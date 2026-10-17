@@ -10,7 +10,7 @@
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseFrontMatter } from './charter-front-matter.mjs';
-import { writeOut } from './out.mjs';
+import { say } from './out.mjs';
 
 const PRESETS = {
   'mattpocock-skills': {
@@ -46,10 +46,6 @@ const CARDS = {
   tester: ['test-first', 'debugging'],
 };
 
-function say(lines, code) {
-  writeOut(`${lines.join('\n')}\n`);
-  process.exit(code);
-}
 const unknown = (reason) => say([`unknown: ${reason}`], 2);
 
 const [card, rootArg] = process.argv.slice(2);

@@ -19,12 +19,8 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { projectUrl, readJson } from './ado.mjs';
-import { writeOut } from './out.mjs';
+import { say } from './out.mjs';
 
-function say(lines, code) {
-  writeOut(lines.map((l) => `${l}\n`).join(''));
-  process.exit(code);
-}
 const unknown = (reason) => say([`unknown: ${reason}`], 2);
 
 const [command, org, project, name, ...extra] = process.argv.slice(2);

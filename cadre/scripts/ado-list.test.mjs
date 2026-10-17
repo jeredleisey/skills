@@ -148,8 +148,11 @@ test('a large list reaches a reader that is slow, with no line cut off', async (
   let out = '';
   child.stdout.setEncoding('utf8');
   child.stdout.on('data', (c) => (out += c));
-  child.stdout.pause();
-  setTimeout(() => child.stdout.resume(), 400);
+  // Stop reading at the first data, and read on 400 ms later, so a slow runner cannot hide a lost tail.
+  child.stdout.once('data', () => {
+    child.stdout.pause();
+    setTimeout(() => child.stdout.resume(), 400);
+  });
   await new Promise((ok) => child.on('close', ok));
   const lines = out.split('\n').filter(Boolean);
   assert.equal(lines.length, 200);

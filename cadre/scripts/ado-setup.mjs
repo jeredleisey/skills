@@ -16,11 +16,8 @@
 //   usage message on stderr                                 exit 64
 // CADRE_ADO_CMD replaces the ADO client. See ado.mjs.
 import { projectUrl, readJson } from './ado.mjs';
+import { say } from './out.mjs';
 
-function say(line, code) {
-  console.log(line);
-  process.exit(code);
-}
 const unknown = (reason) => say(`unknown: ${reason}`, 2);
 
 const [command, org, project, name, ...extra] = process.argv.slice(2);

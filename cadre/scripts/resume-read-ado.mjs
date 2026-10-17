@@ -21,12 +21,8 @@ import { join } from 'node:path';
 import { orgUrl, projectUrl, readJson } from './ado.mjs';
 import { parseFrontMatter } from './charter-front-matter.mjs';
 import { auditLedger, holderWho, okLine, parseHolder, pickCheckpoint, same } from './resume-core.mjs';
-import { writeOut } from './out.mjs';
+import { say as done } from './out.mjs';
 
-function done(line, code) {
-  writeOut(`${line}\n`);
-  process.exit(code);
-}
 const unknown = (reason) => done(`unknown: ${reason}`, 2);
 
 const [itemId, sessionArg, ...extra] = process.argv.slice(2);
