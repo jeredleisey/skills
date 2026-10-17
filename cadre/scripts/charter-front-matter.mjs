@@ -6,7 +6,7 @@
 //   - Any other line must be `key: value`, or the parser throws an Error with the reason.
 //   - A named key that appears twice throws.
 // Return { values, lists }. `values` maps a named key to its text, without quotes.
-// `lists` maps a named key to the items of the `- item` lines that follow it.
+// `lists` maps a named key to its items: those of an inline `[a, b]`, a comma list, or the `- item` lines.
 
 function unquote(value) {
   const m = /^(["'])(.*)\1$/.exec(value);
@@ -31,7 +31,9 @@ export function parseFrontMatter(text, names) {
     if (names.includes(m[1])) {
       if (m[1] in values) throw new Error(`${m[1]} appears twice`);
       values[m[1]] = unquote((m[2] ?? '').trim());
-      lists[m[1]] = [];
+      const inline = /^\[(.*)\]$/.exec(values[m[1]]);
+      const flat = inline ? inline[1] : values[m[1]];
+      lists[m[1]] = flat === '' ? [] : flat.split(',').map((x) => unquote(x.trim()));
       current = m[1];
     }
   }

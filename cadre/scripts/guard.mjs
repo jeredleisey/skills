@@ -109,7 +109,7 @@ function scan(text, out) {
 
 const SHELLS = new Set(['bash', 'sh', 'zsh', 'dash', 'ksh']);
 const KEYWORDS = new Set(['{', '!', 'if', 'then', 'do', 'else', 'elif', 'while', 'until']);
-const WRAPPERS = new Set(['env', 'sudo', 'command', 'exec', 'time', 'nice', 'nohup']);
+const WRAPPERS = new Set(['env', 'sudo', 'command', 'exec', 'time', 'nice', 'nohup', 'xargs']);
 
 // Every command that the text may run, as a list of words. A wrapper, a leading assignment, and
 // the text of `bash -c` or `eval` are opened, so that the command inside is seen.
@@ -198,8 +198,9 @@ function pushReason(args, cwd) {
     const colon = spec.indexOf(':');
     if (colon === 0) return 'a delete of a remote branch';
     let target = colon === -1 ? spec : spec.slice(colon + 1);
+    if (/[$*?[~]/.test(spec)) return 'a push with a target that the guard cannot read';
     if (target === 'HEAD' || target === '@') target = currentBranch(cwd) ?? 'main';
-    if (branches.has(target.replace(/^refs\/heads\//, ''))) return 'a push to the default branch';
+    if (branches.has(target.replace(/^(refs\/)?heads\//, ''))) return 'a push to the default branch';
   }
   return null;
 }
@@ -212,7 +213,7 @@ function mergeReason(args) {
     if (GH_VALUE_OPTIONS.has(args[i])) i++;
     else if (!args[i].startsWith('-')) words.push(args[i]);
   }
-  return args[0] === 'gh' && words[0] === 'pr' && words[1] === 'merge' ? 'a merge of a pull request' : null;
+  return args[0] === 'gh' && words[0] === 'pr' && words[1] === 'merge' && !args.includes('--disable-auto') ? 'a merge of a pull request' : null;
 }
 
 const MATCH = {
@@ -241,11 +242,7 @@ function readCharter(cwd) {
   try {
     const root = git(['rev-parse', '--show-toplevel'], cwd) ?? cwd;
     const { values, lists } = parseFrontMatter(readFileSync(join(root, ...CHARTER.split('/')), 'utf8'), ['guards', 'allow']);
-    let allow = lists.allow ?? [];
-    const inline = /^\[(.*)\]$/.exec(values.allow ?? '');
-    if (inline) allow = inline[1].split(',');
-    else if (values.allow) allow = values.allow.split(',');
-    return { off: values.guards === 'off', allow: new Set(allow.map((n) => n.trim().replace(/^(["'])(.*)\1$/, '$2'))) };
+    return { off: values.guards === 'off', allow: new Set(lists.allow) };
   } catch {
     return NONE;
   }
