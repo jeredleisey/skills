@@ -51,7 +51,7 @@ Written <date and time>. Check each item against the tracker before you act on i
 
 ## The resume steps
 
-1. Read the handoff note and the adapter.
+1. Read the handoff note and the charter.
 2. Check each item of "In progress" against the tracker: the state of the issue, the branch, the pull request.
 3. Check the ledger. Remove each grant that ended with its session.
 4. Contact a peer only when your work needs it. Do not announce that you are back.

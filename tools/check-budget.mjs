@@ -9,7 +9,7 @@ const counted = [
   'cadre/agents/reviewer.md',
   'cadre/agents/researcher.md',
   'cadre/agents/tester.md',
-  'cadre/skills/orchestrate/references/adapter.md',
+  'cadre/skills/orchestrate/references/charter.md',
 ];
 
 const root = rootFromArgs();
