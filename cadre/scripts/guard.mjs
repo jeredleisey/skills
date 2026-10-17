@@ -29,6 +29,7 @@ const CHARTER = 'docs/agents/cadre-charter.md';
 const FALLBACK = ['main', 'master', 'dev', 'develop', 'trunk'];
 const HAS_VARIABLE = /[$`]/;
 // A tilde expands only at the start of a word, or after : or =. Inside a word it is a literal.
+const REDIRECTION = /^(&>>|&>|<<<|<<-|<<|>>|>\||>&|<&|<>|>|<)/;
 const SPECIAL = /[$*?[`{]|^~|[:=]~/;
 
 // ---- the shell scanner: split a command line into commands, each a list of words ----
@@ -47,15 +48,24 @@ function closeParen(text, from) {
 // backticks is a command of its own, also inside double quotes. A comment is data.
 function scan(text, out, state) {
   let words = [];
+  let redirs = [];
+  let pending = null;
   let cur = null;
   const endWord = () => {
-    if (cur !== null) words.push(cur);
+    if (cur !== null && pending !== null) redirs.push({ op: pending, target: cur });
+    else if (cur !== null) words.push(cur);
+    if (cur !== null) pending = null;
     cur = null;
   };
   const endCommand = () => {
     endWord();
-    if (words.length > 0) out.push(words);
+    pending = null;
+    if (words.length > 0) {
+      words.redirs = redirs;
+      out.push(words);
+    }
     words = [];
+    redirs = [];
   };
   // Scan a $( ) span or a backtick pair that starts at i. Return the index after it, or -1.
   const nested = (i) => {
@@ -106,6 +116,13 @@ function scan(text, out, state) {
       i += 2;
     } else if (c === '#' && cur === null) {
       while (i < text.length && text[i] !== '\n') i++;
+    } else if (c === '<' || c === '>' || (c === '&' && text[i + 1] === '>')) {
+      // A redirection is an operator and its target. It is not an argument. Its & is not a break.
+      const op = REDIRECTION.exec(text.slice(i))[0];
+      if (cur !== null && /^[0-9]+$/.test(cur)) cur = null;
+      else endWord();
+      pending = op;
+      i += op.length;
     } else if (c === '\n' || ';&|()'.includes(c)) {
       endCommand();
       i++;
@@ -230,15 +247,12 @@ function unwrap(name, words) {
   return words.slice(i + (spec.skip ?? 0));
 }
 
-// A shell with no -c and no script reads its commands from stdin.
+// A shell with no -c and no script reads its commands from stdin. Redirections are not in args.
 function isBareShell(args) {
   let script = false;
   for (let i = 1; i < args.length; i++) {
     const a = args[i];
-    if (/^<{1,3}-?$/.test(a)) i++;
-    else if (a === '>' || a === '>>') i++;
-    else if (a.startsWith('<') || a.startsWith('>') || /^[0-9]+>/.test(a) || a.startsWith('-')) continue;
-    else script = true;
+    if (!a.startsWith('-')) script = true;
   }
   return !script;
 }
@@ -326,7 +340,10 @@ function commandsOf(text, dir, depth = 0) {
     }
     out.push({ args, dir, text });
   }
-  if (feeds) out.push({ args: ['?', ...tokensOf([...raw.flat(), ...doc.bodies])], dir });
+  if (feeds) {
+    const targets = raw.flatMap((w) => (w.redirs ?? []).map((r) => r.target));
+    out.push({ args: ['?', ...tokensOf([...raw.flat(), ...targets, ...doc.bodies])], dir });
+  }
   return out;
 }
 
@@ -378,6 +395,18 @@ const changesPush = (setting) => {
   return key.startsWith('alias.') || /^remote\..*\.push$/.test(key) || key === 'push.default';
 };
 
+// The long options of git push. git accepts a unique prefix of one.
+const PUSH_LONG = ['all', 'branches', 'prune', 'mirror', 'dry-run', 'porcelain', 'delete', 'tags', 'follow-tags', 'signed', 'no-signed', 'atomic', 'push-option', 'receive-pack', 'exec', 'repo', 'force', 'force-with-lease', 'force-if-includes', 'no-force-with-lease', 'no-force-if-includes', 'set-upstream', 'upstream', 'thin', 'no-thin', 'quiet', 'verbose', 'progress', 'verify', 'no-verify', 'recurse-submodules', 'no-recurse-submodules', 'ipv4', 'ipv6', 'help'];
+
+// The full name of a long option, or null when a prefix fits more than one option.
+function longOption(given) {
+  const bare = given.slice(2);
+  if (PUSH_LONG.includes(bare)) return given;
+  const hits = PUSH_LONG.filter((o) => o.startsWith(bare));
+  if (hits.length > 1) return null;
+  return hits.length === 1 ? `--${hits[0]}` : given;
+}
+
 const place = (cwd, to) => (cwd === null || to === undefined || SPECIAL.test(to) ? null : resolve(cwd, to));
 
 function pushReason({ args, dir, text }) {
@@ -411,6 +440,7 @@ function pushReason({ args, dir, text }) {
   let wide = false;
   let repoOption = false;
   let ambiguous = false;
+  let help = false;
   const positional = [];
   const loose = [];
   for (i += 1; i < args.length; i++) {
@@ -421,8 +451,10 @@ function pushReason({ args, dir, text }) {
     }
     if (a.startsWith('--')) {
       const eq = a.indexOf('=');
-      const opt = eq === -1 ? a : a.slice(0, eq);
-      if (opt === '--force' || opt === '--force-with-lease' || opt === '--force-if-includes') force = true;
+      const opt = longOption(eq === -1 ? a : a.slice(0, eq));
+      if (opt === null) return 'a push option that the guard cannot tell from another';
+      if (opt === '--help') help = true;
+      else if (opt === '--force' || opt === '--force-with-lease' || opt === '--force-if-includes') force = true;
       else if (opt === '--delete') del = true;
       else if (['--all', '--branches', '--mirror', '--prune'].includes(opt)) wide = true;
       else if (opt === '--repo' || PUSH_VALUE_OPTIONS.has(opt)) {
@@ -430,12 +462,14 @@ function pushReason({ args, dir, text }) {
         if (eq === -1) loose.push(args[++i] ?? '');
         else loose.push(a.slice(eq + 1));
       } else if ((opt === '--recurse-submodules' || opt === '--signed') && eq === -1) ambiguous = true;
-    } else if (/^-[A-Za-z]+$/.test(a)) {
+    } else if (/^-[A-Za-z0-9]+$/.test(a)) {
+      if (a === '-h') help = true;
       if (a.includes('f')) force = true;
       if (a.includes('d')) del = true;
       if (a === '-o') loose.push(args[++i] ?? '');
     } else positional.push(a);
   }
+  if (help) return null;
   if (del) return 'a delete of a remote branch';
   if (force) return 'a force push';
   if (wide) return 'a push of all branches';
@@ -466,14 +500,15 @@ const MERGE_FLAGS = new Set(['--auto', '--merge', '-m', '--squash', '-s', '--reb
 const GH_VALUE_OPTIONS = new Set(['-R', '--repo', '--hostname']);
 
 function mergeReason({ args }) {
+  if (args[0] !== 'gh') return null;
   const words = [];
   for (let i = 1; i < args.length && words.length < 2; i++) {
     if (GH_VALUE_OPTIONS.has(args[i])) i++;
     else if (!args[i].startsWith('-')) words.push(args[i]);
   }
-  if (args[0] !== 'gh') return null;
   if (HAS_VARIABLE.test(words[0] ?? '') || (words[0] === 'pr' && HAS_VARIABLE.test(words[1] ?? ''))) return 'a gh command that the guard cannot read';
   if (words[0] !== 'pr' || words[1] !== 'merge') return null;
+  if (args.includes('--help') || args.includes('-h')) return null;
   // Only a command that just turns auto-merge off passes.
   const disableOnly = args.includes('--disable-auto') && !args.some((a) => MERGE_FLAGS.has(a));
   return disableOnly ? null : 'a merge of a pull request';
@@ -522,16 +557,26 @@ const MATCH = {
 
 const NONE = { off: false, allow: new Set() };
 
-// Read the charter from origin/<default branch>. Any fault returns NONE, which is guards on.
+// Read the charter from every candidate default branch that exists as a remote ref: the default
+// that the environment or origin/HEAD names, init.defaultBranch, and the usual names. The strictest
+// wins, so a helper cannot move origin/HEAD to a branch that has guards: off. A candidate with no
+// charter, or any fault, returns NONE, which is guards on. `allow` is the intersection.
 function readCharter(cwd) {
   try {
     const repo = { cwd, gitDir: null };
-    const branch = knownDefault(repo);
-    if (!branch) return NONE;
-    const text = git(['show', `origin/${branch}:${CHARTER}`], repo);
-    if (text === null) return NONE;
-    const { values, lists } = parseFrontMatter(text, ['guards', 'allow']);
-    return { off: values.guards === 'off', allow: new Set(lists.allow) };
+    const names = new Set([knownDefault(repo), git(['config', 'init.defaultBranch'], repo), ...FALLBACK].filter(Boolean));
+    let off = true;
+    let allow = null;
+    for (const name of names) {
+      if (git(['rev-parse', '--verify', '-q', `refs/remotes/origin/${name}`], repo) === null) continue;
+      const text = git(['show', `origin/${name}:${CHARTER}`], repo);
+      if (text === null) return NONE;
+      const { values, lists } = parseFrontMatter(text, ['guards', 'allow']);
+      off &&= values.guards === 'off';
+      const these = new Set(lists.allow);
+      allow = allow === null ? these : new Set([...allow].filter((x) => these.has(x)));
+    }
+    return allow === null ? NONE : { off, allow };
   } catch {
     return NONE;
   }
@@ -559,8 +604,10 @@ function decide(guard, input) {
   const cwd = typeof input.cwd === 'string' && input.cwd !== '' ? input.cwd : process.cwd();
   const reason = MATCH[guard](commandsOf(command, cwd));
   if (reason === null) return null;
-  // Only an absent agent_id means the main session. An empty or null one counts as a helper.
-  if ('agent_id' in input) {
+  // Docs: agent_id is set inside a subagent or an in-process teammate. agent_type is set there too,
+  // and in a session that runs with --agent. A field that is present counts, even empty or null.
+  // Only a hook input with neither field is the orchestrator.
+  if ('agent_id' in input || 'agent_type' in input) {
     return { permissionDecision: 'deny', permissionDecisionReason: `A helper never pushes or merges. This is ${reason}. Tell the orchestrator.` };
   }
   const config = { ...readCharter(cwd), ...readPersonal() };
