@@ -251,3 +251,30 @@ test('remote: a repo and a project that both hold a space are not mixed up', () 
   const r = run(['remote', 'https://dev.azure.com/example-org/Example%20Project/_git/my%20repo'], {});
   assert.deepEqual(JSON.parse(r.line.slice('ok ado-remote '.length)), { org: 'example-org', repo: 'my repo', project: 'Example Project' });
 });
+
+// ---- the local tracker: when setup proposes it ----
+
+test('local: no remote proposes the local tracker', () => {
+  assert.deepEqual([run(['local'], {}).line, run(['local'], {}).code], ['ok local no-remote', 0]);
+  assert.equal(run(['local', ''], {}).line, 'ok local no-remote');
+});
+
+test('local: a remote that is neither GitHub nor ADO proposes it, and names the host', () => {
+  for (const [url, host] of [['https://gitlab.com/acme/app.git', 'gitlab.com'], ['git' + AT + 'bitbucket.org:acme/app.git', 'bitbucket.org'], ['ssh://git' + AT + 'git.example.com:2222/acme/app', 'git.example.com']]) {
+    const r = run(['local', url], {});
+    assert.deepEqual([r.line, r.code], [`ok local other-host ${host}`, 0], url);
+  }
+});
+
+test('local: a GitHub or ADO remote does not propose it', () => {
+  for (const url of ['https://github.com/acme/app.git', 'git' + AT + 'github.com:acme/app.git', 'https://dev.azure.com/example-org/Plain/_git/acme', 'git' + AT + 'ssh.dev.azure.com:v3/example-org/Plain/acme', 'https://example-org.visualstudio.com/Plain/_git/acme']) {
+    const r = run(['local', url], {});
+    assert.deepEqual([r.line, r.code], ['ok not-local', 0], url);
+  }
+});
+
+test('local: a URL that has no host is unknown', () => {
+  const r = run(['local', 'not a url'], {});
+  assert.match(r.line, /^unknown: /);
+  assert.equal(r.code, 2);
+});

@@ -3,12 +3,16 @@
 //        node setup-check.mjs gh <owner/repo> [host]
 //        node setup-check.mjs remote <url>
 //        node setup-check.mjs ado <org> <project>
+//        node setup-check.mjs local [url]
 // Output and exit code:
 //   ok node <version>       exit 0   Node 22 or later is installed
 //   ok gh <owner/repo>      exit 0   the gh account can see the repo
 //   ok ado-remote {"org":..,"repo":..,"project":..}   exit 0   the remote is an Azure DevOps (ADO) URL. The names
 //                                    are URL-decoded JSON strings, and a repo or a project can hold a space.
 //   ok not-ado              exit 0   the remote is not an ADO URL
+//   ok local no-remote      exit 0   there is no remote: propose the local tracker
+//   ok local other-host <host>  exit 0   the host is neither GitHub nor ADO: propose it, or ask if it is GitHub Enterprise
+//   ok not-local            exit 0   the remote is GitHub or ADO
 //   ok ado <org>/<project>  exit 0   the token in AZURE_DEVOPS_EXT_PAT can read the project
 //   stop: <what to do>      exit 1   setup must stop and tell the human this
 //   unknown: <reason>       exit 2   the check cannot tell. This is never a pass.
@@ -77,6 +81,20 @@ function checkRemote(url) {
   say(found ? `ok ado-remote ${JSON.stringify(found)}` : 'ok not-ado', 0);
 }
 
+function checkLocal(url) {
+  if (!url?.trim()) say('ok local no-remote', 0);
+  const m = /^[A-Za-z][A-Za-z0-9+.-]*:\/\/(?:[^@/]*@)?([^/:]+)(?::\d+)?\//.exec(url.trim()) || /^(?:[^@/\s]+@)?([^:/\s]+):./.exec(url.trim());
+  if (!m) say('unknown: the remote URL has no host', 2);
+  const host = m[1].toLowerCase();
+  if (host === 'github.com') say('ok not-local', 0);
+  try {
+    if (parseRemote(url)) say('ok not-local', 0);
+  } catch {
+    say('ok not-local', 0); // an ADO host with a bad path: the remote check reports it
+  }
+  say(`ok local other-host ${host}`, 0);
+}
+
 // A read of the work item types of the project proves three things: the host, the project, and the token scope.
 function checkAdo(org, project) {
   let r;
@@ -100,9 +118,10 @@ function checkAdo(org, project) {
 const [check, ...rest] = process.argv.slice(2);
 if (check === 'node' && rest.length === 0) checkNode();
 else if (check === 'remote' && rest.length === 1) checkRemote(rest[0]);
+else if (check === 'local' && rest.length <= 1) checkLocal(rest[0]);
 else if (check === 'ado' && rest.length === 2) checkAdo(rest[0], rest[1]);
 else if (check === 'gh' && rest.length >= 1 && rest.length <= 2) checkGh(rest[0], rest[1]);
 else {
-  console.error('usage: node setup-check.mjs node | gh <owner/repo> [host] | remote <url> | ado <org> <project>');
+  console.error('usage: node setup-check.mjs node | gh <owner/repo> [host] | remote <url> | local [url] | ado <org> <project>');
   process.exit(64);
 }
