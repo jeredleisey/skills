@@ -29,7 +29,7 @@ Each of the last three is optional, and each is an object. A value in `answers` 
 | Key | Question |
 | --- | --- |
 | `tracker` | Which tracker, host, and owner? (found in the account check) |
-| `skill_pack` | Which skill pack? |
+| `skill_pack` | Which skill pack? (setup writes it to the front matter of the charter) |
 | `owners` | Which paths does each orchestrator own? |
 | `merge_deploy` | Who may merge and deploy, and how? |
 | `documentation` | Which documentation follows a change? |

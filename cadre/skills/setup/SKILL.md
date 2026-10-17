@@ -93,7 +93,7 @@ Done when the human has heard each line.
 
 ### 6. Ask the questions
 
-Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. The tracker comes from step 2. A preset from step 3 can give the answers and the defaults. The tracker and the skill pack go in the body of the charter. Ask one question at a time and wait for each answer. Do not ask again about an answer that the human confirmed in step 3. Show a preset default as `default: <value>`, and let the human type another value.
+Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. The tracker comes from step 2. A preset from step 3 can give the answers and the defaults. The tracker goes in the body of the charter. The skill pack goes in its front matter, as `skill_pack`. Ask one question at a time and wait for each answer. Do not ask again about an answer that the human confirmed in step 3. Show a preset default as `default: <value>`, and let the human type another value.
 
 1. Which skill pack does this repo use? Offer three choices:
    - `mattpocock-skills`. Whether the answer came from a preset or from this question, say that the human types `/mattpocock-skills:setup-matt-pocock-skills` by hand, because that skill is human-only. The two setups stay separate. Cadre never reads or writes the files of that tool.

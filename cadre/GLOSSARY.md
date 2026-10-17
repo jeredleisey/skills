@@ -17,7 +17,7 @@ A plugin of SDLC skills that the role cards use, such as `mattpocock-skills` or 
 _Avoid_: skill set, toolset
 
 **Capability**:
-A kind of work that a role card asks for, such as test-first or code review, which the charter maps to a skill in the skill pack.
+A kind of work that a role card asks for, such as `test-first` or `code-review`. The charter maps it to a skill: a `skill_pack` preset, plus overrides.
 _Avoid_: skill (when the kind of work is meant)
 
 **Preset**:
@@ -35,7 +35,7 @@ An agent that does one ticket for an orchestrator and stops.
 _Avoid_: worker, subagent (when the role is meant)
 
 **Role card**:
-The agent definition of one helper role, such as `coder` or `reviewer`.
+The agent definition of one helper role, such as `coder` or `reviewer`. It names capabilities, not skills.
 _Avoid_: agent, persona
 
 **Peer**:
