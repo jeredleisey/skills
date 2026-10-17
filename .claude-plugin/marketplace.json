@@ -1,0 +1,13 @@
+{
+  "name": "jeredleisey",
+  "owner": { "name": "Jered Leisey" },
+  "description": "Jered Leisey's Claude Code plugins.",
+  "plugins": [
+    {
+      "name": "cadre",
+      "source": "./cadre",
+      "description": "Run a team of agents on a software repo: an orchestrator, role cards, and rules for one-way steps.",
+      "category": "productivity"
+    }
+  ]
+}

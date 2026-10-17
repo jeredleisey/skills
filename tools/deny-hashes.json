@@ -1,0 +1,16 @@
+{
+  "algorithm": "sha256",
+  "note": "sha256 of each denied lowercase token. A pair of adjacent tokens is joined with no separator before the hash.",
+  "hashes": [
+    "0420b3c0c4dbdff175878bd033f406592569a1434d1c46895b440e58f0f4b36d",
+    "269e2fd9b211755757bad3408f614b73d0f1ec79fde4ddd56ade694269e73b89",
+    "688c25635e8d49a9881c66569d646596fafa9e184e6cae590701fca1830989a3",
+    "83221cfa7b813404ee8c7e03b3f26e961dcc90f7050b51dafe80fa16a356d5bb",
+    "8cfde6efdfc4ed5ab1f6acbbd1ba49bf31932f84d0a4c090eb41c7d151e8b180",
+    "911da7be1bdb28110970f33ad8320d3d892c862b0b3de963c04ccba2c152ee6f",
+    "9bac4ca57c9d7273fc55e7b803de8c9f8296dd6bc72cd79bc850a43bddafb6c4",
+    "9cad66723ea7e3c9af89c0664e03c40fcfee95014fef070c8461751006cb75bd",
+    "e3638dd52d300c1393f35ef855ed00ae35e66b48acc8a8fbfc6b5dfba335593b",
+    "ec6f049478046f72becb006a2339202eae93911281dd610a7c869adec1ba3297"
+  ]
+}
