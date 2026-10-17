@@ -26,6 +26,13 @@ git -C remote.git config core.logAllRefUpdates true
 git -C remote.git symbolic-ref HEAD refs/heads/topic
 mkdir -p remote.git/logs
 printf 'seed\n' > remote.git/logs/HEAD
+# A hook logs every ref update that any push makes, to any ref. The seed line keeps the file non-empty.
+printf 'seed\n' > pushes.log
+cat > remote.git/hooks/pre-receive <<HOOK
+#!/bin/sh
+cat >> "$PWD/pushes.log"
+HOOK
+chmod +x remote.git/hooks/pre-receive
 git switch -q -c topic
 printf 'one more line\n' >> README.md
 git commit -q -am "Change the readme"

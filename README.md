@@ -33,4 +33,5 @@ The runner runs `claude plugin eval` on `cadre/` with 3 runs per case, a cost li
 - On macOS, the key comes from the login keychain, service `ANTHROPIC_API_KEY`. The runner gives it to the one eval process, and never prints or writes it.
 - Elsewhere, set `ANTHROPIC_API_KEY`.
 - The workflow `evals` runs the same command by hand (`workflow_dispatch`), with the repository secret `ANTHROPIC_API_KEY`.
+- A run that passes no flag keeps nothing. To keep each run folder and its trace for review, set `CADRE_EVAL_KEEP=1`. A kept folder may hold secrets, for example if the agent ran `env`. Delete it after you look.
 - The cases are in `cadre/evals/`. The models are in `tools/run-evals.mjs`.

@@ -16,8 +16,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --global @anthropic-ai/claude-code
+      - run: npm install --global @anthropic-ai/claude-code@2.1.301
       # The cases grant Bash. Claude Code runs it in a sandbox that needs these two packages.
+      - run: sudo apt-get update
       - run: sudo apt-get install -y bubblewrap socat
       - run: node tools/run-evals.mjs
         env:

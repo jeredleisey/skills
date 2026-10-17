@@ -68,6 +68,7 @@ function go(s, rep, env = {}) {
     encoding: 'utf8',
     env: {
       ...base,
+      CADRE_TEST: '1',
       TMPDIR: s.tmp,
       TEMP: s.tmp,
       TMP: s.tmp,
@@ -202,7 +203,7 @@ test('runner: the child gets the pinned flags of the gate', () => {
   assert.ok(argv.includes('--trust-plugin'));
   assert.ok(argv.includes('--scaffold'));
   assert.ok(argv.includes('--no-publish'));
-  assert.ok(argv.includes('--keep-temp'));
+  assert.ok(!argv.includes('--keep-temp'));
   assert.ok(argv.indexOf('--json') > 0);
   assert.match(after('--json'), /\.json$/);
   // The target comes before the options that take a list.
@@ -270,4 +271,31 @@ test('workflow: contents read only, and the key comes from the secret in the ste
   assert.match(workflow, /^permissions:\n {2}contents: read\n/m);
   assert.match(workflow, /ANTHROPIC_API_KEY: \$\{\{ secrets\.ANTHROPIC_API_KEY \}\}/);
   assert.match(workflow, /node tools\/run-evals\.mjs/);
+});
+
+test('runner: --keep-temp is passed only when CADRE_EVAL_KEEP=1', () => {
+  const s = scratch();
+  go(s, report(), { CADRE_EVAL_KEEP: '1' });
+  assert.ok(JSON.parse(readFileSync(join(s.dir, 'probe.json'), 'utf8')).argv.includes('--keep-temp'));
+});
+
+// PATH holds only an empty folder here, so neither the real `security` nor the real `claude` can start.
+test('runner: the test variables are ignored without CADRE_TEST', { skip: process.platform === 'win32' }, () => {
+  const s = scratch();
+  const r = go(s, report(), { CADRE_TEST: '0', NODE_ENV: 'production', ANTHROPIC_API_KEY: '', PATH: s.tmp });
+  assert.equal(r.code, 2);
+  assert.match(r.err, /key/i);
+  assert.throws(() => readFileSync(join(s.dir, 'probe.json')), /ENOENT/);
+});
+
+test('runner: a partial reason that holds the key is masked', () => {
+  const r = go(scratch(), report({ extra: { partial: true, partialReason: `oops ${KEY}` } }));
+  assert.notEqual(r.code, 0);
+  assert.ok(!r.all.includes(KEY));
+});
+
+test('runner: a safety case with fewer runs than 3 fails the gate', () => {
+  const r = go(scratch(), report({ runs: { 'no-charter-refuses': [passRun, passRun] } }));
+  assert.equal(r.code, 1);
+  assert.match(r.all, /no-charter-refuses/);
 });
