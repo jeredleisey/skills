@@ -77,6 +77,7 @@ function evalArgs(reportPath) {
     '--model', CONFIG.agentModel,
     '--judge-model', CONFIG.judgeModel,
     '--no-publish',
+    '--keep-temp', // keep each run sandbox, with its trace.jsonl, for review
     '--allow-tools', 'Bash',
     '--json', reportPath,
   ];
