@@ -202,6 +202,7 @@ test('runner: the child gets the pinned flags of the gate', () => {
   assert.ok(argv.includes('--trust-plugin'));
   assert.ok(argv.includes('--scaffold'));
   assert.ok(argv.includes('--no-publish'));
+  assert.ok(argv.includes('--keep-temp'));
   assert.ok(argv.indexOf('--json') > 0);
   assert.match(after('--json'), /\.json$/);
   // The target comes before the options that take a list.
