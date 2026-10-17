@@ -28,22 +28,22 @@ Done when the human has the table and the choices, and you did not start as any 
    - Check A shows `free`: take the name. Do not ask the human.
    - Check A shows `unknown`: ask the human, and give the reason that the script printed.
 4. If the status is `retired`, ask the human before you resume it.
-5. Write your own session id in `session` and your host in `host`, in the front matter. In Claude Code, the id is in `$CLAUDE_CODE_SESSION_ID`, and the host is the output of `scripts/host-name.sh`, in the folder of the skill. Then do the resume steps in [handoff.md](handoff.md).
+5. Write your own session id in `session` and your host in `host`, in the front matter. In Claude Code, the id is in `$CLAUDE_CODE_SESSION_ID`, and the host is the output of `node ${CLAUDE_PLUGIN_ROOT}/scripts/host-id.mjs`. Then do the resume steps in [handoff.md](handoff.md).
 
 ## Check for a live holder
 
 Run this check for a handoff note. It reads a fact with a command.
 
-- **Check A.** If the `host` of the note is not this host (the output of `scripts/host-name.sh`), the result of check A is `unknown`: the script sees only this machine. Otherwise run `scripts/session-holder.sh <session>` with the `session` id of the note. Both scripts are in the folder of the skill. `session-holder.sh` prints one line:
+- **Check A.** If the `host` of the note is not this host (the output of `node ${CLAUDE_PLUGIN_ROOT}/scripts/host-id.mjs`), the result of check A is `unknown`: the script sees only this machine. Otherwise run `node ${CLAUDE_PLUGIN_ROOT}/scripts/holder-check.mjs <session>` with the `session` id of the note. `holder-check.mjs` prints one line:
   - `held pid=... name=... cwd=... status=...` (exit 0): another live session holds that id.
   - `free` (exit 1): no live session holds it.
-  - `unknown: <reason>` (exit 2): the check cannot tell, for example when `claude` is missing, the command fails, or its output does not parse. The script never says `free` after a failure.
+  - `unknown: <reason>` (exit 2): the check cannot tell, for example when `claude agents` fails or is missing, a process cannot be read, or its output does not parse. The script never says `free` after a failure.
   - `self pid=...` (exit 3): this session holds it. The script compares the pid with `$CLAUDE_PID`.
   - A usage message (exit 64): the call has no session id.
 
 Notes on the checks:
 
-- The script runs `claude agents --json`, a documented interface of Claude Code. It lists the active sessions on this machine. The script keeps an entry only when its pid is alive and is a Claude process. Set `CLAUDE_AGENTS_JSON_CMD` to use another command, for example `cat fixture.json` in a test.
+- The script runs `claude agents --json`, a documented interface of Claude Code. It lists the active sessions on this machine. The script drops an entry only when it proves that the pid is dead or is another program. A process named `node` (an npm install) or a Git Bash shell can be Claude, so it gives `held`. Set `CLAUDE_AGENTS_JSON_CMD` to use another command, for example `cat fixture.json` in a test.
 - A `free` result for a session id does not prove that the orchestrator is gone. A new session can hold the name with a new id, or on another host.
 - A session name in place of an id gives `unknown`. A note with no `session` gives the usage message. Count that as `unknown` too.
 

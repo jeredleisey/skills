@@ -18,7 +18,7 @@ metadata:
   type: project
   orchestrator: <Name>
   session: <the id of the session that last wrote this note, for example $CLAUDE_CODE_SESSION_ID>
-  host: <the host of that session, the output of scripts/host-name.sh in the folder of the skill>
+  host: <the host of that session, the output of node ${CLAUDE_PLUGIN_ROOT}/scripts/host-id.mjs>
   status: active        # active | retired
 ---
 
