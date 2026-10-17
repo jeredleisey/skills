@@ -21,11 +21,13 @@ test('hooks.json parses and has one PreToolUse handler for each guard', () => {
   assert.deepEqual(guards.sort(), ['merge', 'push']);
 });
 
-test('each handler blocks on failure and has a narrow if filter', () => {
+test('each handler blocks on failure and on a timeout, and has an if filter that git.exe and gh.exe pass', () => {
   for (const h of handlers()) {
     assert.equal(h.type, 'command');
     assert.equal(h.onFailure, 'block');
-    assert.match(h.if, /^Bash\(\*(git|gh) \*\)$/);
+    assert.match(h.if, /^Bash\(\*(git|gh)\*\)$/);
+    // Docs: a hook that times out counts as a failure, and onFailure block then blocks the call.
+    assert.equal(h.timeout, 10);
   }
 });
 

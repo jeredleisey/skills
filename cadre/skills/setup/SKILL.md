@@ -12,7 +12,7 @@ If a human did not start this setup in this session, stop. Tell the parent to as
 
 Never push to the default branch. Never merge the pull request. The human reviews and merges it.
 
-A check script prints one line. A line that starts with `stop:` or `unknown:` ends setup. Say the line to the human and do nothing more.
+A check script prints one line. A line that starts with `stop:` or `unknown:` ends setup. Say the line to the human and do nothing more. The one exception is step 5: an `unknown:` line there does not end setup.
 
 ## Steps
 
@@ -71,9 +71,13 @@ Done when you know which questions to ask.
 
 Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-policy.mjs" <owner>/<repo> [host]`. Add the host only when it is not `github.com`. The script changes nothing.
 
-Say each line to the human. A `gap:` line names a rule that GitHub does not enforce on the default branch. The guards still hold in an agent session, where the repo has no such rule. Use them when the human answers the merge question of step 6.
+Say each line to the human. A `gap:` line names a rule that GitHub does not enforce on the default branch. The hooks only slow an agent and stop a slip. The branch policy of the repo is the guard that holds.
 
-`unknown: <reason>` means that the policy is unread. Say the reason, and do not say that the policy is fine. Go on.
+The hooks do not cover `gh api` merges, `az repos pr update` and auto-complete on Azure DevOps, shell aliases, or a script on disk. The branch policy covers them.
+
+Use the lines when the human answers the merge question of step 6.
+
+`unknown: <reason>` means that the policy is unread. Say the reason, and do not say that the policy is fine. Then go on.
 
 Done when the human has heard each line.
 
