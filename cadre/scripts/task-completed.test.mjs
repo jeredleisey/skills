@@ -8,8 +8,8 @@ import { join } from 'node:path';
 const plugin = join(import.meta.dirname, '..');
 const script = join(import.meta.dirname, 'task-completed.mjs');
 
-function run(stdin, teams = '1') {
-  const env = { ...process.env };
+function run(stdin, teams = '1', extra = {}) {
+  const env = { ...process.env, ...extra };
   delete env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS;
   if (teams !== null) env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = teams;
   const input = typeof stdin === 'string' ? stdin : JSON.stringify({ hook_event_name: 'TaskCompleted', task_id: 't1', task_subject: 'x', ...stdin });
@@ -24,8 +24,14 @@ test('teams on: a completion with agent_id is blocked with a one-line reason', (
   assert.match(r.err, /lead/);
 });
 
-test('teams on: a completion with agent_type is blocked', () => {
-  assert.equal(run({ agent_type: 'coder' }).code, 2);
+test('teams on: a completion with teammate_name is blocked, for a teammate in a split pane', () => {
+  const r = run({ teammate_name: 'implementer' });
+  assert.equal(r.code, 2);
+  assert.match(r.err, /lead/);
+});
+
+test('teams on: agent_type alone passes, so a lead started with --agent completes tasks', () => {
+  assert.equal(run({ agent_type: 'coordinator' }).code, 0);
 });
 
 test('teams on: an empty agent_id still counts', () => {
@@ -54,6 +60,14 @@ test('teams on: each true value turns the hook on', () => {
   }
 });
 
+test('teams on: a throw inside the hook still blocks with exit 2', () => {
+  // The preload makes readFileSync throw an error that is not a parse error.
+  const preload = join(import.meta.dirname, 'task-completed-throw.cjs');
+  const r = run({ agent_id: 'a1' }, '1', { NODE_OPTIONS: `--require "${preload}"` });
+  assert.equal(r.code, 2);
+  assert.match(r.err, /blocks/);
+});
+
 test('teams on: bad stdin blocks', () => {
   for (const bad of ['not json', '', '[]', 'null', '"x"']) {
     const r = run(bad);
@@ -71,7 +85,8 @@ test('hooks.json has a TaskCompleted handler that runs an existing script in exe
   const h = list[0];
   assert.equal(h.type, 'command');
   assert.equal(h.command, 'node');
-  assert.equal(h.onFailure, 'block');
+  // Docs: onFailure has no effect on TaskCompleted, so the script blocks by itself and the entry omits it.
+  assert.equal('onFailure' in h, false);
   assert.equal(typeof h.timeout, 'number');
   const m = /^\${CLAUDE_PLUGIN_ROOT}\/(.+)$/.exec(h.args[0]);
   assert.ok(m, `script argument: ${h.args[0]}`);

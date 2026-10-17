@@ -12,7 +12,7 @@ If a human did not start this setup in this session, stop. Tell the parent to as
 
 Never push to the default branch. Never merge the pull request. The human reviews and merges it.
 
-A check script prints one line. A line that starts with `stop:` or `unknown:` ends setup. Say the line to the human and do nothing more. The one exception is step 5: an `unknown:` line there does not end setup.
+A check script prints one line. A line that starts with `stop:` or `unknown:` ends setup. Say the line to the human and do nothing more. The exceptions are step 5 and step 8: an `unknown:` line there does not end setup.
 
 ## Steps
 
@@ -133,11 +133,15 @@ Agent teams are a Claude Code feature that is experimental. One lead session wor
 
 Ask the human: turn on agent teams? Yes or no. After a yes, ask for the scope:
 
-- `local`: the default. The file is `.claude/settings.local.json`, and it stays out of git.
+- `local`: the default. The file is `.claude/settings.local.json`. Claude Code keeps it out of git only when `.gitignore` has a rule for it. The script checks the rule.
 - `project`: the file is `.claude/settings.json`. It is committed, so the whole team gets the setting.
 - `user`: the file is `settings.json` in your Claude config folder. It covers every repo.
 
-After a yes, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/teams-setting.mjs" <scope> <repo root>`. For `project`, use the worktree of step 7 as the repo root. Commit the file, and push it to `cadre-charter`, so that it is in the pull request of step 7. Say that the pull request now holds a committed file. An `unknown: <reason>` line means that nothing was written. Say the reason. Setup is still done.
+After a yes, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/teams-setting.mjs" <scope> <repo root>`. Say each line that the script prints, also a `note:` line.
+
+For `project`, use the worktree and the branch that step 7 made, with its number if it has one. If step 7 made none, or no setup pull request is open, make a worktree and a branch from `origin/<default branch>` as step 7 does, and open a pull request as step 7 does. Commit the file and push the branch. Say that the pull request holds a committed file.
+
+An `unknown: <reason>` line means that nothing was written. Say the reason. Setup is still done.
 
 Done when the human said no, or the script printed a path.
 
@@ -145,4 +149,4 @@ Done when the human said no, or the script printed a path.
 
 - A charter never holds a secret value. It holds the names of stores only.
 - Ask the human for each answer. Do not guess an answer from the file of another tool.
-- Setup changes no branch policy and no setting of the repo.
+- Setup changes no branch policy and no setting of the repo. One exception: after a yes, step 8 puts the teams line of a project scope in the setup pull request.
