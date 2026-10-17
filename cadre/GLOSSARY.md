@@ -46,11 +46,11 @@ _Avoid_: board, backlog, issue system
 
 **Charter**:
 The committed file in a repo that states how cadre works there: tracker, owners, merge rules, skill pack, guards, and actions that only a human may do.
-_Avoid_: adapter, config, profile
+_Avoid_: config, profile, settings file
 
 **Personal file**:
 A file in the user folder of one person that holds that person's preferences, or a charter for a repo that the person does not own.
-_Avoid_: user config, local adapter
+_Avoid_: user config, local charter
 
 **Orchestrator issue**:
 The tracker item that holds one orchestrator: its identity, its human owner, and its ledger.

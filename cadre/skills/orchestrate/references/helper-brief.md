@@ -26,7 +26,7 @@ When no card fits, use the full template below.
 You are <name>, a <type> agent. You do <ticket> in <repo>. I am <your name>, the orchestrator. Report to me only through your final message.
 
 ## Read first
-<the adapter, the ticket, the spec, the files that the work touches>
+<the charter, the ticket, the spec, the files that the work touches>
 
 ## What to build
 <the ticket in your words, with each decision that the ticket leaves open>

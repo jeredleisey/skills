@@ -5,7 +5,7 @@ description: Run work as an orchestrator. Split a goal into tickets, give each t
 
 # Orchestrate
 
-An **orchestrator** owns the outcome of a piece of work, not each line of it. It shapes the work, gives tickets to **helpers**, verifies what they return, and talks to the **human** and to **peer** orchestrators. The facts of one repo live in its **adapter**. The state of your own work lives in your **handoff note** and your permission **ledger**.
+An **orchestrator** owns the outcome of a piece of work, not each line of it. It shapes the work, gives tickets to **helpers**, verifies what they return, and talks to the **human** and to **peer** orchestrators. The facts of one repo live in its **charter**. The state of your own work lives in your **handoff note** and your permission **ledger**.
 
 Two kinds of step need care:
 
@@ -16,7 +16,16 @@ Two kinds of step need care:
 
 ### 0. Start
 
-Each orchestrator has a name and a handoff note. The notes of a project form its **roster**. Start in one of three ways, as [references/roster.md](references/roster.md) tells:
+First, in the repo root, run the charter check: `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs"`. It prints one line. Act on that line:
+
+- `ok`: continue.
+- `older-cadre`: continue, and say "A newer cadre has new options. Type `/cadre:setup` to see them."
+- `missing`: stop and say "This repo has no charter. Type `/cadre:setup`, then ask me again."
+- `stale <old> <new>`: stop and say "The charter is older than this cadre. Type `/cadre:setup`, then ask me again."
+- `plugin-too-old`: stop and say "The charter is newer than this cadre. Update cadre, then ask me again."
+- `unknown: <reason>`: stop and say the reason. Never continue.
+
+Next, each orchestrator has a name and a handoff note. The notes of a project form its **roster**. Start in one of three ways, as [references/roster.md](references/roster.md) tells:
 
 - **List:** the human asks which orchestrators the project has. Show the roster and wait for a choice.
 - **Resume:** the human says "resume as <name>", or you start after a compaction. Resume only an orchestrator whose note exists, and only when no other live session holds it, as the checks in the roster read. After a compaction, this conversation already is that orchestrator: skip the check. If the note does not exist, show the roster and ask. Never take the name or the ledger of another orchestrator.
@@ -24,9 +33,9 @@ Each orchestrator has a name and a handoff note. The notes of a project form its
 
 Done when you are one orchestrator with its own note, and the resume steps in [references/handoff.md](references/handoff.md) are done for a resume.
 
-### 1. Load the adapter
+### 1. Load the charter
 
-Read the adapter of the repo, at `docs/agents/orchestration.md`. If it does not exist, ask the human the questions in [references/adapter.md](references/adapter.md) and write it in a pull request. Done when you know the tracker, the owner of each file, who may merge and deploy, the documentation rule, and the actions that only the human may do.
+Read the charter of the repo, at `docs/agents/cadre-charter.md` ([references/charter.md](references/charter.md)). Done when you know the tracker, the owner of each file, who may merge and deploy, the documentation rule, and the actions that only the human may do.
 
 ### 2. Shape the work
 
@@ -38,7 +47,7 @@ When a peer works in the same repo, propose the split of tickets and files to th
 
 ### 4. Delegate
 
-Give each ticket to one helper, in its own worktree and branch. Put each worktree at `<repo>/.claude/worktrees/<branch>`, inside the clone, with `git worktree add .claude/worktrees/<branch> -b <branch> <base>`. `claude -w <branch>` uses the same place. The repo must ignore `.claude/worktrees/` ([references/adapter.md](references/adapter.md)). You also edit only in a worktree. A clone that other agents share stays on its main branch. Start the helper from a role card when one fits: `coder` for code, `reviewer` for a review, `researcher` for reading, `tester` for a proof. [references/roles.md](references/roles.md) lists the cards. Write the brief from [references/helper-brief.md](references/helper-brief.md). A helper commits and stops: it does not push, merge, or deploy. Done when the harness shows each helper as running, or its start failed and you know why.
+Give each ticket to one helper, in its own worktree and branch. Put each worktree at `<repo>/.claude/worktrees/<branch>`, inside the clone, with `git worktree add .claude/worktrees/<branch> -b <branch> <base>`. `claude -w <branch>` uses the same place. The repo must ignore `.claude/worktrees/` ([references/charter.md](references/charter.md)). You also edit only in a worktree. A clone that other agents share stays on its main branch. Start the helper from a role card when one fits: `coder` for code, `reviewer` for a review, `researcher` for reading, `tester` for a proof. [references/roles.md](references/roles.md) lists the cards. Write the brief from [references/helper-brief.md](references/helper-brief.md). A helper commits and stops: it does not push, merge, or deploy. Done when the harness shows each helper as running, or its start failed and you know why.
 
 ### 5. Verify
 
@@ -63,7 +72,7 @@ Before each one-way step:
 4. Write the command so that it stops at the first error, for example `set -euo pipefail`. Do not chain a delete after a step that can fail.
 5. Keep a way back: a backup, a tag, or the old version.
 6. If the harness or its permission check refuses the step, do not find another route. Stop and ask the human.
-7. After a merge, update each clone that a live tool runs from. The adapter names them.
+7. After a merge, update each clone that a live tool runs from. The charter names them.
 
 Done when the step succeeded, you checked its result, and each clone that a live tool runs from is current.
 
