@@ -14,6 +14,8 @@ Front matter holds only what a script or a hook reads.
 | `allow` | A list of guards that the repo allows, such as `[merge]`. Absent when none. |
 | `skill_pack` | The preset of the skill map: `mattpocock-skills`, `superpowers`, or `none`. Absent means `none`. |
 | `capabilities` | Overrides of the skill map, as items `<capability>=<skill or none>`. Write the inline list `[a=b, c=d]` or `- a=b` lines, never a mix. A capability appears once. Absent when none. |
+| `tracker` | `ado` for Azure DevOps. Absent for GitHub, the default. |
+| `ado_org`, `ado_project` | The ADO organization and project. Absent for GitHub. |
 
 A ticket that adds a script or a hook that reads another field adds that field here.
 
@@ -37,7 +39,7 @@ skill_pack: <mattpocock-skills, superpowers, or none>
 # Charter
 
 ## Tracker
-<kind, for example GitHub; host; owner and repo>
+<GitHub: host, owner, repo. ADO: org, project, area path, item type>
 
 ## Owners
 | Path | Owner | Note |
