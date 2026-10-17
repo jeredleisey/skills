@@ -10,7 +10,7 @@ import { join } from 'node:path';
 
 const list = join(import.meta.dirname, 'local-list.mjs');
 const resume = join(import.meta.dirname, 'resume-read-local.mjs');
-const dir = realpathSync(mkdtempSync(join(tmpdir(), 'cadre-local-')));
+const dir = realpathSync.native(mkdtempSync(join(tmpdir(), 'cadre-local-')));
 after(() => rmSync(dir, { recursive: true, force: true }));
 
 const HOST = 'a'.repeat(32);
@@ -131,10 +131,11 @@ test('checkpoint: a time more than 5 minutes ahead is ignored and named, and a m
   const repo = makeRepo();
   ls(repo, 'new', 'Rigel', 'Ship the report.');
   append(repo, CP('2026-10-01T00:00:00Z'));
-  append(repo, CP(stamp(3600 * 1000)));
+  const future = stamp(3600 * 1000); // one value for the file and the assertion
+  append(repo, CP(future));
   append(repo, '\ncadre-checkpoint v1 2026-10-02T00:00:00Z\n\njust text\n');
   const f = fields(rs(repo, ['rigel', SESSION]).line);
-  assert.deepEqual([f.checkpoint, f.ignored], ['2026-10-01T00:00:00Z', stamp(3600 * 1000)]);
+  assert.deepEqual([f.checkpoint, f.ignored], ['2026-10-01T00:00:00Z', future]);
 });
 
 test('checkpoint: a marker line inside a code fence is not a checkpoint', () => {
