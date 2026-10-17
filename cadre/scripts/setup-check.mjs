@@ -26,14 +26,10 @@
 // a 203, or an empty body, and the line names AZURE_DEVOPS_EXT_PAT. A 404 and a 403 stop with their own line.
 import { spawnSync } from 'node:child_process';
 import { isAuthFailure, PAT_HINT, parseRemote, projectUrl, request } from './ado.mjs';
+import { say } from './out.mjs';
 
 const MIN_NODE = 22;
 const INSTALL_NODE = `Install Node ${MIN_NODE} or later from https://nodejs.org (a managed laptop may need your IT team), then type /cadre:setup again.`;
-
-function say(line, code) {
-  console.log(line);
-  process.exit(code);
-}
 
 function exec(command) {
   const r = spawnSync(command, { shell: true, encoding: 'utf8', timeout: 30000 });

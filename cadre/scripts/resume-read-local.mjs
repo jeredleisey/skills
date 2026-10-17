@@ -11,11 +11,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { auditLedger, holderWho, okLine, parseHolder, pickCheckpoint, same } from './resume-core.mjs';
 import { locate, localUser, parseFile, slug } from './local-store.mjs';
+import { say } from './out.mjs';
 
-function done(line, code) {
-  console.log(line);
-  process.exit(code);
-}
+const done = say;
 const unknown = (reason) => done(`unknown: ${reason}`, 2);
 
 const [name, sessionArg, ...extra] = process.argv.slice(2);
