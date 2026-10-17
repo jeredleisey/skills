@@ -24,8 +24,8 @@ function closeParen(text, from) {
 }
 
 // Push each command of `text` onto `out`. `state.unbalanced` becomes true at a quote with no end.
-// Text in single quotes is data. A $( ) span or a pair of
-// backticks is a command of its own, also inside double quotes. A comment is data.
+// Text in single quotes is data. A $( ) span or a pair of backticks is a command of its own, also
+// inside double quotes. A <( ) or >( ) span is a command of its own and one argument. A comment is data.
 function scan(text, out, state) {
   let words = [];
   let redirs = [];
@@ -47,9 +47,10 @@ function scan(text, out, state) {
     words = [];
     redirs = [];
   };
-  // Scan a $( ) span or a backtick pair that starts at i. Return the index after it, or -1.
+  // Scan a $( ) span, a <( ) or >( ) process substitution, or a backtick pair that starts at i.
+  // Return the index after it, or -1.
   const nested = (i) => {
-    if (text.startsWith('$(', i)) {
+    if (text[i + 1] === '(' && '$<>'.includes(text[i])) {
       const end = closeParen(text, i + 2);
       scan(text.slice(i + 2, end), out, state);
       return end + 1;
@@ -66,7 +67,7 @@ function scan(text, out, state) {
   let i = 0;
   while (i < text.length) {
     const c = text[i];
-    const after = c === '$' || c === '`' ? nested(i) : -1;
+    const after = '$`<>'.includes(c) ? nested(i) : -1;
     if (after !== -1) {
       cur = (cur ?? '') + '$()';
       i = after;

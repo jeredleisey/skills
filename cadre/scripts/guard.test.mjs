@@ -628,6 +628,16 @@ test('a redirection is not a refspec: a bare push on main still asks, for both c
   passes('push', ['git push origin 2>&1', 'git push > push.log'], f);
 });
 
+test('a process substitution is one argument, and the words after it still count', () => {
+  const f = world('feature');
+  for (const c of ['git push -o <(true) origin main', 'git push --push-option <(true) origin main', 'git push -o >(cat) origin main', 'git push origin main 2>(cat)']) {
+    assertDecision(run(f, 'push', hook(f, c)), 'ask');
+    assertDecision(run(f, 'push', hook(f, c, { agent_id: 'a1' })), 'deny');
+  }
+  asks('push', ['diff <(git push origin main) x'], f);
+  passes('push', ['git push -o <(true) origin feat', 'diff <(git log) <(git log main)'], f);
+});
+
 test('a redirection into a shell still counts as input to it', () => {
   const w = world();
   asks('push', ['sh < script-text <<EOF\ngit push origin main\nEOF', 'bash <<< "git push origin main" 2>&1'], w);
