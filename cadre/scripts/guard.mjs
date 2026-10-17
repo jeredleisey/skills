@@ -123,6 +123,8 @@ function pushReason({ args, dir, text }) {
   let repoOption = false;
   let ambiguous = false;
   let help = false;
+  let tags = false;
+  let followTags = false;
   const positional = [];
   const loose = [];
   for (i += 1; i < args.length; i++) {
@@ -136,6 +138,8 @@ function pushReason({ args, dir, text }) {
       const opt = longOption(eq === -1 ? a : a.slice(0, eq));
       if (opt === null) return 'a push option that the guard cannot tell from another';
       if (opt === '--help') help = true;
+      else if (opt === '--tags') tags = true;
+      else if (opt === '--follow-tags') followTags = true;
       else if (opt === '--force' || opt === '--force-with-lease' || opt === '--force-if-includes') force = true;
       else if (opt === '--delete') del = true;
       else if (['--all', '--branches', '--mirror', '--prune'].includes(opt)) wide = true;
@@ -156,7 +160,9 @@ function pushReason({ args, dir, text }) {
   if (force) return 'a force push';
   if (wide) return 'a push of all branches';
   const branches = defaultBranches(repo, positional[0]);
-  if (positional.length <= (ambiguous ? 2 : 1)) {
+  // --tags alone pushes tags and no branch. --follow-tags pushes the branch too.
+  const tagsOnly = tags && !followTags;
+  if (!tagsOnly && positional.length <= (ambiguous ? 2 : 1)) {
     if (repo.cwd === null) return 'a push in a repo that the guard cannot tell';
     const now = currentBranch(repo);
     if (now === null || branches.has(now)) return 'a push of the current branch, which may be the default branch';

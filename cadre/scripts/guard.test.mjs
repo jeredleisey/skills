@@ -686,3 +686,9 @@ test('-4 and -6 are flags, and --help passes', () => {
   passes('push', ['git push --help', 'git push -h'], m);
   passes('merge', ['gh pr merge --help', 'gh pr merge -h'], m);
 });
+
+test('--tags pushes only tags, so it passes on main, unless a branch or another option asks', () => {
+  const m = world('main');
+  passes('push', ['git push --tags', 'git push origin --tags', 'git push --tags origin'], m);
+  asks('push', ['git push origin main --tags', 'git push --tags --force', 'git push --tags --delete origin v1', 'git push --tags --mirror', 'git push --tags --all', 'git push --follow-tags', 'git push origin --follow-tags', 'git push --tags --follow-tags'], m);
+});
