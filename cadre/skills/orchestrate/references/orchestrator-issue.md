@@ -1,6 +1,6 @@
 # The orchestrator issue
 
-One orchestrator is one GitHub issue. The issue is the only record of the orchestrator. A compaction, a new session, or a new machine rebuilds from it. Write it for a reader with no context: that reader is you.
+One orchestrator is one GitHub issue, or one work item on Azure DevOps (ADO: [read the last section](#on-azure-devops) when the charter has `tracker: ado`). The issue is the only record of the orchestrator. A compaction, a new session, or a new machine rebuilds from it. Write it for a reader with no context: that reader is you.
 
 In each command below, `<plugin root>` is the folder that holds `skills/` and `scripts/`. It is two folders above the base directory that the harness prints when the skill loads.
 
@@ -104,3 +104,31 @@ cadre-checkpoint v1 <ISO UTC time>
 ```
 
 Get the time with `node -e "console.log(new Date().toISOString().slice(0,19)+'Z')"`. A resume reads the newest trusted comment by marker time. Done when the comment has the marker line and the three sections.
+
+## On Azure DevOps
+
+Everything above holds, with the differences below. Take `<org>`, `<project>`, the area path, and the item type from the charter. The base URL is `https://dev.azure.com/<org>/<project>/_apis/wit`. Write `%20` for a space in the project, and `%24` for the `$` of a URL, so that the shell keeps it.
+
+- **Calls.** Run `node "<plugin root>/scripts/ado-call.mjs" <GET|POST|PATCH> "<url>" [body file]`. It sends the token in `AZURE_DEVOPS_EXT_PAT`. Line 1 of its output is the HTTP status, and the body follows. Read the status before the body. A 302, a 401, or an empty body means a dead sign-in: stop, and tell the human to check that variable. Use `api-version=7.1`, and `7.1-preview.4` for comments.
+- **The item.** A work item of the item type, in the area path, titled `Orchestrator: <Name>`, with the tag `cadre:orchestrator` and Assigned To set to the owner. The unique name of the owner is the account name that ADO shows, often an email address. It replaces the GitHub login in `Granted by`.
+- **The description** holds the four sections as HTML. Escape `&`, `<`, and `>` in text. Write it with the API: another editor can rewrite the HTML, and a resume then says `unknown`.
+
+```html
+<h2>Purpose</h2><p>one sentence</p>
+<h2>Repos</h2><p>each repo and clone</p>
+<h2>Ledger</h2>
+<table><tr><th>Granted by</th><th>Action</th><th>Repo or host</th><th>Scope</th><th>When</th></tr>
+<tr><td>owner</td><td>merge</td><td>repo</td><td>scope</td><td>2026-10-17 indefinite</td></tr></table>
+<h2>Holder</h2>
+<pre>session: none
+host: none
+since: none</pre>
+```
+
+A heading is exactly `<h2>Name</h2>`. Ledger is one `<table>`: a header row of `<th>` cells and rows of `<td>` cells with plain text. Holder is one `<pre>` block.
+
+- **Write the body.** Read the item with `GET .../workitems/<id>?api-version=7.1`. Note `rev`. Change one section of `System.Description`. Send `PATCH .../workitems/<id>?api-version=7.1` with this body in a file: `[{"op":"test","path":"/rev","value":<rev>},{"op":"replace","path":"/fields/System.Description","value":"<html>"}]`. If the status is not 200, a second writer won: go to the read. Then follow the steps of Write the body from step 4.
+- **New and List.** Find items with two calls. `POST .../wiql?api-version=7.1` with `{"query":"SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project AND [System.Tags] CONTAINS 'cadre:orchestrator'"}` returns ids only. Then `POST .../workitemsbatch?api-version=7.1` with `{"ids":[...],"fields":["System.Title","System.AssignedTo","System.State","System.Description"]}` gives the fields, 200 ids at most. Refuse a title that matches in any state. Create with `POST .../workitems/%24<type>?api-version=7.1`. Its body is a list of `add` operations on `/fields/System.Title`, `System.AreaPath`, `System.Tags`, `System.AssignedTo`, and `System.Description`. A tag exists once a write names it.
+- **Resume.** Run `node "<plugin root>/scripts/resume-read-ado.mjs" <id> "$CLAUDE_CODE_SESSION_ID"` in the repo root. It reads the charter, and it reads the state by category. Its line is that of the GitHub read. The owner check compares the token's account with Assigned To, by unique name, ignoring case. To read the checkpoint, use `GET .../workItems/<id>/comments/<checkpoint>?api-version=7.1-preview.4`, and read `text`. To reopen, set `System.State` to a state of the category `InProgress`. To retire, set a state of the category `Completed`. Read the states from `GET .../workitemtypes/<type>?api-version=7.1`.
+- **Live work.** Give each ticket the tag `cadre:work:<name>`. A write to `System.Tags` adds tags and removes none. A tag leaves only through a `replace` of the full list. Never remove a tag of this kind. The live work is the open items with that tag, selected by state category. Never use a state name: the names differ in each project and type. Run the WIQL as above with `[System.Tags] CONTAINS 'cadre:work:<name>'`. Read all types with `GET .../workitemtypes?api-version=7.1`. Keep an item when the category of its state, in its type, is `Proposed` or `InProgress`.
+- **Checkpoints.** `POST .../workItems/<id>/comments?api-version=7.1-preview.4` with `{"text":"<p>cadre-checkpoint v1 <ISO UTC time></p><h2>Decisions</h2><ul><li>...</li></ul><h2>Waiting for the human</h2><ol><li>...</li></ol><h2>Next, in order</h2><ol><li>...</li></ol>"}`. The marker is the first text. Only add checkpoints. The script trusts a comment by the owner with the marker and the three headings, and it skips a deleted one.

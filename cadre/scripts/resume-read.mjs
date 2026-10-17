@@ -22,7 +22,7 @@
 // Set CADRE_GH_CMD to use another command than gh, for example a fixture in a test.
 // The host id comes from host-id.mjs, so CADRE_HOME applies.
 import { spawnSync } from 'node:child_process';
-import { join } from 'node:path';
+import { auditLedger, holderWho, okLine, parseHolder, pickCheckpoint, same } from './resume-core.mjs';
 
 function done(line, code) {
   console.log(line);
@@ -59,7 +59,6 @@ if (!(Array.isArray(issue.labels) ? issue.labels : []).some((l) => l?.name === '
 const assignees = Array.isArray(issue.assignees) ? issue.assignees : [];
 if (assignees.length !== 1 || !assignees[0]?.login) unknown(`the issue needs exactly one assignee, it has ${assignees.length}`);
 const assignee = assignees[0].login;
-const same = (a, b) => a.toLowerCase() === b.toLowerCase();
 if (!same(login, assignee)) done(`not-owner login=${login} assignee=${assignee}`, 1);
 
 const text = String(issue.body ?? '').replace(/\r\n/g, '\n');
@@ -86,69 +85,44 @@ function section(name) {
 }
 
 // Holder
-const holder = {};
-const VALUE = { session: /^(none|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i, host: /^(none|[0-9a-f]{32})$/, since: /^\S+$/ };
-for (const line of section('Holder')) {
-  if (!line.trim()) continue;
-  const m = /^\s*[-*]?\s*(session|host|since):\s*`?([^`\s]*)`?\s*$/i.exec(line);
-  const key = m?.[1].toLowerCase();
-  if (!m || !VALUE[key].test(m[2])) unknown(`the Holder section has a bad line: ${line.trim().slice(0, 40)}`);
-  if (key in holder) unknown(`the Holder section has ${key} twice`);
-  holder[key] = m[2];
-}
-if (!holder.session || !holder.host) unknown('the Holder section lacks a session or a host line');
-let who = 'free';
-if (sessionArg && holder.session.toLowerCase() === sessionArg.toLowerCase()) {
-  who = 'self';
-} else if (holder.session.toLowerCase() !== 'none') {
-  const r = spawnSync(process.execPath, [join(import.meta.dirname, 'host-id.mjs')], { encoding: 'utf8', timeout: 20000 });
-  const id = (r.stdout ?? '').trim();
-  if (r.status !== 0 || !/^[0-9a-f]{32}$/.test(id)) unknown('cannot read the host id of this machine');
-  who = holder.host.toLowerCase() === id ? 'same-host' : 'other-host';
+let holder;
+let who;
+try {
+  holder = parseHolder(section('Holder'));
+  who = holderWho(holder, sessionArg);
+} catch (e) {
+  unknown(e.message);
 }
 
 // Ledger
-const bad = [];
-const ended = [];
 const splitRow = (line) => line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
 const [header, ...rows] = section('Ledger').filter((l) => l.trim().startsWith('|'));
-if (!header || splitRow(header).join('|').toLowerCase() !== 'granted by|action|repo or host|scope|when') {
-  unknown('the Ledger table has no header Granted by | Action | Repo or host | Scope | When');
-}
-let rowNumber = 0;
-for (const line of rows) {
-  const cells = splitRow(line);
-  if (cells.every((c) => /^[:\s-]*$/.test(c))) continue; // the separator, or an empty row
-  rowNumber += 1;
-  if (cells.length !== 5 || !same(cells[0], assignee)) bad.push(rowNumber);
-  const s = /session\s+(\S+)/i.exec(cells[4] ?? '');
-  if (s && !(sessionArg && same(s[1], sessionArg))) ended.push(rowNumber);
+let audit;
+try {
+  audit = auditLedger(
+    header ? splitRow(header) : null,
+    rows.map(splitRow).filter((cells) => !cells.every((c) => /^[:\s-]*$/.test(c))), // not the separator, or an empty row
+    assignee,
+    sessionArg,
+  );
+} catch (e) {
+  unknown(e.message);
 }
 
 // Checkpoint
-const MARKER = /^cadre-checkpoint v1 (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)$/;
 const comments = ghJson('the comments', `api --paginate --slurp repos/{owner}/{repo}/issues/${issueNumber}/comments`);
 if (!Array.isArray(comments)) unknown('the comments are not a JSON array');
-const SECTIONS = ['decisions', 'waiting for the human', 'next, in order'];
-const limit = Date.now() + 5 * 60 * 1000;
-const ignored = [];
-let newest = null;
-for (const c of comments.flat()) {
-  if (!same(String(c?.user?.login ?? ''), assignee)) continue; // only the owner writes a checkpoint
-  const m = MARKER.exec(String(c?.body ?? '').split('\n')[0].trim());
-  const time = m ? Date.parse(m[1]) : NaN;
-  if (Number.isNaN(time)) continue;
-  const headings = String(c.body).split('\n').filter((l) => /^##\s/.test(l)).map((l) => l.replace(/^##\s+/, '').trim().toLowerCase());
-  if (!SECTIONS.every((h) => headings.includes(h))) continue;
-  if (time > limit) {
-    ignored.push(c.id);
-    continue;
-  }
-  if (!newest || time >= newest.time) newest = { time, id: c.id };
-}
-
-const list = (a) => (a.length ? a.join(',') : 'none');
-done(
-  `ok holder=${who} session=${holder.session} checkpoint=${newest ? newest.id : 'none'} ignored=${list(ignored)} state=${String(issue.state).toLowerCase()} bad-rows=${list(bad)} ended-rows=${list(ended)}`,
-  0,
+const checkpoint = pickCheckpoint(
+  comments.flat().map((c) => {
+    const body = String(c?.body ?? '');
+    return {
+      id: c?.id,
+      author: String(c?.user?.login ?? ''),
+      firstLine: body.split('\n')[0].trim(),
+      headings: body.split('\n').filter((l) => /^##\s/.test(l)).map((l) => l.replace(/^##\s+/, '').trim().toLowerCase()),
+    };
+  }),
+  assignee,
 );
+
+done(okLine({ who, holder, checkpoint, state: String(issue.state).toLowerCase(), bad: audit.bad, ended: audit.ended }), 0);
