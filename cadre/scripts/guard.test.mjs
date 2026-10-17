@@ -702,3 +702,111 @@ test('--tags pushes only tags, so it passes on main, unless a branch or another 
   passes('push', ['git push --tags', 'git push origin --tags', 'git push --tags origin'], m);
   asks('push', ['git push origin main --tags', 'git push --tags --force', 'git push --tags --delete origin v1', 'git push --tags --mirror', 'git push --tags --all', 'git push --follow-tags', 'git push origin --follow-tags', 'git push --tags --follow-tags'], m);
 });
+
+// ---- Azure DevOps: az repos pr update with --status completed or --auto-complete ----
+
+const AZ_DONE = 'az repos pr update --id 5 --status completed';
+
+test('az repos pr update --status completed asks from the orchestrator and is denied for a helper', () => {
+  const w = world();
+  assertDecision(run(w, 'merge', hook(w, AZ_DONE)), 'ask');
+  assertDecision(run(w, 'merge', hook(w, AZ_DONE, { agent_id: 'a1' })), 'deny');
+  assertDecision(run(w, 'merge', hook(w, AZ_DONE, { agent_type: 'coder' })), 'deny');
+  pass(run(w, 'push', hook(w, AZ_DONE)));
+});
+
+test('az repos pr update asks for each form of completion and of auto-complete', () => {
+  asks('merge', [
+    'az repos pr update --id 5 --status Completed',
+    'az repos pr update --id 5 --status=completed',
+    'az repos pr update --status completed --id 5 --org https://dev.azure.com/example-org',
+    'az repos pr update --id 5 --status completed --delete-source-branch true',
+    'az repos pr update --id 5 --auto-complete',
+    'az repos pr update --id 5 --auto-complete true',
+    'az repos pr update --id 5 --auto-complete True',
+    'az repos pr update --id 5 --auto-complete=true',
+    'az repos pr update --id 5 --auto-complete --squash true',
+    'az repos pr update --id 5 --auto-complete --status abandoned',
+    'az repos pr update --id 5 --status abandoned --status completed',
+    'az repos pr update --id 5 --stat completed',
+    'az repos pr update --id 5 --auto-comp true',
+    'az repos pr update --id 5 -o json --status completed',
+    'az repos pr create --title x --auto-complete true',
+    'az repos pr create --title x --auto-complete',
+  ]);
+});
+
+test('az is matched in each wrapper and path form that the guard handles for gh', () => {
+  asks('merge', [
+    'az.cmd repos pr update --id 5 --status completed',
+    'AZ.CMD repos pr update --id 5 --status completed',
+    '/usr/bin/az repos pr update --id 5 --status completed',
+    '"C:/Program Files/Microsoft SDKs/Azure/CLI2/wbin/az.cmd" repos pr update --id 5 --status completed',
+    'sudo -u x az repos pr update --id 5 --status completed',
+    'env -u X az repos pr update --id 5 --status completed',
+    'env FOO=1 az repos pr update --id 5 --status completed',
+    'timeout 5 az repos pr update --id 5 --auto-complete true',
+    'ssh host az repos pr update --id 5 --status completed',
+    "ssh -p 22 host 'cd x && az repos pr update --id 5 --status completed'",
+    'cd x && az repos pr update --id 5 --status completed',
+    'echo hi; az repos pr update --id 5 --status completed',
+    'bash -c "az repos pr update --id 5 --status completed"',
+    "sh -c 'az repos pr update --id 5 --auto-complete'",
+    'eval "az repos pr update --id 5 --status completed"',
+    'xargs -I{} az repos pr update --id {} --status completed',
+    "find . -exec az repos pr update --id 5 --status completed ';'",
+    'az \\\nrepos pr update --id 5 \\\n--status completed',
+    'echo "az repos pr update --id 5 --status completed" | sh',
+    'sh <<EOF\naz repos pr update --id 5 --auto-complete\nEOF',
+  ]);
+});
+
+test('az with a variable that the guard cannot read asks when completion or auto-complete may follow', () => {
+  asks('merge', [
+    'az repos pr update --id 5 --status $S',
+    'az repos pr update --id 5 --status "$(echo completed)"',
+    'az repos pr update --id 5 --auto-complete $X',
+    'az repos pr $SUB --id 5 --status completed',
+    '$AZ repos pr update --id 5 --status completed',
+  ]);
+  passes('merge', ['az repos pr update --id 5 --title $T', 'az repos pr show --id $N', '$AZ account show']);
+});
+
+test('az commands that do not complete a pull request pass', () => {
+  passes('merge', [
+    'az repos pr update --id 5 --title x',
+    'az repos pr update --id 5 --status abandoned',
+    'az repos pr update --id 5 --status active',
+    'az repos pr update --id 5 --status=abandoned',
+    'az repos pr update --id 5 --auto-complete false',
+    'az repos pr update --id 5 --auto-complete=false',
+    'az repos pr update --id 5 --auto-complete False --title x',
+    'az repos pr update --id 5 --description "then set --status completed"',
+    'az repos pr update --id 5 --title completed',
+    'az repos pr update --help --status completed',
+    'az repos pr update -h',
+    'az repos pr show --id 5',
+    'az repos pr list --status completed',
+    'az repos pr create --title x',
+    'az repos pr create --title x --auto-complete false',
+    'az repos pr set-vote --id 5 --vote approve',
+    'az boards work-item update --id 5 --state Completed',
+    'az pipelines run --name x',
+    'echo "az repos pr update --id 5 --status completed"',
+    'git status',
+  ]);
+});
+
+test('the charter allow list lets the orchestrator complete with az, and a helper stays denied', () => {
+  const w = world();
+  charter(w, 'allow: [merge]\n');
+  pass(run(w, 'merge', hook(w, AZ_DONE)));
+  assertDecision(run(w, 'merge', hook(w, AZ_DONE, { agent_id: 'a1' })), 'deny');
+});
+
+test('a personal deny of merge makes az ask even when the charter allows it', () => {
+  const w = world();
+  charter(w, 'allow: [merge]\n');
+  personal(w, '{"deny": ["merge"]}');
+  assertDecision(run(w, 'merge', hook(w, AZ_DONE)), 'ask');
+});
