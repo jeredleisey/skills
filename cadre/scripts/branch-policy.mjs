@@ -5,7 +5,10 @@
 //   ok                       exit 0   no gap: rules or protection cover all four checks
 //   unknown: <reason>        exit 2   the script cannot read the policy. This is never ok.
 // The four checks, each covered by a ruleset rule or by classic branch protection:
-//   a pull request is required, force push is blocked, delete is blocked, a status check is required.
+//   a pull request is required, a review is required, force push is blocked, delete is blocked,
+//   a status check is required.
+// The gap for a missing pull request and the gap for a missing review are two lines. A pull request
+// rule or protection with 0 approving reviews is a review gap only.
 // The script runs `gh api` with GET only: repo, rules/branches/<branch>, branches/<branch>/protection.
 // CADRE_GH_CMD replaces `gh` (a shell command). A test uses it.
 import { spawnSync } from 'node:child_process';
@@ -52,8 +55,15 @@ const classic = api(`repos/${repo}/branches/${branch}/protection`);
 if (classic.ok) protection = classic.body ?? {};
 else if (!/Branch not protected/i.test(classic.text)) fail('the branch protection', classic);
 
+// Each source of a review rule gives its count of approving reviews. A source with no count counts as a review.
+const counts = [];
+const prRule = ruleSet.body.find((rule) => rule?.type === 'pull_request');
+if (prRule) counts.push(prRule.parameters?.required_approving_review_count);
+if (protection?.required_pull_request_reviews) counts.push(protection.required_pull_request_reviews.required_approving_review_count);
+
 const gaps = [];
 if (!types.has('pull_request') && !protection?.required_pull_request_reviews) gaps.push('gap: no rule requires a pull request');
+if (!counts.some((count) => count !== 0)) gaps.push('gap: no review is required');
 if (!types.has('non_fast_forward') && protection?.allow_force_pushes?.enabled !== false) gaps.push('gap: force push is allowed');
 if (!types.has('deletion') && protection?.allow_deletions?.enabled !== false) gaps.push('gap: the branch can be deleted');
 if (!types.has('required_status_checks') && !protection?.required_status_checks) gaps.push('gap: no required status check');

@@ -23,10 +23,26 @@ function world(branch = 'feature') {
   return { repo, home };
 }
 
-const charter = (w, front) => {
+const gitIn = (dir, ...args) =>
+  spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=bot@noreply.github.com', '-c', 'commit.gpgsign=false', ...args], { cwd: dir });
+const slash = (p) => p.replace(/\\/g, '/');
+
+// Write the charter file in the working tree only.
+function writeCharter(w, text) {
   mkdirSync(join(w.repo, 'docs', 'agents'), { recursive: true });
-  writeFileSync(join(w.repo, 'docs', 'agents', 'cadre-charter.md'), `---\ncharter_schema: 1\nwritten_by: cadre 0.1.0\n${front}---\n\n# Charter\n`);
-};
+  writeFileSync(join(w.repo, 'docs', 'agents', 'cadre-charter.md'), text);
+}
+const front = (extra) => `---\ncharter_schema: 1\nwritten_by: cadre 0.1.0\n${extra}---\n\n# Charter\n`;
+
+// Commit the charter text, and make it the content of origin/main, which is origin/HEAD.
+function commitCharter(w, text) {
+  writeCharter(w, text);
+  gitIn(w.repo, 'add', 'docs');
+  gitIn(w.repo, 'commit', '-q', '-m', 'charter');
+  gitIn(w.repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+  gitIn(w.repo, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main');
+}
+const charter = (w, extra) => commitCharter(w, front(extra));
 
 // Run `guard.mjs <guard>`. `input` is an object (hook JSON) or a string (sent as it is).
 function run(w, guard, input, env = {}) {
@@ -185,12 +201,18 @@ const personal = (w, obj) => writeFileSync(join(w.home, 'guards.json'), typeof o
 const push = (w, extra) => run(w, 'push', hook(w, 'git push origin main', extra));
 const merge = (w) => run(w, 'merge', hook(w, 'gh pr merge 5'));
 
-test('guards: off in the charter passes both guards, also for a helper', () => {
+test('guards: off in the charter passes both guards for the orchestrator', () => {
   const w = world();
   charter(w, 'guards: off\n');
   pass(push(w));
-  pass(push(w, { agent_id: 'a1' }));
   pass(merge(w));
+});
+
+test('a helper is denied also when the charter has guards: off or allows the guard', () => {
+  const w = world();
+  charter(w, 'guards: off\nallow: [push, merge]\n');
+  assertDecision(push(w, { agent_id: 'a1' }), 'deny');
+  assertDecision(run(w, 'merge', hook(w, 'gh pr merge 5', { agent_id: 'a1' })), 'deny');
 });
 
 test('allow: [merge] passes the merge guard and leaves the push guard on', () => {
@@ -220,28 +242,25 @@ test('a charter with other front matter fields still holds the guards on', () =>
   assertDecision(push(w), 'ask');
 });
 
-test('an unreadable charter gives ask, and a missing charter gives ask', () => {
+test('a missing charter gives ask, also when git cannot run', () => {
   const w = world();
   assertDecision(push(w), 'ask');
-  writeFileSync(join(w.repo, 'docs'), 'a file where a folder should be');
-  assertDecision(push(w), 'ask');
-  rmSync(join(w.repo, 'docs'));
-  mkdirSync(join(w.repo, 'docs', 'agents', 'cadre-charter.md'), { recursive: true });
-  assertDecision(push(w), 'ask');
+  commitCharter(w, front('guards: off\n'));
+  pass(push(w));
+  assertDecision(run(w, 'push', hook(w, 'git push origin main'), { CADRE_GIT_CMD: join(w.home, 'no-such-git') }), 'ask');
 });
 
-test('a charter with broken front matter gives ask, even if it says guards: off', () => {
+test('a committed charter with broken front matter gives ask, even if it says guards: off', () => {
   const w = world();
-  mkdirSync(join(w.repo, 'docs', 'agents'), { recursive: true });
-  const file = join(w.repo, 'docs', 'agents', 'cadre-charter.md');
-  writeFileSync(file, '---\nguards: off\nthis line is not a key\n---\n');
-  assertDecision(push(w), 'ask');
-  writeFileSync(file, '---\nguards: off\n');
-  assertDecision(push(w), 'ask');
-  writeFileSync(file, 'guards: off\n');
-  assertDecision(push(w), 'ask');
-  writeFileSync(file, '---\nguards: off\nguards: on\n---\n');
-  assertDecision(push(w), 'ask');
+  for (const text of [
+    '---\nguards: off\nthis line is not a key\n---\n',
+    '---\nguards: off\n',
+    'guards: off\n',
+    '---\nguards: off\nguards: on\n---\n',
+  ]) {
+    commitCharter(w, text);
+    assertDecision(push(w), 'ask');
+  }
 });
 
 test('the charter is read at the repo root when cwd is a subfolder', () => {
@@ -311,4 +330,181 @@ test('a push target that the guard cannot read asks', () => {
 test('gh pr merge --disable-auto passes', () => {
   const w = world();
   pass(run(w, 'merge', hook(w, 'gh pr merge 5 --disable-auto')));
+});
+
+// ---- adversarial review: continuation lines, wrappers, options with a value, the repo that a command selects ----
+
+const asks = (guard, commands, w = world()) => {
+  for (const c of commands) assert.equal(decision(run(w, guard, hook(w, c)))?.permissionDecision, 'ask', c);
+};
+const passes = (guard, commands, w = world()) => {
+  for (const c of commands) {
+    const r = run(w, guard, hook(w, c));
+    assert.deepEqual([r.out, r.code], ['', 0], c);
+  }
+};
+
+test('a backslash-newline joins the line before the match', () => {
+  asks('push', ['git push origin feat \\\n--force', 'git push origin \\\n:feat', 'git\\\n push origin main', 'git push origin \\\r\nmain']);
+  asks('merge', ['gh pr  merge \\\n 5', 'gh \\\n pr merge 5']);
+});
+
+test('a wrapper option that takes a value does not hide the command', () => {
+  asks('push', [
+    'sudo -u root git push origin main',
+    'sudo --user root git push origin main',
+    'sudo --user=root git push origin main',
+    'env -u X git push origin main',
+    'env -i FOO=1 git push origin main',
+    'nice -n 5 git push origin main',
+    'nice -5 git push origin main',
+    'ionice -c 3 git push origin main',
+    'doas -u x git push origin main',
+    'nohup git push origin main',
+    'time -p git push origin main',
+    'command git push origin main',
+    'exec -a x git push origin main',
+    'timeout 10 git push origin main',
+    'timeout -s KILL -k 5 10 git push origin main',
+    'watch -n 5 git push origin main',
+    'watch "git push origin main"',
+    'stdbuf -o0 git push origin main',
+    'setsid -f git push origin main',
+    'caffeinate -t 5 git push origin main',
+    'busybox git push origin main',
+    'xargs git push origin main',
+    'xargs -I{} git push origin {}',
+    'xargs -n 1 -P 4 git push origin main',
+    "find . -name x -exec git push origin main ';'",
+    'find . -exec git push origin main \;',
+    'find . -execdir git push --force origin f +',
+    'ssh host git push origin main',
+    "ssh -p 22 -o X=y host 'cd x && git push origin main'",
+    'sudo sudo -u x timeout 5 git push origin main',
+    "env -S 'git push origin main'",
+  ]);
+  asks('merge', ['sudo -u x gh pr merge 5', 'env -u X gh pr merge 5', 'timeout 5 gh pr merge 5', 'ssh host gh pr merge 5', 'xargs -I{} gh pr merge {}']);
+});
+
+test('an unknown option of a known wrapper asks when the words of a push or a merge follow', () => {
+  asks('push', ['sudo --weird git push origin feature', 'nice --weird=1 git push origin feature', 'timeout --weird 5 git push origin feature']);
+  asks('merge', ['sudo --weird gh pr merge 5']);
+  passes('push', ['sudo --weird ls', 'sudo --weird git status', 'sudo --weird echo hi']);
+});
+
+test('a command piped or fed into a shell asks when its text holds a push or a merge', () => {
+  asks('push', [
+    'echo "git push origin feature" | sh',
+    'echo "git push origin main" | bash',
+    'printf "git push --force" | sudo bash -s',
+    'bash <<< "git push origin feature"',
+    'sh <<EOF\ngit push origin feature\nEOF',
+    'cat <<EOF | sh\ngit push origin feature\nEOF',
+    'echo "git push origin feature" | /bin/zsh -',
+  ]);
+  asks('merge', ['echo "gh pr merge 5" | sh']);
+  passes('push', ['echo "git push origin main"', 'printf "git push" | cat', 'grep "git push" notes | sort', 'echo hi | sh', 'echo "git push" > notes.txt', 'sh script.sh', 'cat <<EOF\nnote about git push\nEOF']);
+});
+
+test('git.exe and gh.exe, with a path or in capitals, are matched', () => {
+  asks('push', ['git.exe push origin main', 'GIT.EXE push origin main', '/usr/bin/git push origin main', '"C:/Program Files/Git/cmd/git.exe" push origin main']);
+  asks('merge', ['gh.exe pr merge 5']);
+});
+
+test('a push option that takes a value does not hide the refspec', () => {
+  const w = world();
+  asks('push', [
+    'git push --repo origin main',
+    'git push --repo=origin main',
+    'git push --receive-pack x origin main',
+    'git push --receive-pack=x origin main',
+    'git push --exec x origin main',
+    'git push -o ci.skip origin main',
+    'git push --push-option ci.skip origin main',
+    'git push --signed=if-asked origin main',
+    'git push --recurse-submodules=check origin main',
+    'git push --recurse-submodules check origin main',
+  ], w);
+  const m = world('main');
+  asks('push', ['git push -o ci.skip', 'git push --recurse-submodules check', 'git push --signed origin', 'git push --repo origin', 'git push --exec x origin'], m);
+  passes('push', ['git push -o ci.skip origin feature', 'git push --repo origin feature'], w);
+});
+
+function sibling(w, branch) {
+  const dir = join(w.repo, '..', 'other');
+  mkdirSync(dir, { recursive: true });
+  spawnSync('git', ['init', '-q', '-b', branch], { cwd: dir });
+  return slash(dir);
+}
+
+test('a bare push is judged in the repo that -C, --git-dir, --work-tree, or cd selects', () => {
+  const feature = world('feature');
+  const onMain = sibling(feature, 'main');
+  asks('push', [`git -C ${onMain} push`, `git -C ${onMain} push origin HEAD`, `cd ${onMain} && git push`, `cd ${onMain}; git push`, `git --git-dir=${onMain}/.git push`, `git --git-dir ${onMain}/.git push`, `git --work-tree ${onMain} push`, 'git -C ../other push', 'cd ../other && git push', 'git -C .. -C other push', `pushd ${onMain} && git push`], feature);
+  const main = world('main');
+  const other = sibling(main, 'feature');
+  passes('push', [`git -C ${other} push`, `cd ${other} && git push`, `cd ${other}\ngit push`, 'cd ../other && git push'], main);
+  asks('push', ['git push', `cd ${other} && cd ${slash(main.repo)} && git push`], main);
+});
+
+test('a bare push asks when the guard cannot tell which repo a command selects', () => {
+  const w = world('feature');
+  asks('push', ['git -C $DIR push', 'git -C "$(pwd)" push', 'cd $DIR && git push', 'cd *.d && git push', 'cd && git push', 'cd - && git push', 'cd ~/x && git push', '(cd x; git push)', 'cd x && (cd y && git push)', 'popd && git push', 'git --git-dir=$G push'], w);
+  passes('push', ['git status', 'cd $DIR && git status'], w);
+});
+
+test('the charter in the working tree does not count, and one committed on the default branch does', () => {
+  const w = world();
+  writeCharter(w, front('guards: off\n'));
+  assertDecision(push(w), 'ask');
+  commitCharter(w, front('guards: on\n'));
+  writeCharter(w, front('guards: off\n'));
+  assertDecision(push(w), 'ask');
+  commitCharter(w, front('guards: off\n'));
+  pass(push(w));
+});
+
+test('a charter committed only on the current branch does not count', () => {
+  const w = world();
+  writeCharter(w, front('guards: off\n'));
+  gitIn(w.repo, 'add', 'docs');
+  gitIn(w.repo, 'commit', '-q', '-m', 'charter');
+  assertDecision(push(w), 'ask');
+  gitIn(w.repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+  assertDecision(push(w), 'ask');
+  gitIn(w.repo, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main');
+  pass(push(w));
+});
+
+test('the charter comes from origin/<default>, where CADRE_DEFAULT_BRANCH names the default', () => {
+  const w = world();
+  commitCharter(w, front('guards: off\n'));
+  gitIn(w.repo, 'update-ref', 'refs/remotes/origin/develop', 'HEAD');
+  gitIn(w.repo, 'update-ref', '-d', 'refs/remotes/origin/main');
+  assertDecision(push(w), 'ask');
+  pass(run(w, 'push', hook(w, 'git push origin develop'), { CADRE_DEFAULT_BRANCH: 'develop' }));
+});
+
+test('without origin/HEAD the default branch is any of main, master, dev, develop, trunk, and init.defaultBranch', () => {
+  const w = world();
+  asks('push', ['git push origin main', 'git push origin master', 'git push origin dev', 'git push origin develop', 'git push origin trunk'], w);
+  passes('push', ['git push origin release'], w);
+  spawnSync('git', ['config', 'init.defaultBranch', 'release'], { cwd: w.repo });
+  asks('push', ['git push origin release'], w);
+});
+
+test('without origin/HEAD the head of the remote of the current branch is a default branch', () => {
+  const w = world();
+  spawnSync('git', ['config', 'branch.feature.remote', 'up'], { cwd: w.repo });
+  spawnSync('git', ['symbolic-ref', 'refs/remotes/up/HEAD', 'refs/remotes/up/stable'], { cwd: w.repo });
+  asks('push', ['git push up stable'], w);
+});
+
+test('agent_id that is empty or null counts as a helper call', () => {
+  const w = world();
+  for (const id of ['', null]) {
+    assertDecision(push(w, { agent_id: id }), 'deny');
+    assertDecision(run(w, 'merge', hook(w, 'gh pr merge 5', { agent_id: id })), 'deny');
+  }
+  pass(run(w, 'push', hook(w, 'git push origin feature', { agent_id: '' })));
 });

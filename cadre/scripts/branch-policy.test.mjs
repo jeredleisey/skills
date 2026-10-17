@@ -52,6 +52,7 @@ test('no rule and no protection gives each gap on its own line, and no ok', () =
   const r = run({ ...full, 'repos/acme/app/rules/branches/main': rules() });
   assert.deepEqual(r.lines, [
     'gap: no rule requires a pull request',
+    'gap: no review is required',
     'gap: force push is allowed',
     'gap: the branch can be deleted',
     'gap: no required status check',
@@ -61,10 +62,20 @@ test('no rule and no protection gives each gap on its own line, and no ok', () =
 
 test('each gap shows alone when the other rules are present', () => {
   const only = (drop) => run({ ...full, 'repos/acme/app/rules/branches/main': rules(...['pull_request', 'non_fast_forward', 'deletion', 'required_status_checks'].filter((t) => t !== drop)) }).lines;
-  assert.deepEqual(only('pull_request'), ['gap: no rule requires a pull request']);
+  assert.deepEqual(only('pull_request'), ['gap: no rule requires a pull request', 'gap: no review is required']);
   assert.deepEqual(only('non_fast_forward'), ['gap: force push is allowed']);
   assert.deepEqual(only('deletion'), ['gap: the branch can be deleted']);
   assert.deepEqual(only('required_status_checks'), ['gap: no required status check']);
+});
+
+test('a pull request rule or protection with no approving review is a review gap, apart from the pull request gap', () => {
+  const zero = { body: [{ type: 'pull_request', parameters: { required_approving_review_count: 0 } }, { type: 'non_fast_forward' }, { type: 'deletion' }, { type: 'required_status_checks' }] };
+  assert.deepEqual(run({ ...full, 'repos/acme/app/rules/branches/main': zero }).lines, ['gap: no review is required']);
+  const one = { body: [{ type: 'pull_request', parameters: { required_approving_review_count: 1 } }, { type: 'non_fast_forward' }, { type: 'deletion' }, { type: 'required_status_checks' }] };
+  assert.deepEqual(run({ ...full, 'repos/acme/app/rules/branches/main': one }).lines, ['ok']);
+  const classic = { body: { required_pull_request_reviews: { required_approving_review_count: 0 } } };
+  assert.deepEqual(run({ ...full, 'repos/acme/app/rules/branches/main': rules('non_fast_forward', 'deletion', 'required_status_checks'), 'repos/acme/app/branches/main/protection': classic }).lines, ['gap: no review is required']);
+  assert.deepEqual(run({ ...full, 'repos/acme/app/rules/branches/main': zero, 'repos/acme/app/branches/main/protection': { body: { required_pull_request_reviews: { required_approving_review_count: 2 } } } }).lines, ['ok']);
 });
 
 test('classic branch protection closes the gaps that it covers', () => {
@@ -80,6 +91,7 @@ test('classic branch protection closes the gaps that it covers', () => {
   const loose = { body: { allow_force_pushes: { enabled: true }, allow_deletions: { enabled: true } } };
   assert.deepEqual(run({ ...full, 'repos/acme/app/rules/branches/main': rules(), 'repos/acme/app/branches/main/protection': loose }).lines, [
     'gap: no rule requires a pull request',
+    'gap: no review is required',
     'gap: force push is allowed',
     'gap: the branch can be deleted',
     'gap: no required status check',
