@@ -10,8 +10,16 @@ Front matter holds only what a script or a hook reads.
 | --- | --- |
 | `charter_schema` | An integer. It rises only when an old charter cannot work. |
 | `written_by` | `cadre <version>`, the version that wrote the file. |
+| `guards` | `off` turns the guards off. Absent when on, the default. |
+| `allow` | A list of guards that the repo allows, such as `[merge]`. Absent when none. |
 
 A ticket that adds a script or a hook that reads another field adds that field here.
+
+## Guards
+
+The guards are `push` and `merge`. A hook reads `guards` and `allow` from the charter of the repo root. An unreadable charter counts as guards on.
+
+A personal file `guards.json` in `$CADRE_HOME`, or `~/.cadre`, can only add: `{"guards": "on"}` or `{"deny": ["merge"]}`. It never turns a guard off.
 
 ## The body
 

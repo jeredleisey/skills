@@ -37,14 +37,14 @@ A preset is a file of default answers from a plugin. Read [the preset reference]
 
 Then act on the line:
 
-- `count` is 0: ask the questions that step 5 leaves, as step 4 says.
+- `count` is 0: ask the questions that step 6 leaves, as step 4 says.
 - `count` is 1: show its answers. The human confirms or changes each one. Show its defaults as the default of the question that setup still asks.
 - `count` is 2 or more: show the plugin ids. The human chooses one, or none of them. Then treat it as count 1. Never mix two presets.
 - `unknown: <reason>`: say the reason and end setup.
 
-A human can change any preset answer. A preset is a default, never a lock. This version supports GitHub only. If a preset `tracker` answer names another tracker, say that this version cannot use it. Ignore that answer, and keep the GitHub tracker of step 2. A preset value of `skill_pack` must be one of the three choices of step 5. If not, treat it as not set, and say why. If the charter already holds an answer and the preset gives another, keep the charter answer. Show the preset value as a note. A preset never lowers a branch policy or a guard, and never sets a secret. Show each key with its note. Tell the human about each key that the reference does not list, and ignore that key.
+A human can change any preset answer. A preset is a default, never a lock. This version supports GitHub only. If a preset `tracker` answer names another tracker, say that this version cannot use it. Ignore that answer, and keep the GitHub tracker of step 2. A preset value of `skill_pack` must be one of the three choices of step 6. If not, treat it as not set, and say why. If the charter already holds an answer and the preset gives another, keep the charter answer. Show the preset value as a note. A preset never lowers a branch policy or a guard, and never sets a secret. Show each key with its note. Tell the human about each key that the reference does not list, and ignore that key.
 
-Step 3 feeds the questions of step 5. If step 4 finds a charter that is `ok`, show the preset answers as notes only.
+Step 3 feeds the questions of step 6. If step 4 finds a charter that is `ok`, show the preset answers as notes only.
 
 Done when you hold one preset or none.
 
@@ -59,7 +59,7 @@ Read the charter from the default branch, so that a feature branch never shows `
 
 Then act on the line:
 
-- `missing`: this is a first setup. Ask every question in step 5.
+- `missing`: this is a first setup. Ask every question in step 6.
 - `ok`: the charter is current. Show its fields. Ask the human what to change, and ask only about that.
 - `older-cadre` or `stale <old> <new>`: read the charter. Keep each answer that is there. Ask only for each field that is missing or new in [the charter reference](../orchestrate/references/charter.md).
 - `plugin-too-old`: end setup. Say to update cadre, then type /cadre:setup again.
@@ -67,7 +67,17 @@ Then act on the line:
 
 Done when you know which questions to ask.
 
-### 5. Ask the questions
+### 5. Report the branch policy
+
+Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-policy.mjs" <owner>/<repo> [host]`. Add the host only when it is not `github.com`. The script changes nothing.
+
+Say each line to the human. A `gap:` line names a rule that GitHub does not enforce on the default branch. The guards still hold in an agent session, where the repo has no such rule. Use them when the human answers the merge question of step 6.
+
+`unknown: <reason>` means that the policy is unread. Say the reason, and do not say that the policy is fine. Go on.
+
+Done when the human has heard each line.
+
+### 6. Ask the questions
 
 Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. The tracker comes from step 2. A preset from step 3 can give the answers and the defaults. The tracker and the skill pack go in the body of the charter. Ask one question at a time and wait for each answer. Do not ask again about an answer that the human confirmed in step 3. Show a preset default as `default: <value>`, and let the human type another value.
 
@@ -85,7 +95,7 @@ Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. The 
 
 Done when each question has an answer, or the human says "none".
 
-### 6. Write the charter in a pull request
+### 7. Write the charter in a pull request
 
 1. Use the default branch and the fetch of step 4.
 2. Work in a worktree, not in the clone. Run `git worktree add .claude/worktrees/cadre-charter -b cadre-charter origin/<default branch>`. If the branch name exists, add a number to it. Do all edits in that worktree.
