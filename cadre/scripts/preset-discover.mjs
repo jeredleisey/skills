@@ -30,7 +30,7 @@ const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v)
 function parsePreset(text) {
   let data;
   try {
-    data = JSON.parse(text.replace(/^﻿/, ''));
+    data = JSON.parse(text.replace(/^\uFEFF/, ''));
   } catch {
     throw new Error('the file is not JSON');
   }
