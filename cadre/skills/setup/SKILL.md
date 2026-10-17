@@ -125,6 +125,22 @@ Done when each question has an answer, or the human says "none".
 
 Done when the pull request is open and the check printed `ok` on the branch.
 
+### 8. Offer agent teams
+
+Run `node -p "process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS ?? ''"`. If the output is a true value (`1`, `true`, `yes`, or `on`), skip this step. Done then.
+
+Agent teams are a Claude Code feature that is experimental. One lead session works with teammate sessions that share a task list. Cadre works with them or without them.
+
+Ask the human: turn on agent teams? Yes or no. After a yes, ask for the scope:
+
+- `local`: the default. The file is `.claude/settings.local.json`, and it stays out of git.
+- `project`: the file is `.claude/settings.json`. It is committed, so the whole team gets the setting.
+- `user`: the file is `settings.json` in your Claude config folder. It covers every repo.
+
+After a yes, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/teams-setting.mjs" <scope> <repo root>`. For `project`, use the worktree of step 7 as the repo root. Commit the file, and push it to `cadre-charter`, so that it is in the pull request of step 7. Say that the pull request now holds a committed file. An `unknown: <reason>` line means that nothing was written. Say the reason. Setup is still done.
+
+Done when the human said no, or the script printed a path.
+
 ## Rules
 
 - A charter never holds a secret value. It holds the names of stores only.
