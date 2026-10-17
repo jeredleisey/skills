@@ -62,7 +62,8 @@ test('teams on: each true value turns the hook on', () => {
 
 test('teams on: a throw inside the hook still blocks with exit 2', () => {
   // The preload makes readFileSync throw an error that is not a parse error.
-  const preload = join(import.meta.dirname, 'task-completed-throw.cjs');
+  // NODE_OPTIONS reads a backslash in a quoted path as an escape, so the path uses forward slashes.
+  const preload = join(import.meta.dirname, 'task-completed-throw.cjs').replaceAll('\\', '/');
   const r = run({ agent_id: 'a1' }, '1', { NODE_OPTIONS: `--require "${preload}"` });
   assert.equal(r.code, 2);
   assert.match(r.err, /blocks/);
