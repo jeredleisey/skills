@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Setup
 
-Setup teaches cadre how one repo works. It writes the **charter** at `docs/agents/cadre-charter.md` in a pull request, so that the team reviews it like code. Only the human starts setup. This version supports GitHub and Azure DevOps (ADO) repos.
+Setup teaches cadre how one repo works. It writes the **charter** at `docs/agents/cadre-charter.md` in a pull request, so that the team reviews it like code. Only the human starts setup. This version supports GitHub and Azure DevOps (ADO) repos. A repo with no such remote can use the local tracker.
 
 If a human did not start this setup in this session, stop. Tell the parent to ask the human to run /cadre:setup.
 
@@ -23,12 +23,18 @@ If the path `${CLAUDE_PLUGIN_ROOT}` shows as empty or literal, use the folder tw
 ### 2. Find the repo and check the account
 
 1. Run `git rev-parse --show-toplevel`. Use that folder as the repo root for the rest of setup.
-2. Run `git remote get-url origin`. If there is no remote, end setup. Say that this version needs a GitHub or ADO remote.
+2. Run `git remote get-url origin`. Then run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" local "<url>"`. Use an empty URL when the command failed.
+   - `ok local no-remote`: say that the repo has no remote. Propose the local tracker.
+   - `ok local other-host <host>`: say that the host is neither GitHub nor ADO. Ask if it is GitHub Enterprise. If yes, go on as GitHub with that host. If no, propose the local tracker.
+   - `ok not-local`: go to item 3.
+   - `unknown:` ends setup.
+
+   The local tracker keeps its files in `.cadre/` of the main clone, on this machine only. Tell the human so. The human confirms, or setup ends. After a yes, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/local-list.mjs" init`. It adds `/.cadre/` to `.git/info/exclude`, so git never shows the folder. The account check does not apply. Skip items 3 to 5 and step 5. Done when the line is `ok init <folder>`.
 3. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" remote "<url>"`. An `unknown:` line ends setup. The line `ok ado-remote {"org":"<org>","repo":"<repo>","project":"<project>"}` means ADO. Read the three names from the JSON: a repo or a project can hold a space. The line `ok not-ado` means GitHub.
 4. GitHub: read the host and `<owner>/<repo>` from the URL. Accept an https URL or an ssh URL such as `git@host:owner/repo.git`. Remove a final `.git`. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" gh <owner>/<repo> [host]`. Add the host only when it is not `github.com`. A `stop:` line names `gh auth switch`. A 404 can mean the wrong account, so never say that the repo does not exist.
 5. ADO: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" ado "<org>" "<project>"`. ADO works through a token in the variable `AZURE_DEVOPS_EXT_PAT`. A `stop:` line names it. An empty variable is the first thing to check, and the check never prints the token. Do not run `az login` as a fix: the token is the way in.
 
-Done when the line is `ok gh <owner>/<repo>` or `ok ado <org>/<project>`.
+Done when the line is `ok gh <owner>/<repo>`, `ok ado <org>/<project>`, or `ok init <folder>`.
 
 ### 3. Find the presets
 
@@ -51,7 +57,7 @@ Done when you hold one preset or none.
 
 Read the charter from the default branch, so that a feature branch never shows `missing`.
 
-1. Find the default branch. GitHub: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`. ADO: run `git remote set-head origin --auto`, then `git symbolic-ref --short refs/remotes/origin/HEAD`, and remove the `origin/` prefix.
+1. Local: the default branch is `git symbolic-ref --short HEAD` in the main clone. Skip the fetch of item 2, and read the file from that branch. Otherwise find the default branch. GitHub: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`. ADO: run `git remote set-head origin --auto`, then `git symbolic-ref --short refs/remotes/origin/HEAD`, and remove the `origin/` prefix.
 2. Run `git fetch origin`.
 3. Make a new empty temporary folder. Run `git show origin/<default branch>:docs/agents/cadre-charter.md`, and write the output to `docs/agents/cadre-charter.md` under that folder. If the command fails, the charter is `missing`.
 4. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" <temporary folder>`.
@@ -120,12 +126,12 @@ Done when each question has an answer, or the human says "none".
 
 1. Use the default branch and the fetch of step 4.
 2. Work in a worktree, not in the clone. Run `git worktree add .claude/worktrees/cadre-charter -b cadre-charter origin/<default branch>`. If the branch name exists, add a number to it. Do all edits in that worktree.
-3. Write `docs/agents/cadre-charter.md` in the form of [the charter reference](../orchestrate/references/charter.md). On ADO, write `tracker: ado`, `ado_org`, and `ado_project` in the front matter. Write the area path and the item type in the `## Tracker` section. On GitHub, write none of them.
+3. Write `docs/agents/cadre-charter.md` in the form of [the charter reference](../orchestrate/references/charter.md). On ADO, write `tracker: ado`, `ado_org`, and `ado_project` in the front matter. Local: write `tracker: local`. Write the area path and the item type in the `## Tracker` section. On GitHub, write none of them.
 4. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" --schema`. Put its number in `charter_schema`.
 5. Read `version` in `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`. Put `cadre <version>` in `written_by`.
 6. Make sure that `.gitignore` has the line `.claude/worktrees/`. Add it if not.
 7. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" <worktree>`. The line must be `ok`. If not, fix the file.
-8. Commit the files. Push with `git push -u origin cadre-charter`.
+8. Commit the files. Local: stop here. There is no remote, so no push and no pull request. Say the branch name, and that the human reviews and merges it by hand. Otherwise push with `git push -u origin cadre-charter`.
 9. Open the pull request. GitHub: `gh pr create --base <default branch> --head cadre-charter`. ADO: `az repos pr create --source-branch cadre-charter --target-branch <default branch> --title "<title>" --description "<text>" --repository "<repo>" --project "<project>" --organization https://dev.azure.com/<org>`. Never add `--auto-complete`. The body says what the charter holds.
 10. Say the URL. Say that the human reviews and merges it, and that `/cadre:orchestrate` works after the merge.
 
