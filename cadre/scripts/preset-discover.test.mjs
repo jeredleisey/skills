@@ -32,9 +32,9 @@ function plugin(id, file, extra = {}) {
 }
 const preset = (answers = {}, defaults = {}) => ({ preset_schema: 1, answers, defaults });
 
-function run(cmd) {
+function run(cmd, args = []) {
   const env = { ...process.env, CADRE_PLUGIN_LIST_CMD: cmd };
-  const r = spawnSync(process.execPath, [script], { env, encoding: 'utf8' });
+  const r = spawnSync(process.execPath, [script, ...args], { env, encoding: 'utf8' });
   return { line: r.stdout.trim(), err: r.stderr.trim(), code: r.status };
 }
 
@@ -191,4 +191,73 @@ test('a null value in answers, defaults, or notes gives unknown with the plugin 
     assert.equal(r.code, 2, part);
     assert.match(r.line, /^unknown: null@example-org: /);
   }
+});
+
+test('a project-scope entry for another repo is skipped', () => {
+  const other = join(dir, 'other-repo');
+  const here = join(dir, 'this-repo');
+  mkdirSync(other);
+  mkdirSync(here);
+  const p = plugin('proj@example-org', preset({ tracker: 'ghe' }), { scope: 'project', projectPath: other });
+  const r = run(listing([p]), [here]);
+  assert.equal(r.code, 0);
+  assert.equal(JSON.parse(r.line).count, 0);
+});
+
+test('a project-scope entry for this repo counts', () => {
+  const here = join(dir, 'this-repo');
+  mkdirSync(here, { recursive: true });
+  const p = plugin('proj@example-org', preset({ tracker: 'ghe' }), { scope: 'project', projectPath: here });
+  assert.equal(JSON.parse(run(listing([p]), [here]).line).count, 1);
+});
+
+test('the repo root defaults to the current folder', () => {
+  const here = join(dir, 'cwd-repo');
+  mkdirSync(here, { recursive: true });
+  const p = plugin('proj@example-org', preset(), { scope: 'project', projectPath: here });
+  const env = { ...process.env, CADRE_PLUGIN_LIST_CMD: listing([p]) };
+  const r = spawnSync(process.execPath, [script], { env, cwd: here, encoding: 'utf8' });
+  assert.equal(JSON.parse(r.stdout).count, 1);
+});
+
+test('a user-scope entry counts in any repo', () => {
+  const here = join(dir, 'any-repo');
+  mkdirSync(here, { recursive: true });
+  const p = plugin('user@example-org', preset());
+  assert.equal(JSON.parse(run(listing([p]), [here]).line).count, 1);
+});
+
+test('one id with several entries keeps the first that applies here', () => {
+  const other = join(dir, 'other-repo');
+  const here = join(dir, 'this-repo');
+  mkdirSync(other, { recursive: true });
+  mkdirSync(here, { recursive: true });
+  const a = plugin('multi@example-org', preset({ tracker: 'other' }), { scope: 'project', projectPath: other });
+  const b = plugin('multi@example-org', preset({ tracker: 'here' }));
+  const out = JSON.parse(run(listing([a, b]), [here]).line);
+  assert.equal(out.count, 1);
+  assert.equal(out.presets[0].answers.tracker, 'here');
+});
+
+test('an answers value of null gives unknown with the plugin id', () => {
+  const r = run(listing([plugin('nul@example-org', { preset_schema: 1, answers: null })]));
+  assert.equal(r.code, 2);
+  assert.match(r.line, /^unknown: nul@example-org: /);
+});
+
+test('an installPath that is a file, not a folder, is skipped', () => {
+  const file = join(dir, `afile${n++}`);
+  writeFileSync(file, 'x');
+  const r = run(listing([{ id: 'file@example-org', enabled: true, installPath: file }]));
+  assert.equal(r.code, 0);
+  assert.equal(JSON.parse(r.line).count, 0);
+});
+
+test('a second scope with an unreadable file does not spoil a good entry', () => {
+  const good = plugin('twice@example-org', preset({ tracker: 'ghe' }));
+  const bad = plugin('twice@example-org', null, { scope: 'project' });
+  mkdirSync(join(bad.installPath, 'cadre-presets.json'));
+  const r = run(listing([good, bad]));
+  assert.equal(r.code, 0);
+  assert.equal(JSON.parse(r.line).count, 1);
 });

@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Set up cadre in a GitHub repo. Check Node and the gh account, ask the questions, and write the charter in a pull request. Run again to add new fields after a cadre update.
+description: Set up cadre in a GitHub repo. Check Node and the gh account, apply presets, ask the questions, and write the charter in a pull request. Run again to add new fields after a cadre update.
 disable-model-invocation: true
 ---
 
@@ -33,16 +33,18 @@ Done when the line is `ok gh <owner>/<repo>`.
 
 ### 3. Find the presets
 
-A preset is a file of default answers from a plugin. Read [the preset reference](references/presets.md). Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/preset-discover.mjs"`.
+A preset is a file of default answers from a plugin. Read [the preset reference](references/presets.md). Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/preset-discover.mjs" <repo root>`, with the repo root of step 2.
 
 Then act on the line:
 
-- `count` is 0: ask every question as step 5 says.
+- `count` is 0: ask the questions that step 5 leaves, as step 4 says.
 - `count` is 1: show its answers. The human confirms or changes each one. Show its defaults as the default of the question that setup still asks.
-- `count` is 2 or more: show the plugin ids. The human chooses one. Then treat it as count 1. Never mix two presets.
+- `count` is 2 or more: show the plugin ids. The human chooses one, or none of them. Then treat it as count 1. Never mix two presets.
 - `unknown: <reason>`: say the reason and end setup.
 
-A human can change any preset answer. A preset is a default, never a lock. A preset `tracker` answer is an item to confirm, and the human's answer wins over step 2. Show each key with its note. Tell the human about each key that the reference does not list, and ignore it.
+A human can change any preset answer. A preset is a default, never a lock. This version supports GitHub only. If a preset `tracker` answer names another tracker, say that this version cannot use it. Ignore that answer, and keep the GitHub tracker of step 2. A preset value of `skill_pack` must be one of the three choices of step 5. If not, treat it as not set, and say why. If the charter already holds an answer and the preset gives another, keep the charter answer. Show the preset value as a note. A preset never lowers a branch policy or a guard, and never sets a secret. Show each key with its note. Tell the human about each key that the reference does not list, and ignore that key.
+
+Step 3 feeds the questions of step 5. If step 4 finds a charter that is `ok`, show the preset answers as notes only.
 
 Done when you hold one preset or none.
 
@@ -70,7 +72,7 @@ Done when you know which questions to ask.
 Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. The tracker comes from step 2. A preset from step 3 can give the answers and the defaults. The tracker and the skill pack go in the body of the charter. Ask one question at a time and wait for each answer. Do not ask again about an answer that the human confirmed in step 3. Show a preset default as `default: <value>`, and let the human type another value.
 
 1. Which skill pack does this repo use? Offer three choices:
-   - `mattpocock-skills`. Say that the human types `/mattpocock-skills:setup-matt-pocock-skills` by hand, because that skill is human-only. The two setups stay separate. Cadre never reads or writes the files of that tool.
+   - `mattpocock-skills`. Whether the answer came from a preset or from this question, say that the human types `/mattpocock-skills:setup-matt-pocock-skills` by hand, because that skill is human-only. The two setups stay separate. Cadre never reads or writes the files of that tool.
    - `superpowers`.
    - `none`. The role cards use a short built-in method.
 2. Which files or folders does each orchestrator own? What happens to that ownership when code moves to a new repo?

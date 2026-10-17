@@ -1,5 +1,8 @@
 // Find the preset files of the enabled plugins on this machine.
-// Usage: node preset-discover.mjs
+// Usage: node preset-discover.mjs [repo-root]
+// The repo root defaults to the current folder.
+// An entry with a projectPath counts only when it equals the repo root.
+// An entry with no projectPath (user scope) counts everywhere.
 // Output and exit code:
 //   {"count":N,"presets":[{"plugin","answers","defaults","notes"}]}   exit 0   N can be 0
 //   unknown: <reason>                                                 exit 2   a command or a file failed
@@ -8,13 +11,13 @@
 // Each entry has the fields id, enabled, and installPath.
 // A plugin counts when it is enabled and its installPath holds cadre-presets.json.
 // An entry with no installPath, or with no file there, has no preset.
-// One plugin can be listed in two scopes. It counts once, by id.
+// One plugin can be listed in two scopes. It counts once, by id, from the first entry that applies here.
 // A failure never gives count 0, and a bad file is never skipped.
 // Set CADRE_PLUGIN_LIST_CMD to a shell command that prints the list.
 // A test can use it to read a fixture.
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, realpathSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
 const FILE = 'cadre-presets.json';
 const SCHEMA = 1;
@@ -22,6 +25,17 @@ const SCHEMA = 1;
 function done(line, code) {
   console.log(line);
   process.exit(code);
+}
+
+// A path in a form that two spellings of one folder share.
+function canon(path) {
+  let full;
+  try {
+    full = realpathSync(path);
+  } catch {
+    full = resolve(path);
+  }
+  return process.platform === 'win32' ? full.toLowerCase() : full;
 }
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -38,7 +52,7 @@ function parsePreset(text) {
   if (data.preset_schema !== SCHEMA) throw new Error(`unknown preset_schema, this cadre reads ${SCHEMA}`);
   const out = {};
   for (const key of ['answers', 'defaults', 'notes']) {
-    const value = data[key] ?? {};
+    const value = data[key] === undefined ? {} : data[key];
     if (!isObject(value)) throw new Error(`${key} is not an object`);
     if (Object.values(value).some((v) => v === null)) throw new Error(`${key} holds a null value`);
     out[key] = value;
@@ -47,6 +61,7 @@ function parsePreset(text) {
   return out;
 }
 
+const repoRoot = canon(process.argv[2] || process.cwd());
 const cmd = process.env.CADRE_PLUGIN_LIST_CMD || 'claude plugin list --json';
 const r = spawnSync(cmd, {
   shell: true,
@@ -71,6 +86,8 @@ const seen = new Set();
 const presets = [];
 for (const p of list) {
   if (p.enabled !== true || typeof p.installPath !== 'string' || !p.installPath) continue;
+  if (typeof p.projectPath === 'string' && p.projectPath && canon(p.projectPath) !== repoRoot) continue; // enabled for another repo
+  if (typeof p.id === 'string' && seen.has(p.id)) continue; // a second scope of a plugin that counts
   let text;
   try {
     text = readFileSync(join(p.installPath, FILE), 'utf8');
@@ -79,7 +96,6 @@ for (const p of list) {
     done(`unknown: ${p.id ?? p.installPath}: cannot read ${FILE}: ${e.code ?? e.message}`, 2);
   }
   if (typeof p.id !== 'string' || !p.id) done(`unknown: ${p.installPath}: the entry has a preset file and no id`, 2);
-  if (seen.has(p.id)) continue;
   seen.add(p.id);
   try {
     presets.push({ plugin: p.id, ...parsePreset(text) });
