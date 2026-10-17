@@ -31,7 +31,22 @@ If the path `${CLAUDE_PLUGIN_ROOT}` shows as empty or literal, use the folder tw
 
 Done when the line is `ok gh <owner>/<repo>`.
 
-### 3. Read the charter that exists
+### 3. Find the presets
+
+A preset is a file of default answers from a plugin. Read [the preset reference](references/presets.md). Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/preset-discover.mjs"`.
+
+Then act on the line:
+
+- `count` is 0: ask every question as step 5 says.
+- `count` is 1: show its answers. The human confirms or changes each one. Show its defaults as the default of the question that setup still asks.
+- `count` is 2 or more: show the plugin ids. The human chooses one. Then treat it as count 1. Never mix two presets.
+- `unknown: <reason>`: say the reason and end setup.
+
+A human can change any preset answer. A preset is a default, never a lock. A preset `tracker` answer is an item to confirm, and the human's answer wins over step 2. Show each key with its note. Tell the human about each key that the reference does not list, and ignore it.
+
+Done when you hold one preset or none.
+
+### 4. Read the charter that exists
 
 Read the charter from the default branch, so that a feature branch never shows `missing`.
 
@@ -42,7 +57,7 @@ Read the charter from the default branch, so that a feature branch never shows `
 
 Then act on the line:
 
-- `missing`: this is a first setup. Ask every question in step 4.
+- `missing`: this is a first setup. Ask every question in step 5.
 - `ok`: the charter is current. Show its fields. Ask the human what to change, and ask only about that.
 - `older-cadre` or `stale <old> <new>`: read the charter. Keep each answer that is there. Ask only for each field that is missing or new in [the charter reference](../orchestrate/references/charter.md).
 - `plugin-too-old`: end setup. Say to update cadre, then type /cadre:setup again.
@@ -50,11 +65,11 @@ Then act on the line:
 
 Done when you know which questions to ask.
 
-### 4. Ask the questions
+### 5. Ask the questions
 
-Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. The tracker comes from step 2. The tracker and the skill pack go in the body of the charter. Ask one question at a time and wait for each answer.
+Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. The tracker comes from step 2. A preset from step 3 can give the answers and the defaults. The tracker and the skill pack go in the body of the charter. Ask one question at a time and wait for each answer. Do not ask again about an answer that the human confirmed in step 3. Show a preset default as `default: <value>`, and let the human type another value.
 
-1. Which skill pack does this repo use? Offer three presets:
+1. Which skill pack does this repo use? Offer three choices:
    - `mattpocock-skills`. Say that the human types `/mattpocock-skills:setup-matt-pocock-skills` by hand, because that skill is human-only. The two setups stay separate. Cadre never reads or writes the files of that tool.
    - `superpowers`.
    - `none`. The role cards use a short built-in method.
@@ -68,9 +83,9 @@ Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. The 
 
 Done when each question has an answer, or the human says "none".
 
-### 5. Write the charter in a pull request
+### 6. Write the charter in a pull request
 
-1. Use the default branch and the fetch of step 3.
+1. Use the default branch and the fetch of step 4.
 2. Work in a worktree, not in the clone. Run `git worktree add .claude/worktrees/cadre-charter -b cadre-charter origin/<default branch>`. If the branch name exists, add a number to it. Do all edits in that worktree.
 3. Write `docs/agents/cadre-charter.md` in the form of [the charter reference](../orchestrate/references/charter.md).
 4. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" --schema`. Put its number in `charter_schema`.

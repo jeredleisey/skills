@@ -20,6 +20,10 @@ _Avoid_: skill set, toolset
 A kind of work that a role card asks for, such as test-first or code review, which the charter maps to a skill in the skill pack.
 _Avoid_: skill (when the kind of work is meant)
 
+**Preset**:
+A data file of default answers for setup that a plugin ships. A human can change every answer in it.
+_Avoid_: profile, lock
+
 ## Agents
 
 **Orchestrator**:
