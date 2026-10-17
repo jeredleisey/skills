@@ -60,6 +60,10 @@ _Avoid_: handoff note, roster entry
 The one session that acts as an orchestrator at a given time, as the orchestrator issue records it.
 _Avoid_: owner (that is the human), lock
 
+**Host id**:
+A random 32-character id of one machine, kept in the cadre user folder, that the orchestrator issue records as the host of the holder. It holds no fact about the machine or its user.
+_Avoid_: host name, device name, machine id
+
 **Checkpoint**:
 A comment on an orchestrator issue that records decisions, what waits for the human, and the next steps.
 _Avoid_: handoff, snapshot
