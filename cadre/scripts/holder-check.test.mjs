@@ -5,7 +5,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -14,6 +14,7 @@ const dir = mkdtempSync(join(tmpdir(), 'cadre-holder-'));
 const ID = '11111111-2222-3333-4444-555555555555';
 const OTHER = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 let n = 0;
+after(() => rmSync(dir, { recursive: true, force: true }));
 
 // A shell command that runs a small Node program.
 function nodeCmd(source) {
@@ -148,15 +149,41 @@ test('process output that the check does not know gives unknown, not free', () =
   assert.match(r.line, /^unknown: /);
 });
 
-test('a live process named node counts as possibly Claude', () => {
-  for (const name of ['node', 'node.exe', 'bash.exe', 'sh', 'mintty.exe']) {
+test('a live process with an ambiguous name gives unknown, not free and not held', () => {
+  for (const name of ['node', 'node.exe', 'nodejs', 'bash.exe', 'sh', 'mintty.exe', 'git-bash.exe']) {
     const r = run([ID], {
       CLAUDE_AGENTS_JSON_CMD: agents([session(4242)]),
       CADRE_PROCESS_CMD: prints(`alive ${name}`),
     });
-    assert.notEqual(r.line, 'free', name);
-    assert.match(r.line, /^(held|unknown)/, name);
+    assert.equal(r.code, 2, name);
+    assert.match(r.line, /^unknown: process 4242 is named /, name);
   }
+});
+
+test('a held entry wins over an entry with an ambiguous name', () => {
+  const r = run([ID], {
+    CLAUDE_AGENTS_JSON_CMD: agents([session(1111), session(2222)]),
+    CADRE_PROCESS_CMD: nodeCmd('process.stdout.write(process.env.CADRE_PID === "2222" ? "alive claude" : "alive node");'),
+  });
+  assert.match(r.line, /^held pid=2222/);
+});
+
+test('the pid of this session gives self even when the process is named node', () => {
+  const r = run([ID], {
+    CLAUDE_AGENTS_JSON_CMD: agents([session(4242)]),
+    CADRE_PROCESS_CMD: prints('alive node'),
+    CLAUDE_PID: '4242',
+  });
+  assert.deepEqual([r.line, r.code], ['self pid=4242', 3]);
+});
+
+test('an id in upper case matches an entry in lower case, and the reverse', () => {
+  const env = { CADRE_PROCESS_CMD: prints('alive claude') };
+  const upper = OTHER.toUpperCase();
+  const lowerList = run([upper], { ...env, CLAUDE_AGENTS_JSON_CMD: agents([session(4242, { sessionId: OTHER })]) });
+  assert.match(lowerList.line, /^held/);
+  const upperList = run([OTHER], { ...env, CLAUDE_AGENTS_JSON_CMD: agents([session(4242, { sessionId: upper })]) });
+  assert.match(upperList.line, /^held/);
 });
 
 test('a native install that runs from a versioned file name counts as possibly Claude', () => {
