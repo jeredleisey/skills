@@ -52,6 +52,7 @@ function body({ session = 'none', host = 'none', since = 'none', rows = [], hold
 
 const issue = (over = {}) => ({
   state: 'open',
+  labels: [{ name: 'cadre:orchestrator' }],
   assignees: [{ login: 'ada' }],
   body: body(),
   ...over,
@@ -59,7 +60,7 @@ const issue = (over = {}) => ({
 const comment = (id, time, extra = '', login = 'ada') => ({
   id,
   user: { login },
-  body: `cadre-checkpoint v1 ${time}\n\n## Decisions\n- none\n${extra}`,
+  body: `cadre-checkpoint v1 ${time}\n\n## Decisions\n- none\n\n## Waiting for the human\n1. none\n\n## Next, in order\n1. none\n${extra}`,
 });
 
 function run(args, { user = 'ada', iss = issue(), comments = [], host = HOST, fail = '', env = {} } = {}) {
@@ -126,7 +127,7 @@ test('the owner of a free orchestrator gets ok with holder=free', () => {
   assert.equal(r.code, 0);
   assert.equal(r.lines, 1);
   assert.deepEqual(fields(r.line), {
-    holder: 'free', session: 'none', checkpoint: 'none', state: 'open', 'bad-rows': 'none', 'ended-rows': 'none',
+    holder: 'free', session: 'none', checkpoint: 'none', ignored: 'none', state: 'open', 'bad-rows': 'none', 'ended-rows': 'none',
   });
   assert.match(r.line, /^ok /);
 });
@@ -249,4 +250,93 @@ test('a checkpoint that the owner did not write is ignored', () => {
     { id: 103, body: 'cadre-checkpoint v1 2026-10-17T13:00:00Z\n' },
   ];
   assert.equal(fields(run(['4'], { comments }).line).checkpoint, '101');
+});
+
+const bodyWith = (edit) => issue({ body: edit(body({ session: SESSION, host: HOST, since: '2026-10-17T08:00:00Z' })) });
+
+test('the same session in the Holder is holder=self, with no process check', () => {
+  const r = run(['4', SESSION], { iss: bodyWith((b) => b) });
+  assert.equal(fields(r.line).holder, 'self');
+});
+
+test('a different session in the Holder is not self', () => {
+  assert.equal(fields(run(['4', OLD_SESSION], { iss: bodyWith((b) => b) }).line).holder, 'same-host');
+});
+
+test('a second Holder heading gives unknown', () => {
+  const r = run(['4'], { iss: bodyWith((b) => b + '\n## Holder\nsession: none\nhost: none\nsince: none\n') });
+  assert.equal(r.code, 2);
+  assert.match(r.line, /^unknown: .*Holder/);
+});
+
+test('a heading inside a code fence gives unknown', () => {
+  const r = run(['4'], { iss: bodyWith((b) => b + '\n```\n## Holder\nsession: none\n```\n') });
+  assert.equal(r.code, 2);
+  assert.match(r.line, /^unknown: .*fence/);
+});
+
+test('a Holder field that appears twice gives unknown', () => {
+  const r = run(['4'], { iss: bodyWith((b) => b.replace('since:', 'host: none\nsince:')) });
+  assert.equal(r.code, 2);
+  assert.match(r.line, /^unknown: .*twice/);
+});
+
+test('a Holder with garbage gives unknown', () => {
+  for (const edit of [
+    (b) => b.replace('since: 2026-10-17T08:00:00Z', 'since: 2026-10-17T08:00:00Z\nfree to take'),
+    (b) => b.replace(`host: ${HOST}`, 'host: my-laptop'),
+    (b) => b.replace(`session: ${SESSION}`, 'session: lead'),
+  ]) {
+    const r = run(['4'], { iss: bodyWith(edit) });
+    assert.equal(r.code, 2);
+    assert.match(r.line, /^unknown: .*Holder/);
+  }
+});
+
+test('a Ledger with no header gives unknown, and a data row is never skipped', () => {
+  const noHeader = bodyWith((b) => b.replace(/\| Granted by[^\n]*\n/, ''));
+  const r = run(['4'], { iss: noHeader });
+  assert.equal(r.code, 2);
+  assert.match(r.line, /^unknown: .*header/);
+});
+
+test('a Ledger with another header gives unknown', () => {
+  const r = run(['4'], { iss: bodyWith((b) => b.replace('Repo or host', 'Where')) });
+  assert.equal(r.code, 2);
+  assert.match(r.line, /^unknown: .*header/);
+});
+
+test('a non-owner is refused even when the body is broken', () => {
+  const r = run(['4'], { user: 'grace', iss: issue({ body: 'no sections at all' }) });
+  assert.deepEqual([r.line, r.code], ['not-owner login=grace assignee=ada', 1]);
+});
+
+test('an issue without the label cadre:orchestrator gives unknown', () => {
+  const r = run(['4'], { iss: issue({ labels: [{ name: 'bug' }] }) });
+  assert.equal(r.code, 2);
+  assert.match(r.line, /^unknown: .*label/);
+});
+
+test('a pull request gives unknown', () => {
+  const r = run(['4'], { iss: issue({ pull_request: { url: 'x' } }) });
+  assert.equal(r.code, 2);
+  assert.match(r.line, /^unknown: .*pull request/);
+});
+
+test('a marker time more than 5 minutes ahead is ignored and reported', () => {
+  const comments = [comment(101, '2026-10-17T09:00:00Z'), comment(102, '2099-01-01T00:00:00Z')];
+  const f = fields(run(['4'], { comments }).line);
+  assert.equal(f.checkpoint, '101');
+  assert.equal(f.ignored, '102');
+});
+
+test('a marker time of now is accepted', () => {
+  const now = new Date().toISOString().slice(0, 19) + 'Z';
+  assert.equal(fields(run(['4'], { comments: [comment(101, now)] }).line).checkpoint, '101');
+});
+
+test('a checkpoint that lacks one of the three sections is ignored', () => {
+  const full = comment(101, '2026-10-17T09:00:00Z');
+  const partial = { id: 102, user: { login: 'ada' }, body: 'cadre-checkpoint v1 2026-10-17T12:00:00Z\n\n## Decisions\n- x\n\n## Next, in order\n1. y\n' };
+  assert.equal(fields(run(['4'], { comments: [full, partial] }).line).checkpoint, '101');
 });
