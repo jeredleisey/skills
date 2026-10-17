@@ -3,14 +3,17 @@
 // Output and exit code:
 //   <id>               exit 0   the id of this machine
 //   unknown: <reason>  exit 2   the script cannot read or make an id
-// The id is random. It lives in the file host-id in the cadre user folder, which is
-// ~/.cadre, or the folder in CADRE_HOME. The script makes the file from 16 random
-// bytes when it is missing. It never uses the host name, a MAC address, a serial
-// number, a user name, or the time, so a public issue holds no fact about a person.
+// The id is random. It lives in the file host-id in the cadre user folder.
+// That folder is ~/.cadre, or the folder in CADRE_HOME.
+// The script makes the file from 16 random bytes when it is missing.
+// It never uses the host name, a MAC address, a serial number, a user name, or the time.
+// So a public issue holds no fact about a person.
+// A test can set CADRE_RANDOM_CMD to a shell command that prints 32 hex characters.
 import { randomBytes } from 'node:crypto';
-import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { linkSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 
 const ID = /^[0-9a-f]{32}$/;
 
@@ -25,6 +28,15 @@ function readId(file) {
   return text;
 }
 
+function newId() {
+  const cmd = process.env.CADRE_RANDOM_CMD;
+  if (!cmd) return randomBytes(16).toString('hex');
+  const r = spawnSync(cmd, { shell: true, encoding: 'utf8', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] });
+  const id = (r.stdout ?? '').trim();
+  if (r.status !== 0 || !ID.test(id)) fail('the random source failed');
+  return id;
+}
+
 const home = process.env.CADRE_HOME || join(homedir(), '.cadre');
 const file = join(home, 'host-id');
 
@@ -33,18 +45,20 @@ try {
     console.log(readId(file));
   } catch (e) {
     if (e.code !== 'ENOENT') throw e;
-    const id = randomBytes(16).toString('hex');
-    mkdirSync(dirname(file), { recursive: true });
+    const id = newId();
+    mkdirSync(home, { recursive: true, mode: 0o700 });
+    // Write a temp file, then link it to the final name. A reader never sees an
+    // empty file, and a second first call cannot replace the id of the first.
+    const temp = join(home, `host-id.${process.pid}.tmp`);
     try {
-      writeFileSync(file, `${id}\n`, { flag: 'wx', mode: 0o600 });
-      chmodSync(file, 0o600); // the umask can narrow the mode of a new file, never widen it
+      writeFileSync(temp, `${id}\n`, { flag: 'wx', mode: 0o600 });
+      linkSync(temp, file);
       console.log(id);
     } catch (w) {
-      if (w.code !== 'EEXIST') {
-        rmSync(file, { force: true }); // leave no empty file that blocks the next call
-        throw w;
-      }
+      if (w.code !== 'EEXIST') throw w;
       console.log(readId(file)); // another call made the file first
+    } finally {
+      rmSync(temp, { force: true });
     }
   }
 } catch (e) {
