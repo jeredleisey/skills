@@ -23,6 +23,19 @@
           }
         ]
       }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/task-completed.mjs"],
+            "onFailure": "block",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }
