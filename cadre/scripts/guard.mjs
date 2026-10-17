@@ -28,7 +28,8 @@ const GUARDS = ['push', 'merge'];
 const CHARTER = 'docs/agents/cadre-charter.md';
 const FALLBACK = ['main', 'master', 'dev', 'develop', 'trunk'];
 const HAS_VARIABLE = /[$`]/;
-const SPECIAL = /[$*?[~`{]/;
+// A tilde expands only at the start of a word, or after : or =. Inside a word it is a literal.
+const SPECIAL = /[$*?[`{]|^~|[:=]~/;
 
 // ---- the shell scanner: split a command line into commands, each a list of words ----
 
