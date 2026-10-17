@@ -32,11 +32,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseHolder, pickCheckpoint, same } from './resume-core.mjs';
 import { createExclusive, ensure, localUser, locate, newFile, parseFile, slug, validate, withLock, writeAtomic } from './local-store.mjs';
+import { say } from './out.mjs';
 
-function say(lines, code) {
-  for (const line of [lines].flat()) console.log(line);
-  process.exit(code);
-}
 const refuse = (reason) => say(`refuse: ${reason}`, 1);
 const SHAPES = [
   'init', 'orchestrators', 'new <name> <purpose> [session-id]', 'put <name> <Purpose|Repos|Ledger|Holder> <file>',
