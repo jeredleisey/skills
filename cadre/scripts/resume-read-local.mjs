@@ -7,7 +7,7 @@
 //   - The state is the `state:` line. A checkpoint id is the time of its marker line, not a comment id.
 //     There is no author to check: the file is the owner's, and the owner check covers it.
 // The file is unknown when it is missing, a section is missing or twice, or a heading is in a code fence.
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { auditLedger, holderWho, okLine, parseHolder, pickCheckpoint, same } from './resume-core.mjs';
 import { locate, localUser, parseFile, slug } from './local-store.mjs';
@@ -27,10 +27,12 @@ if (!name || !slug(name) || extra.length > 0) {
 let file;
 let text;
 try {
-  file = join(locate().folder, 'orchestrators', `${slug(name)}.md`);
+  const where = locate();
+  if (!existsSync(where.folder)) throw Object.assign(new Error('x'), { code: 'NOSETUP' });
+  file = join(where.folder, 'orchestrators', `${slug(name)}.md`);
   text = readFileSync(file, 'utf8');
 } catch (e) {
-  unknown(e.code === 'ENOENT' ? `there is no file for ${name}` : `cannot read the file for ${name}: ${e.message}`);
+  unknown(e.code === 'NOSETUP' ? 'not set up; run /cadre:setup' : e.code === 'ENOENT' ? `there is no file for ${name}` : `cannot read the file for ${name}: ${e.message}`);
 }
 let parsed;
 try {

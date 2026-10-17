@@ -57,7 +57,7 @@ Done when you hold one preset or none.
 
 Read the charter from the default branch, so that a feature branch never shows `missing`.
 
-1. Local: the default branch is `git symbolic-ref --short HEAD` in the main clone. Skip the fetch of item 2, and read the file from that branch. Otherwise find the default branch. GitHub: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`. ADO: run `git remote set-head origin --auto`, then `git symbolic-ref --short refs/remotes/origin/HEAD`, and remove the `origin/` prefix.
+1. Local: the default branch is the value of `git config init.defaultBranch` when that branch exists, else `main` if it exists, else `master` if it exists (test each with `git show-ref --verify refs/heads/<branch>`). If none exists, ask the human. Never take the checked-out branch. Skip the fetch of item 2. In item 3, run `git show <default branch>:docs/agents/cadre-charter.md`. Otherwise find the default branch. GitHub: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`. ADO: run `git remote set-head origin --auto`, then `git symbolic-ref --short refs/remotes/origin/HEAD`, and remove the `origin/` prefix.
 2. Run `git fetch origin`.
 3. Make a new empty temporary folder. Run `git show origin/<default branch>:docs/agents/cadre-charter.md`, and write the output to `docs/agents/cadre-charter.md` under that folder. If the command fails, the charter is `missing`.
 4. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" <temporary folder>`.
@@ -125,7 +125,7 @@ Done when each question has an answer, or the human says "none".
 ### 7. Write the charter in a pull request
 
 1. Use the default branch and the fetch of step 4.
-2. Work in a worktree, not in the clone. Run `git worktree add .claude/worktrees/cadre-charter -b cadre-charter origin/<default branch>`. If the branch name exists, add a number to it. Do all edits in that worktree.
+2. Work in a worktree, not in the clone. Run `git worktree add .claude/worktrees/cadre-charter -b cadre-charter origin/<default branch>`. Local: use `<default branch>` with no `origin/`. If the branch name exists, add a number to it. Do all edits in that worktree.
 3. Write `docs/agents/cadre-charter.md` in the form of [the charter reference](../orchestrate/references/charter.md). On ADO, write `tracker: ado`, `ado_org`, and `ado_project` in the front matter. Local: write `tracker: local`. Write the area path and the item type in the `## Tracker` section. On GitHub, write none of them.
 4. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" --schema`. Put its number in `charter_schema`.
 5. Read `version` in `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`. Put `cadre <version>` in `written_by`.

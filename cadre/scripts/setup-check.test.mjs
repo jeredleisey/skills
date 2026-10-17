@@ -278,3 +278,10 @@ test('local: a URL that has no host is unknown', () => {
   assert.match(r.line, /^unknown: /);
   assert.equal(r.code, 2);
 });
+
+test('local: a remote that is a path on this machine proposes it, with no host', () => {
+  for (const url of ['/srv/x.git', '../other', './other', 'file:///srv/x.git', 'C:\\repos\\x', 'C:/repos/x', '~/code/x']) {
+    const r = run(['local', url], {});
+    assert.deepEqual([r.line, r.code], ['ok local path-remote', 0], url);
+  }
+});

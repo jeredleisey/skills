@@ -3,8 +3,8 @@
 // host id from a file in a temporary CADRE_HOME. A live-session check is replaced through CLAUDE_AGENTS_JSON_CMD.
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -95,6 +95,7 @@ test('resume: a user who is not the owner is refused', () => {
 
 test('resume: a missing file is unknown, and a bad argument is usage', () => {
   const repo = makeRepo();
+  ls(repo, 'init');
   const r = rs(repo, ['nobody', SESSION]);
   assert.equal(r.code, 2);
   assert.match(r.line, /^unknown: .*nobody/);
@@ -222,6 +223,7 @@ test('new refuses a name that is taken, ignoring case, and a name with no letter
 
 test('orchestrators lists one line for each file, and none for an empty tracker', () => {
   const repo = makeRepo();
+  ls(repo, 'init');
   assert.deepEqual([ls(repo, 'orchestrators').line, ls(repo, 'orchestrators').code], ['none', 0]);
   ls(repo, 'new', 'Rigel', 'Ship the report.', SESSION);
   ls(repo, 'new', 'Mara', 'Fix the pump.');
@@ -245,6 +247,7 @@ test('orchestrators gives unknown when one file is corrupt, never a shorter list
 
 test('tickets: ticket makes a numbered file, and work lists the open tickets of one orchestrator', () => {
   const repo = makeRepo();
+  assert.deepEqual([ls(repo, 'work', 'Rigel').line, ls(repo, 'work', 'Rigel').code], ['unknown: not set up; run /cadre:setup', 2]);
   ls(repo, 'new', 'Rigel', 'Ship the report.');
   assert.equal(ls(repo, 'work', 'Rigel').line, 'none');
   const a = ls(repo, 'ticket', 'Rigel', 'Fix the pump!');
@@ -308,4 +311,100 @@ test('a second resume while another live session holds the name is held, through
   });
   assert.match(check.stdout, /^held pid=4242 /);
   assert.equal(check.status, 0);
+});
+
+
+test('a tracker that is not set up is unknown, never an empty list', () => {
+  const repo = makeRepo();
+  for (const cmd of [['orchestrators'], ['work', 'Rigel']]) assert.deepEqual([ls(repo, ...cmd).line, ls(repo, ...cmd).code], ['unknown: not set up; run /cadre:setup', 2]);
+  assert.match(rs(repo, ['rigel', SESSION]).line, /^unknown: not set up; run \/cadre:setup/);
+});
+
+test('orchestrators: an owner name with a space stays one field', () => {
+  const repo = makeRepo();
+  run(list, repo, ['new', 'Rigel', 'Ship it.'], { CADRE_LOCAL_USER: 'ada lovelace' });
+  assert.deepEqual(run(list, repo, ['orchestrators'], {}).lines, ['orchestrator name=rigel owner=ada%20lovelace state=open holder=none purpose=Ship it.']);
+});
+
+test('put: input that would leave an unreadable file changes nothing', () => {
+  const repo = makeRepo();
+  ls(repo, 'new', 'Rigel', 'Ship the report.');
+  const before = readFileSync(orchFile(repo, 'rigel'), 'utf8');
+  const bad = [
+    ['Purpose', '```\n'],
+    ['Repos', '```'],
+    ['Holder', 'session: sometimes\nhost: none\nsince: none\n'],
+    ['Ledger', '| Who | What |\n| --- | --- |\n'],
+    ['Purpose', 'cadre-checkpoint v1 2026-10-01T00:00:00Z'],
+  ];
+  for (const [section, text] of bad) {
+    const r = ls(repo, 'put', 'Rigel', section, temp(text));
+    assert.ok([1, 2].includes(r.code), `${section}: ${r.line}`);
+    assert.match(r.line, /^(unknown|refuse): /);
+    assert.equal(readFileSync(orchFile(repo, 'rigel'), 'utf8'), before, section);
+    assert.equal(rs(repo, ['rigel', SESSION]).code, 0, section);
+  }
+});
+
+test('new: bad input writes nothing and the name stays free', () => {
+  const repo = makeRepo();
+  for (const args of [['Bad', '```'], ['Zed', '## Holder'], ['X', 'p', 'abc'], ['Y', 'two\nlines'], ['Z', 'cadre-checkpoint v1 2026-10-01T00:00:00Z']]) {
+    const r = ls(repo, 'new', ...args);
+    assert.ok([1, 2].includes(r.code), args.join(' '));
+    assert.match(r.line, /^(unknown|refuse): /);
+    assert.equal(existsSync(join(repo, '.cadre', 'orchestrators', `${args[0].toLowerCase()}.md`)), false, args.join(' '));
+    assert.equal(ls(repo, 'new', args[0], 'Fine.').code, 0, `${args[0]} stays free`);
+  }
+  assert.deepEqual(readdirSync(join(repo, '.cadre', 'orchestrators')).sort(), ['bad.md', 'x.md', 'y.md', 'z.md', 'zed.md']);
+});
+
+test('put and checkpoint: parallel writers all keep their change', async () => {
+  const repo = makeRepo();
+  ls(repo, 'new', 'Rigel', 'Ship the report.');
+  const jobs = [];
+  const go = (...args) => {
+    const child = spawn(process.execPath, [list, ...args], { cwd: repo, env: env() });
+    let out = '';
+    child.stdout.on('data', (d) => (out += d));
+    jobs.push(new Promise((done) => child.on('close', (code) => done({ code, out: out.trim() }))));
+  };
+  go('put', 'Rigel', 'Purpose', temp('purpose one\n'));
+  go('put', 'Rigel', 'Repos', temp('repo one\n'));
+  go('put', 'Rigel', 'Ledger', temp('| Granted by | Action | Repo or host | Scope | When |\n| --- | --- | --- | --- | --- |\n| ada | merge | acme | all | 2026-10-17 indefinite |\n'));
+  go('put', 'Rigel', 'Holder', temp(`session: ${SESSION}\nhost: ${HOST}\nsince: 2026-10-17T08:00:00Z\n`));
+  for (let i = 0; i < 4; i++) go('state', 'Rigel', i % 2 ? 'open' : 'closed');
+  const results = await Promise.all(jobs);
+  assert.deepEqual(results.map((r) => r.code), results.map(() => 0), JSON.stringify(results));
+  const text = readFileSync(orchFile(repo, 'rigel'), 'utf8');
+  for (const part of ['purpose one', 'repo one', '| ada | merge |', `session: ${SESSION}`]) assert.ok(text.includes(part), part);
+  assert.equal(rs(repo, ['rigel', SESSION]).code, 0);
+  assert.equal(existsSync(`${orchFile(repo, 'rigel')}.lock`), false);
+});
+
+test('lock: a fresh lock gives unknown busy, and a stale one is taken over', () => {
+  const repo = makeRepo();
+  ls(repo, 'new', 'Rigel', 'Ship the report.');
+  const lock = `${orchFile(repo, 'rigel')}.lock`;
+  writeFileSync(lock, '');
+  const before = readFileSync(orchFile(repo, 'rigel'), 'utf8');
+  const busy = ls(repo, 'state', 'Rigel', 'closed');
+  assert.deepEqual([busy.line, busy.code], ['unknown: busy', 2]);
+  assert.equal(readFileSync(orchFile(repo, 'rigel'), 'utf8'), before);
+  const old = new Date(Date.now() - 120 * 1000);
+  utimesSync(lock, old, old);
+  assert.equal(ls(repo, 'state', 'Rigel', 'closed').code, 0);
+  assert.equal(existsSync(lock), false);
+});
+
+test('latest: prints the newest trusted checkpoint block, and none when there is no checkpoint', () => {
+  const repo = makeRepo();
+  ls(repo, 'new', 'Rigel', 'Ship the report.');
+  assert.deepEqual([ls(repo, 'latest', 'Rigel').line, ls(repo, 'latest', 'Rigel').code], ['none', 0]);
+  ls(repo, 'checkpoint', 'Rigel', temp('## Decisions\n- old\n\n## Waiting for the human\n1. none\n\n## Next, in order\n1. none\n'));
+  append(repo, CP(stamp(3600 * 1000)).replace('- none', '- future'));
+  const r = ls(repo, 'latest', 'Rigel');
+  assert.equal(r.code, 0);
+  assert.match(r.line, /^cadre-checkpoint v1 \d{4}-/);
+  assert.ok(r.line.includes('- old') && !r.line.includes('future'));
+  assert.ok(r.line.endsWith('1. none'));
 });
