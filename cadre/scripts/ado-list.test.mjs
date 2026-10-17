@@ -138,3 +138,20 @@ test('a name that could break the query is refused before any call', () => {
 test('usage: a wrong subcommand or argument count gives exit 64', () => {
   for (const args of [[], ['orchestrators'], ['work', 'example-org', 'p'], ['nope', 'a', 'b'], ['orchestrators', 'a', 'b', 'c']]) assert.equal(run(args, {}).code, 64, args.join(' '));
 });
+
+test('a large list reaches a reader that is slow, with no line cut off', async () => {
+  const { spawn } = await import('node:child_process');
+  const long = 'x'.repeat(1000);
+  const rows = batch(...Array.from({ length: 200 }, (_, i) => row(i + 1, { 'System.Title': `${long} ${i + 1}` })));
+  const env = { ...process.env, ...ado.env({ [WIQL]: ids(200), [BATCH]: rows }) };
+  const child = spawn(process.execPath, [script, 'orchestrators', 'example-org', 'Example Project'], { env });
+  let out = '';
+  child.stdout.setEncoding('utf8');
+  child.stdout.on('data', (c) => (out += c));
+  child.stdout.pause();
+  setTimeout(() => child.stdout.resume(), 400);
+  await new Promise((ok) => child.on('close', ok));
+  const lines = out.split('\n').filter(Boolean);
+  assert.equal(lines.length, 200);
+  assert.ok(lines.every((l) => l.startsWith('item id=') && l.endsWith(` ${l.split(' ')[1].slice(3)}`) ), 'each line is whole');
+});

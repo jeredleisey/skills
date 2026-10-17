@@ -23,9 +23,10 @@
 // The host id comes from host-id.mjs, so CADRE_HOME applies.
 import { spawnSync } from 'node:child_process';
 import { auditLedger, holderWho, okLine, parseHolder, pickCheckpoint, same } from './resume-core.mjs';
+import { writeOut } from './out.mjs';
 
 function done(line, code) {
-  console.log(line);
+  writeOut(`${line}\n`);
   process.exit(code);
 }
 const unknown = (reason) => done(`unknown: ${reason}`, 2);

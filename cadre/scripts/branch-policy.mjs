@@ -12,9 +12,10 @@
 // The script runs `gh api` with GET only: repo, rules/branches/<branch>, branches/<branch>/protection.
 // CADRE_GH_CMD replaces `gh` (a shell command). A test uses it.
 import { spawnSync } from 'node:child_process';
+import { writeOut } from './out.mjs';
 
 function say(lines, code) {
-  for (const line of lines) console.log(line);
+  writeOut(lines.map((l) => `${l}\n`).join(''));
   process.exit(code);
 }
 const unknown = (reason) => say([`unknown: ${reason}`], 2);

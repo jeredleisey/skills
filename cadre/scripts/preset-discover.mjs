@@ -18,12 +18,13 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync, realpathSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { writeOut } from './out.mjs';
 
 const FILE = 'cadre-presets.json';
 const SCHEMA = 1;
 
 function done(line, code) {
-  console.log(line);
+  writeOut(`${line}\n`);
   process.exit(code);
 }
 

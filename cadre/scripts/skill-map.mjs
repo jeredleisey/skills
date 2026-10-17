@@ -10,6 +10,7 @@
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseFrontMatter } from './charter-front-matter.mjs';
+import { writeOut } from './out.mjs';
 
 const PRESETS = {
   'mattpocock-skills': {
@@ -46,7 +47,7 @@ const CARDS = {
 };
 
 function say(lines, code) {
-  console.log(lines.join('\n'));
+  writeOut(`${lines.join('\n')}\n`);
   process.exit(code);
 }
 const unknown = (reason) => say([`unknown: ${reason}`], 2);

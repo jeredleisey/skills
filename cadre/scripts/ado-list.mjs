@@ -19,9 +19,10 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { projectUrl, readJson } from './ado.mjs';
+import { writeOut } from './out.mjs';
 
 function say(lines, code) {
-  for (const line of lines) console.log(line);
+  writeOut(lines.map((l) => `${l}\n`).join(''));
   process.exit(code);
 }
 const unknown = (reason) => say([`unknown: ${reason}`], 2);
