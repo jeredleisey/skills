@@ -110,8 +110,10 @@ test('type: no enabled type anywhere is a refusal with no proposal', () => {
 test('type: an enabled type with no Proposed or no Completed state is refused', () => {
   const noProposed = type(types(wit('Issue', { states: [{ name: 'Doing', category: 'InProgress' }, { name: 'Done', category: 'Completed' }] }), wit('Task')));
   assert.match(noProposed.line, /^refuse: Issue has no state in the category Proposed\. propose: Task\./);
-  const noDone = type(types(wit('Issue', { states: [{ name: 'New', category: 'Proposed' }] }), wit('Task')));
+  const noDone = type(types(wit('Issue', { states: [{ name: 'New', category: 'Proposed' }, { name: 'Doing', category: 'InProgress' }] }), wit('Task')));
   assert.match(noDone.line, /^refuse: Issue has no state in the category Completed\./);
+  const noDoing = type(types(wit('Issue', { states: [{ name: 'New', category: 'Proposed' }, { name: 'Done', category: 'Completed' }] }), wit('Task')));
+  assert.match(noDoing.line, /^refuse: Issue has no state in the category InProgress\./);
 });
 
 test('type: a type name that is Task and disabled does not propose itself', () => {
@@ -120,7 +122,7 @@ test('type: a type name that is Task and disabled does not propose itself', () =
 });
 
 test('type: a dead sign-in, a bad body, a missing list, and a failed category read are unknown', () => {
-  for (const answer of [{ status: 302, body: '<html/>' }, { status: 401, body: '' }, { status: 200, body: '' }, { status: 200, body: 'nope' }, { status: 200, body: { value: 'x' } }, { status: 403, body: '{}' }, { crash: true }]) {
+  for (const answer of [{ status: 302, body: '<html/>' }, { status: 401, body: '' }, { status: 200, body: '' }, { status: 200, body: 'nope' }, { status: 200, body: { value: 'x' } }, { status: 200, body: 'null' }, { status: 403, body: '{}' }, { crash: true }]) {
     const r = type(answer);
     assert.match(r.line, /^unknown: /, JSON.stringify(answer));
     assert.deepEqual([r.code, r.lines], [2, 1]);

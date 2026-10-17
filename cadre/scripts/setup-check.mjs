@@ -6,8 +6,8 @@
 // Output and exit code:
 //   ok node <version>       exit 0   Node 22 or later is installed
 //   ok gh <owner/repo>      exit 0   the gh account can see the repo
-//   ok ado org=<org> repo=<repo> project=<project>   exit 0   the remote is an Azure DevOps (ADO) URL. The project is
-//                                    the rest of the line, URL-decoded, and it can hold a space.
+//   ok ado-remote {"org":..,"repo":..,"project":..}   exit 0   the remote is an Azure DevOps (ADO) URL. The names
+//                                    are URL-decoded JSON strings, and a repo or a project can hold a space.
 //   ok not-ado              exit 0   the remote is not an ADO URL
 //   ok ado <org>/<project>  exit 0   the token in AZURE_DEVOPS_EXT_PAT can read the project
 //   stop: <what to do>      exit 1   setup must stop and tell the human this
@@ -74,7 +74,7 @@ function checkRemote(url) {
   } catch (e) {
     say(`unknown: ${e.message}`, 2);
   }
-  say(found ? `ok ado org=${found.org} repo=${found.repo} project=${found.project}` : 'ok not-ado', 0);
+  say(found ? `ok ado-remote ${JSON.stringify(found)}` : 'ok not-ado', 0);
 }
 
 // A read of the work item types of the project proves three things: the host, the project, and the token scope.
@@ -90,7 +90,7 @@ function checkAdo(org, project) {
   if (r.status === 403) say(`stop: the token has no access to the project ${project} (HTTP 403). Make a token with the scope Work Items (Read) and Code (Read), then type /cadre:setup again.`, 1);
   if (r.status !== 200) say(`unknown: ADO answered HTTP ${r.status}`, 2);
   try {
-    if (typeof JSON.parse(r.body) !== 'object') throw new Error('x');
+    if (typeof JSON.parse(r.body) !== 'object' || JSON.parse(r.body) === null) throw new Error('x');
   } catch {
     say('unknown: the answer of ADO is not JSON', 2);
   }

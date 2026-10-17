@@ -161,7 +161,7 @@ const REMOTE_CASES = [
 test('remote: each form of an ADO remote gives the org, the repo, and the decoded project', () => {
   for (const [url, org, project, repo] of REMOTE_CASES) {
     const r = run(['remote', url], {});
-    assert.deepEqual([r.line, r.code, r.lines], [`ok ado org=${org} repo=${repo} project=${project}`, 0, 1], url);
+    assert.deepEqual([r.line.slice(0, 14), JSON.parse(r.line.slice(14)), r.code, r.lines], ['ok ado-remote ', { org, repo, project }, 0, 1], url);
   }
 });
 
@@ -225,7 +225,7 @@ test('ado: a 404 stops and names the project, a 403 stops and names the scope', 
 });
 
 test('ado: a 500, a body that is not JSON, and a failed command are unknown, never a pass', () => {
-  for (const answer of [{ status: 500, body: '{}' }, { status: 200, body: '<html>hi</html>' }, { crash: true }]) {
+  for (const answer of [{ status: 500, body: '{}' }, { status: 200, body: '<html>hi</html>' }, { status: 200, body: 'null' }, { status: 200, body: '5' }, { crash: true }]) {
     const r = adoRun(answer);
     assert.match(r.line, /^unknown: /, JSON.stringify(answer));
     assert.deepEqual([r.code, r.lines], [2, 1]);
@@ -245,4 +245,9 @@ test('ado: a project name with shell characters is encoded in the URL', () => {
   const env = ado.env({});
   run(['ado', 'example-org', 'a"b $x`y'], env);
   assert.equal(ado.requests(env)[0].url, `${BASE}/a%22b%20%24x%60y/_apis/wit/workitemtypes?api-version=7.1`);
+});
+
+test('remote: a repo and a project that both hold a space are not mixed up', () => {
+  const r = run(['remote', 'https://dev.azure.com/example-org/Example%20Project/_git/my%20repo'], {});
+  assert.deepEqual(JSON.parse(r.line.slice('ok ado-remote '.length)), { org: 'example-org', repo: 'my repo', project: 'Example Project' });
 });

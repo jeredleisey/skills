@@ -240,7 +240,9 @@ function azReason({ args }) {
 // An entry that the guard cannot read matches when its words include the words of the command.
 const holds = (args, need) => need.every((word) => args.includes(word));
 
-const LITERAL = { push: /\bpush\b/, merge: /\bmerge\b|\bcompleted?\b/i };
+// The text of a command that holds the words of an az pull request update or create with a completion.
+const azWords = (t) => /\baz(\.cmd)?\b/i.test(t) && /\bpr\b/i.test(t) && /\b(update|create)\b/i.test(t) && (/\bcompleted\b/i.test(t) || /--au/i.test(t));
+const LITERAL = { push: /\bpush\b/, merge: { test: (t) => /\bmerge\b/.test(t) || azWords(t) } };
 const UNREADABLE_VARIABLE = 'a command with a variable that the guard cannot read';
 
 // An entry of `!` is a command that the guard cannot read. It matches when it always does, or when
@@ -269,7 +271,7 @@ const MATCH = {
         continue;
       }
       if (e.args[0] === '?' && holds(e.args, ['gh', 'pr', 'merge'])) return 'a command that the guard cannot read, with a merge in it';
-      if (e.args[0] === '?' && (holds(e.args, ['az', 'repos', 'pr']) || holds(e.args, ['az.cmd', 'repos', 'pr'])) && e.args.some((a) => a === 'completed' || a.startsWith('--auto'))) return 'a command that the guard cannot read, with a completion in it';
+      if (e.args[0] === '?' && (holds(e.args, ['az', 'pr']) || holds(e.args, ['az.cmd', 'pr'])) && (e.args.includes('update') || e.args.includes('create')) && e.args.some((a) => a === 'completed' || a.startsWith('--au'))) return 'a command that the guard cannot read, with a completion in it';
       const reason = azReason(e) ?? mergeReason(e);
       if (reason) return reason;
     }

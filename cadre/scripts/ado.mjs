@@ -70,13 +70,14 @@ export const projectUrl = (org, project) => {
 };
 
 const UNSAFE = /["`$\\\s]/;
+const UNSAFE_PATH = /["`$]/;
 
 // Run one call. Return { status, continuation, body } (body is text), or throw an Error with the reason.
 export function request(method, url, bodyFile) {
-  if (UNSAFE.test(url) || (bodyFile !== undefined && UNSAFE.test(bodyFile.replace(/[\\:/]/g, '')))) throw new Error('the ADO call holds a character that is not safe in a command');
+  if (UNSAFE.test(url) || (bodyFile !== undefined && UNSAFE_PATH.test(bodyFile))) throw new Error('the ADO call holds a character that is not safe in a command');
   const command = process.env.CADRE_ADO_CMD || `"${process.execPath}" "${join(import.meta.dirname, 'ado-call.mjs')}"`;
   const tail = bodyFile === undefined ? '' : ` "${bodyFile}"`;
-  const r = spawnSync(`${command} ${method} "${url}"${tail}`, { shell: true, encoding: 'utf8', timeout: 60000, stdio: ['ignore', 'pipe', 'pipe'] });
+  const r = spawnSync(`${command} ${method} "${url}"${tail}`, { shell: true, encoding: 'utf8', timeout: 60000, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
   if (r.status !== 0) {
     const why = (r.stderr ?? '').split('\n').find((l) => l.trim() !== '');
     throw new Error(`the ADO client failed: ${why?.slice(0, 200) ?? (r.error ? r.error.message : `exit ${r.status}`)}`);
