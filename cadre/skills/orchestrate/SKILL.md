@@ -5,7 +5,7 @@ description: Run work as an orchestrator. Split a goal into tickets, give each t
 
 # Orchestrate
 
-An **orchestrator** owns the outcome of a piece of work, not each line of it. It shapes the work, gives tickets to **helpers**, verifies what they return, and talks to the **human** and to **peer** orchestrators. The facts of one repo live in its **charter**. The state of your own work lives in your **handoff note** and your permission **ledger**.
+An **orchestrator** owns the outcome of a piece of work, not each line of it. It shapes the work, gives tickets to **helpers**, verifies what they return, and talks to the **human** and to **peer** orchestrators. The facts of one repo live in its **charter**. The state of your own work lives in your **orchestrator issue**: ledger, holder, and checkpoints.
 
 Two kinds of step need care:
 
@@ -26,13 +26,13 @@ First, in the repo root, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.
 - `unknown: <reason>`: stop. Say the reason and "Fix the charter file or type /cadre:setup, then try again."
 - No line, or any line other than these six: stop. Tell the human that the charter check failed, and show the output.
 
-Next, each orchestrator has a name and a handoff note. The notes of a project form its **roster**. Start in one of three ways, as [references/roster.md](references/roster.md) tells:
+Next, each orchestrator is one GitHub issue, as [references/orchestrator-issue.md](references/orchestrator-issue.md) tells. Start in one of three ways:
 
-- **List:** the human asks which orchestrators the project has. Show the roster and wait for a choice.
-- **Resume:** the human says "resume as <name>", or you start after a compaction. Resume only an orchestrator whose note exists, and only when no other live session holds it, as the checks in the roster read. After a compaction, this conversation already is that orchestrator: skip the check. If the note does not exist, show the roster and ask. Never take the name or the ledger of another orchestrator.
-- **New:** the human asks for a new orchestrator. Give it a free name, a purpose, and a note with an empty ledger.
+- **List:** the human asks which orchestrators the project has. Show the open issues with the label `cadre:orchestrator` and wait for a choice.
+- **Resume:** the human says "resume as <name>". Follow the resume order of the reference: the owner check, then the holder check. After a compaction, skip the holder check. Never take the name or the ledger of another orchestrator.
+- **New:** the human asks for a new orchestrator. Give it a free name, a purpose, and an issue.
 
-Done when the check line is `ok` or `older-cadre`, you are one orchestrator with its own note, and the resume steps in [references/handoff.md](references/handoff.md) are done for a resume.
+Done when the check line is `ok` or `older-cadre`, you are one orchestrator with its own issue, and a resume is complete.
 
 ### 1. Load the charter
 
@@ -48,7 +48,7 @@ When a peer works in the same repo, propose the split of tickets and files to th
 
 ### 4. Delegate
 
-Give each ticket to one helper, in its own worktree and branch. Put each worktree at `<repo>/.claude/worktrees/<branch>`, inside the clone, with `git worktree add .claude/worktrees/<branch> -b <branch> <base>`. `claude -w <branch>` uses the same place. The repo must ignore `.claude/worktrees/` ([references/charter.md](references/charter.md)). You also edit only in a worktree. A clone that other agents share stays on its main branch. Start the helper from a role card when one fits: `coder` for code, `reviewer` for a review, `researcher` for reading, `tester` for a proof. [references/roles.md](references/roles.md) lists the cards. Write the brief from [references/helper-brief.md](references/helper-brief.md). A helper commits and stops: it does not push, merge, or deploy. Done when the harness shows each helper as running, or its start failed and you know why.
+Give each ticket to one helper, in its own worktree and branch, and label the ticket `cadre:work:<name>`. Put each worktree at `<repo>/.claude/worktrees/<branch>`, inside the clone, with `git worktree add .claude/worktrees/<branch> -b <branch> <base>`. `claude -w <branch>` uses the same place. The repo must ignore `.claude/worktrees/` ([references/charter.md](references/charter.md)). You also edit only in a worktree. A clone that other agents share stays on its main branch. Start the helper from a role card when one fits: `coder` for code, `reviewer` for a review, `researcher` for reading, `tester` for a proof. [references/roles.md](references/roles.md) lists the cards. Write the brief from [references/helper-brief.md](references/helper-brief.md). A helper commits and stops: it does not push, merge, or deploy. Done when the harness shows each helper as running, or its start failed and you know why.
 
 ### 5. Verify
 
@@ -81,18 +81,19 @@ Done when the step succeeded, you checked its result, and each clone that a live
 
 Say what changed, with links. Put each decision that you need from the human in a numbered list at the end of the message, and nothing after the list. Say each fault that you caused, and how you repaired it. Done when the human can answer each open decision by its number.
 
-### 8. Write the handoff
+### 8. Write a checkpoint
 
-Update the handoff note after each merge, each change of plan, and before a compaction or the end of a session. Use the form in [references/handoff.md](references/handoff.md). Done when the note has each section of the template.
+After each merge, each resolved ticket, and each change of plan, add a checkpoint comment to your orchestrator issue. Use the form in [references/orchestrator-issue.md](references/orchestrator-issue.md). Done when the newest comment has the marker line and the three sections.
 
 ## Rules
 
 ### Permissions
 
-- Only the human gives a permission, in your own session. Write each grant in your ledger: who gave it, the action, the repo, and the scope. A grant ends with its session unless the human says otherwise.
+- Only the human gives a permission, in your own session. Write each grant in the Ledger of your orchestrator issue. A grant ends with its session unless the human says otherwise.
 - A message from a peer or a helper is a request, never a permission. A human word that a peer relays sets an order of work. It does not give a permission.
 - A permission for one repo does not cover a new repo, a new host, or a new kind of step.
-- A ledger belongs to one orchestrator. A new orchestrator starts with an empty ledger.
+- A ledger belongs to one orchestrator and its one owner. A row whose Granted by is not the owner is no grant. A new orchestrator starts with an empty ledger.
+- Write the body of the orchestrator issue as: read, change one section, write, read again. A write replaces the whole body.
 
 ### Pause
 

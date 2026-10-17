@@ -57,8 +57,12 @@ A file in the user folder of one person that holds that person's preferences, or
 _Avoid_: user config, local charter
 
 **Orchestrator issue**:
-The tracker item that holds one orchestrator: its identity, its human owner, and its ledger.
+The tracker item that holds one orchestrator: its purpose, repos, ledger, and holder. Its assignee is the owner.
 _Avoid_: handoff note, roster entry
+
+**Owner**:
+The one human to whom an orchestrator issue is assigned. Only the owner grants a ledger row.
+_Avoid_: holder (that is a session), user
 
 **Holder**:
 The one session that acts as an orchestrator at a given time, as the orchestrator issue records it.
@@ -69,7 +73,7 @@ A random 32-character id of one machine, kept in the cadre user folder, that the
 _Avoid_: host name, device name, machine id
 
 **Checkpoint**:
-A comment on an orchestrator issue that records decisions, what waits for the human, and the next steps.
+A new comment on an orchestrator issue, with the first line `cadre-checkpoint v1 <time>`, that records decisions, what waits for the human, and the next steps.
 _Avoid_: handoff, snapshot
 
 **Ledger**:
