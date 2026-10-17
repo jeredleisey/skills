@@ -18,9 +18,10 @@
 // The script makes GET calls only: the repo, and policy/configurations, read to the last page.
 // CADRE_ADO_CMD replaces the ADO client (see ado.mjs).
 import { projectUrl, readJson } from './ado.mjs';
+import { writeOut } from './out.mjs';
 
 function say(lines, code) {
-  for (const line of lines) console.log(line);
+  writeOut(lines.map((l) => `${l}\n`).join(''));
   process.exit(code);
 }
 const unknown = (reason) => say([`unknown: ${reason}`], 2);
