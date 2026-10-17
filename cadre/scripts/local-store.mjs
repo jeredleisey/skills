@@ -3,8 +3,9 @@
 // worktree, so each worktree of a repo reaches one folder. Setup adds the folder to `.git/info/exclude`.
 // A function throws an Error with the reason. The caller prints `unknown: <reason>`.
 import { spawnSync } from 'node:child_process';
-import { appendFileSync, existsSync, linkSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, closeSync, existsSync, linkSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { userInfo } from 'node:os';
+import { LEDGER_HEADER, parseHolder } from './resume-core.mjs';
 import { basename, dirname, join, resolve } from 'node:path';
 
 // The owner is the OS user name: it exists on each machine and it does not change with a repo config.
@@ -79,8 +80,9 @@ export function parseFile(text) {
   let fenced = false;
   for (const line of text.replace(/\r\n/g, '\n').split('\n')) {
     if (/^\s*```/.test(line)) fenced = !fenced;
-    if (!fenced && /^cadre-checkpoint v1(\s|$)/.test(line)) checkpoints.push({ id: line.trim().split(' ')[2] ?? line.trim(), firstLine: line.trim(), headings: [] });
+    if (!fenced && /^cadre-checkpoint v1(\s|$)/.test(line)) checkpoints.push({ id: line.trim().split(' ')[2] ?? line.trim(), firstLine: line.trim(), headings: [], lines: [line] });
     else if (checkpoints.length > 0) {
+      checkpoints.at(-1).lines.push(line);
       if (!fenced && /^##\s/.test(line)) checkpoints.at(-1).headings.push(line.replace(/^##\s+/, '').trim().toLowerCase());
     } else body.push(line);
   }
@@ -111,4 +113,54 @@ export function parseFile(text) {
   if (!head.owner) throw new Error('the file has no owner line');
   if (head.state !== 'open' && head.state !== 'closed') throw new Error('the state line is not open or closed');
   return { owner: head.owner, state: head.state, sections, checkpoints };
+}
+
+// Check the text of a file that is about to be written, as a read does: the file parses, the Holder has its
+// fields, and the Ledger has its header. Throw an Error with the reason. A write calls it before it writes.
+export function validate(text) {
+  const parsed = parseFile(text);
+  const section = (title) => parsed.sections.get(title) ?? (() => { throw new Error(`the file has no ${title} section`); })();
+  for (const title of ['purpose', 'repos']) section(title);
+  parseHolder(section('holder'));
+  const header = section('ledger').find((l) => l.trim().startsWith('|'));
+  const cells = header?.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim().toLowerCase());
+  if (!cells || cells.join('|') !== LEDGER_HEADER) throw new Error('the Ledger table has no header Granted by | Action | Repo or host | Scope | When');
+  return parsed;
+}
+
+const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+export const LOCK_WAIT_MS = 2000;
+export const LOCK_STALE_MS = 30000;
+
+// Hold `<file>.lock` while `work` runs. The lock is made with an exclusive create. A lock that exists is
+// waited for, about 2 seconds, and then the call throws `busy`. A lock older than 30 seconds is stale (its
+// writer died), and the call takes it over.
+export function withLock(file, work) {
+  const lock = `${file}.lock`;
+  const end = Date.now() + LOCK_WAIT_MS;
+  for (;;) {
+    try {
+      closeSync(openSync(lock, 'wx'));
+      break;
+    } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      let age = 0;
+      try {
+        age = Date.now() - statSync(lock).mtimeMs;
+      } catch {
+        continue; // the lock went away: try again at once
+      }
+      if (age > LOCK_STALE_MS) {
+        rmSync(lock, { force: true });
+        continue;
+      }
+      if (Date.now() >= end) throw new Error('busy');
+      sleep(25);
+    }
+  }
+  try {
+    return work();
+  } finally {
+    rmSync(lock, { force: true });
+  }
 }

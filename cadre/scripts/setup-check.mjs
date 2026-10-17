@@ -12,6 +12,7 @@
 //   ok not-ado              exit 0   the remote is not an ADO URL
 //   ok local no-remote      exit 0   there is no remote: propose the local tracker
 //   ok local other-host <host>  exit 0   the host is neither GitHub nor ADO: propose it, or ask if it is GitHub Enterprise
+//   ok local path-remote    exit 0   the remote is a path on this machine, with no host
 //   ok not-local            exit 0   the remote is GitHub or ADO
 //   ok ado <org>/<project>  exit 0   the token in AZURE_DEVOPS_EXT_PAT can read the project
 //   stop: <what to do>      exit 1   setup must stop and tell the human this
@@ -83,6 +84,7 @@ function checkRemote(url) {
 
 function checkLocal(url) {
   if (!url?.trim()) say('ok local no-remote', 0);
+  if (/^(\/|\.\.?[\\/]|~[\\/]|file:\/\/|[A-Za-z]:[\\/])/.test(url.trim())) say('ok local path-remote', 0);
   const m = /^[A-Za-z][A-Za-z0-9+.-]*:\/\/(?:[^@/]*@)?([^/:]+)(?::\d+)?\//.exec(url.trim()) || /^(?:[^@/\s]+@)?([^:/\s]+):./.exec(url.trim());
   if (!m) say('unknown: the remote URL has no host', 2);
   const host = m[1].toLowerCase();
