@@ -4,7 +4,7 @@ The charter holds the facts of one repo that an orchestrator needs. The skill ho
 
 ## The front matter
 
-Front matter holds only what a script or a hook reads. A field at its default value is left out.
+Front matter holds only what a script or a hook reads.
 
 | Field | Meaning |
 | --- | --- |

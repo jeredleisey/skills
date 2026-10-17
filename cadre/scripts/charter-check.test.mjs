@@ -154,3 +154,10 @@ test('unknown: the schema override is not a positive integer', () => {
   charter(t.repo, front(1, '0.2.0'));
   assert.match(run(t, [t.repo], { CADRE_SCHEMA: 'x' }).line, /^unknown: /);
 });
+
+test('--schema prints the plugin schema and nothing else', () => {
+  const t = setup();
+  const r = run(t, ['--schema']);
+  assert.deepEqual([r.line, r.code, r.lines], ['1', 0, 1]);
+  assert.equal(run(t, ['--schema'], { CADRE_SCHEMA: '3' }).line, '3');
+});

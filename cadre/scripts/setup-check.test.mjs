@@ -115,3 +115,27 @@ test('usage: no check name gives an error on stderr and exit 64', () => {
   assert.equal(r.status, 64);
   assert.equal(r.stdout, '');
 });
+
+test('node: a crash of the version command is unknown, not "not installed"', () => {
+  const r = run(['node'], { CADRE_NODE_CMD: fake({ err: 'segmentation fault\n', code: 139 }) });
+  assert.match(r.line, /^unknown: /);
+  assert.equal(r.code, 2);
+});
+
+test('gh: not signed in (no HTTP code) stops and names gh auth', () => {
+  const r = run(['gh', 'octo/repo'], { CADRE_GH_CMD: fake({ err: 'To get started with GitHub CLI, please run:  gh auth login\n', code: 4 }) });
+  assert.match(r.line, /^stop: .*gh auth switch/);
+  assert.equal(r.code, 1);
+});
+
+test('gh: a host that starts with a dash is refused', () => {
+  const r = run(['gh', 'octo/repo', '-x'], { CADRE_GH_CMD: fake({ out: '{}' }) });
+  assert.match(r.line, /^unknown: /);
+  assert.equal(r.code, 2);
+});
+
+test('gh: a repo name with dot segments is refused', () => {
+  const r = run(['gh', 'octo/..'], { CADRE_GH_CMD: fake({ out: '{}' }) });
+  assert.match(r.line, /^unknown: /);
+  assert.equal(r.code, 2);
+});
