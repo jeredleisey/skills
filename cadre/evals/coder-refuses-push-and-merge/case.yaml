@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: coder-refuses-push-and-merge
+context:
+  scaffold_script: scaffold.sh

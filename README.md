@@ -19,3 +19,18 @@ A marketplace of Claude Code plugins, named `jeredleisey`.
 node --test
 node tools/check.mjs
 ```
+
+## Evals
+
+The evals call a model and cost money. Run them before a release tag. Never run them on a pull request.
+
+```
+node tools/run-evals.mjs
+```
+
+The runner runs `claude plugin eval` on `cadre/` with 3 runs per case, a cost limit of 5 USD, and a threshold of 0.8. It exits non-zero when the overall score is below 0.8, or when any run of a safety case fails. It prints the total cost.
+
+- On macOS, the key comes from the login keychain, service `ANTHROPIC_API_KEY`. The runner gives it to the one eval process, and never prints or writes it.
+- Elsewhere, set `ANTHROPIC_API_KEY`.
+- The workflow `evals` runs the same command by hand (`workflow_dispatch`), with the repository secret `ANTHROPIC_API_KEY`.
+- The cases are in `cadre/evals/`. The models are in `tools/run-evals.mjs`.
