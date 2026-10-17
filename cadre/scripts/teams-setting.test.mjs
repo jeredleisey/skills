@@ -3,7 +3,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, realpathSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, mkdtempSync, realpathSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -21,9 +21,17 @@ function sandbox() {
   return { repo, config };
 }
 
-function run(args, config, cwd) {
-  const r = spawnSync(process.execPath, [script, ...args], { env: { ...process.env, CLAUDE_CONFIG_DIR: config }, cwd, encoding: 'utf8' });
-  return { line: r.stdout.trim(), err: r.stderr.trim(), code: r.status };
+// CADRE_GIT_CMD is a fake git. By default it says that the file is ignored (exit 0).
+let g = 0;
+function fakeGit(code) {
+  const file = join(base, `git${g++}.mjs`);
+  writeFileSync(file, `process.exit(${code});`);
+  return `"${process.execPath}" "${file}"`;
+}
+
+function run(args, config, cwd, git = fakeGit(0)) {
+  const r = spawnSync(process.execPath, [script, ...args], { env: { ...process.env, CLAUDE_CONFIG_DIR: config, CADRE_GIT_CMD: git }, cwd, encoding: 'utf8' });
+  return { line: r.stdout.trim(), lines: r.stdout.trim().split('\n'), err: r.stderr.trim(), code: r.status };
 }
 
 const KEY = 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS';
@@ -106,4 +114,34 @@ test('an unknown scope is refused and writes nothing', () => {
   assert.equal(r.code, 2);
   assert.match(r.line, /^unknown: /);
   assert.equal(existsSync(join(repo, '.claude')), false);
+});
+
+test('a BOM at the start of the file is accepted and keeps the other keys', () => {
+  const { repo, config } = sandbox();
+  const file = join(config, 'settings.json');
+  writeFileSync(file, `\uFEFF${JSON.stringify({ model: 'x' })}`);
+  const r = run(['user'], config, repo);
+  assert.deepEqual([r.code, r.line], [0, file]);
+  assert.deepEqual(read(file), { model: 'x', env: { [KEY]: '1' } });
+});
+
+test('the write leaves no temporary file in the folder', () => {
+  const { repo, config } = sandbox();
+  run(['project', repo], config, base);
+  assert.deepEqual(readdirSync(join(repo, '.claude')), ['settings.json']);
+});
+
+test('local: a file that git does not ignore gets a second line, a note', () => {
+  const { repo, config } = sandbox();
+  const file = join(repo, '.claude', 'settings.local.json');
+  const r = run(['local', repo], config, base, fakeGit(1));
+  assert.equal(r.code, 0);
+  assert.deepEqual(r.lines, [file, `note: ${file} is not in .gitignore; add it so it is not committed`]);
+});
+
+test('local: an ignored file gets no note, and project and user never check', () => {
+  const { repo, config } = sandbox();
+  assert.equal(run(['local', repo], config, base, fakeGit(0)).lines.length, 1);
+  assert.equal(run(['project', repo], config, base, fakeGit(1)).lines.length, 1);
+  assert.equal(run(['user', repo], config, base, fakeGit(1)).lines.length, 1);
 });
