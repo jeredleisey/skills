@@ -15,7 +15,7 @@ for (const name of cards) {
     findings.push(`${path}: file is missing`);
     continue;
   }
-  const lines = readFileSync(join(root, path), 'utf8').replace(/^﻿/, '').split(/\r?\n/);
+  const lines = readFileSync(join(root, path), 'utf8').replace(/^\uFEFF/, '').split(/\r?\n/);
   if (lines[0] === '---') {
     const end = lines.indexOf('---', 1);
     if (lines.slice(1, end === -1 ? lines.length : end).some((l) => /^skills:/.test(l))) {

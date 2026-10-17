@@ -129,3 +129,42 @@ test('an unknown card gives unknown and exit 2', () => {
 test('no card gives unknown and exit 2', () => {
   assert.equal(run().code, 2);
 });
+
+test('skill_pack as a list gives unknown and exit 2', () => {
+  const r = run('coder', repo(`${base}\nskill_pack:\n  - superpowers`));
+  assert.equal(r.code, 2);
+  assert.match(r.lines[0], /^unknown: /);
+});
+
+test('an empty skill_pack gives unknown and exit 2', () => {
+  const r = run('coder', repo(`${base}\nskill_pack:`));
+  assert.equal(r.code, 2);
+  assert.match(r.lines[0], /^unknown: /);
+});
+
+test('an inline list as skill_pack gives unknown and exit 2', () => {
+  assert.equal(run('coder', repo(`${base}\nskill_pack: [superpowers]`)).code, 2);
+});
+
+test('a bare comma list in capabilities gives unknown and exit 2', () => {
+  const r = run('tester', repo(`${base}\nskill_pack: none\ncapabilities: debugging=none, test-first=none`));
+  assert.equal(r.code, 2);
+  assert.match(r.lines[0], /^unknown: /);
+});
+
+test('a mix of inline and dash forms in capabilities gives unknown and exit 2', () => {
+  const r = run('tester', repo(`${base}\nskill_pack: none\ncapabilities: [debugging=none]\n  - test-first=none`));
+  assert.equal(r.code, 2);
+});
+
+test('a capability listed twice gives unknown and exit 2', () => {
+  const r = run('tester', repo(`${base}\nskill_pack: none\ncapabilities: [debugging=none, debugging=a:b]`));
+  assert.equal(r.code, 2);
+  assert.match(r.lines[0], /^unknown: .*debugging/);
+});
+
+test('two inline items in capabilities still work', () => {
+  const r = run('tester', repo(`${base}\nskill_pack: superpowers\ncapabilities: [debugging=none, test-first=a:b]`));
+  assert.equal(r.code, 0);
+  assert.deepEqual(r.lines, ['test-first a:b', 'debugging none']);
+});

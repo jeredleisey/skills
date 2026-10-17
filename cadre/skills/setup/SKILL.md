@@ -106,6 +106,7 @@ Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. The 
 6. Which secrets exist, where do they live, and how does a command read one without a print?
 7. Which traps does this repo or this machine have? For example: a wrong default account, a shared clone that nobody may edit.
 8. Which clones does a live tool run from, so that they need an update after a merge?
+9. Does this repo need a card beyond the four? Name, job, when to use.
 
 Done when each question has an answer, or the human says "none".
 

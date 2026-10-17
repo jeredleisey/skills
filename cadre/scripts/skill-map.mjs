@@ -5,7 +5,7 @@
 //   unknown: <reason>             exit 2   no charter, a bad charter, or an unknown card, preset, or capability
 // The charter is docs/agents/cadre-charter.md. The script reads two front matter fields:
 //   skill_pack     a preset name from PRESETS below. Absent means none.
-//   capabilities   overrides, as items `<capability>=<skill name or none>`.
+//   capabilities   overrides, as items `<capability>=<skill name or none>`, in an inline list or `- item` lines.
 // PRESETS is the one table of the skill map. The spec table in the docs points here.
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -63,14 +63,29 @@ try {
   unknown(`charter: ${e.message}`);
 }
 
-const pack = fields.values.skill_pack || 'none';
-if (!Object.hasOwn(PRESETS, pack)) unknown(`unknown skill_pack ${pack}`);
+let pack = 'none';
+if ('skill_pack' in fields.values) {
+  pack = fields.values.skill_pack;
+  if (!Object.hasOwn(PRESETS, pack)) unknown(`bad skill_pack "${pack}", use one of ${Object.keys(PRESETS).join(', ')}`);
+}
 
 const map = { ...PRESETS[pack] };
-for (const item of fields.lists.capabilities ?? []) {
+// Two forms: the inline list `[a=b, c=d]`, or `- a=b` lines. The parser reads both into `lists`.
+const raw = fields.values.capabilities;
+const items = fields.lists.capabilities ?? [];
+if (raw !== undefined && raw !== '') {
+  const inline = /^\[(.*)\]$/.exec(raw);
+  if (!inline) unknown('capabilities must be an inline list [a=b, c=d] or "- a=b" lines');
+  const count = inline[1].trim() === '' ? 0 : inline[1].split(',').length;
+  if (items.length !== count) unknown('capabilities mixes the inline list and "- a=b" lines');
+}
+const seen = new Set();
+for (const item of items) {
   const m = /^([^=\s]+)\s*=\s*(\S+)$/.exec(item);
   if (!m) unknown(`bad capabilities item "${item}", use <capability>=<skill or none>`);
   if (!Object.hasOwn(map, m[1])) unknown(`unknown capability ${m[1]}`);
+  if (seen.has(m[1])) unknown(`capability ${m[1]} is listed twice`);
+  seen.add(m[1]);
   map[m[1]] = m[2];
 }
 
