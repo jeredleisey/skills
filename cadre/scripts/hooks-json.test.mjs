@@ -18,7 +18,7 @@ function handlers() {
 
 test('hooks.json parses and has one PreToolUse handler for each guard', () => {
   const guards = handlers().map((h) => h.args?.[1]);
-  assert.deepEqual(guards.sort(), ['merge', 'push']);
+  assert.deepEqual(guards.sort(), ['merge', 'merge', 'push']);
 });
 
 test('each handler blocks on failure and on a timeout, and has an if filter that git.exe and gh.exe pass', () => {
@@ -27,7 +27,7 @@ test('each handler blocks on failure and on a timeout, and has an if filter that
     assert.equal(h.onFailure, 'block');
     // Docs state case-insensitive matching for PowerShell and WebFetch rules, not for Bash. One lowercase
     // entry is kept. The script lowercases the command word and strips .exe itself.
-    assert.match(h.if, /^Bash\(\*(git|gh)\*\)$/);
+    assert.match(h.if, /^Bash\(\*(git|gh|az)\*\)$/);
     // Docs: a hook that times out counts as a failure, and onFailure block then blocks the call.
     assert.equal(h.timeout, 10);
   }
@@ -43,4 +43,16 @@ test('each command runs an existing script of the plugin through node, in exec f
     assert.ok(['push', 'merge'].includes(h.args[1]));
     assert.ok(existsSync(join(plugin, ...m[1].split('/'))), `${m[1]} exists`);
   }
+});
+
+test('a command of az, git, or gh reaches the guard that matches it through an if filter', () => {
+  const reaches = (guard, command) =>
+    handlers().some((h) => {
+      const m = /^Bash\(\*(\w+)\*\)$/.exec(h.if);
+      return h.args[1] === guard && m && command.toLowerCase().includes(m[1]);
+    });
+  assert.ok(reaches('merge', 'az repos pr update --id 5 --status completed'));
+  assert.ok(reaches('merge', 'az.cmd repos pr update --id 5 --auto-complete true'));
+  assert.ok(reaches('merge', 'gh pr merge 5'));
+  assert.ok(reaches('push', 'git push origin main'));
 });

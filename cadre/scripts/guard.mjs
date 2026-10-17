@@ -1,7 +1,8 @@
 // A PreToolUse hook on Bash. It guards the one-way steps of git and GitHub.
 // Usage: node guard.mjs push|merge        (the hook JSON arrives on stdin)
 //   push   a push to the default branch, a force push, or a delete of a remote branch
-//   merge  gh pr merge, also with --auto
+//   merge  gh pr merge, also with --auto. On Azure DevOps: az repos pr update with --status completed or
+//          --auto-complete (alone or true), and az repos pr create with --auto-complete
 // Output and exit code:
 //   nothing, exit 0         the command is not guarded, or the charter allows it for the orchestrator
 //   permissionDecision ask  exit 0   the orchestrator needs the word of the human
@@ -202,10 +203,44 @@ function mergeReason({ args }) {
   return disableOnly ? null : 'a merge of a pull request';
 }
 
+const AZ_VALUE_OPTIONS = new Set(['-o', '--output', '--query', '--subscription']);
+const OFF_WORDS = new Set(['false', 'no', 'n', 'f', '0']);
+// az takes a unique prefix of an option, so each name matches from a minimum length.
+const optionIs = (given, full, min) => given.length >= min && full.startsWith(given);
+
+// Azure DevOps. Return a reason when the command completes a pull request or turns on auto-complete.
+function azReason({ args }) {
+  if (args[0] !== 'az' && args[0] !== 'az.cmd') return null;
+  const words = [];
+  for (let i = 1; i < args.length && words.length < 3; i++) {
+    if (AZ_VALUE_OPTIONS.has(args[i])) i++;
+    else if (!args[i].startsWith('-')) words.push(args[i]);
+  }
+  const [group, sub, verb] = words;
+  if (HAS_VARIABLE.test(group ?? '') || (group === 'repos' && HAS_VARIABLE.test(sub ?? '')) || (group === 'repos' && sub === 'pr' && HAS_VARIABLE.test(verb ?? ''))) return 'an az command that the guard cannot read';
+  if (group !== 'repos' || sub !== 'pr' || (verb !== 'update' && verb !== 'create')) return null;
+  if (args.includes('--help') || args.includes('-h')) return null;
+  for (let i = 1; i < args.length; i++) {
+    if (!args[i].startsWith('--')) continue;
+    const eq = args[i].indexOf('=');
+    const name = eq === -1 ? args[i] : args[i].slice(0, eq);
+    const next = eq === -1 ? args[i + 1] : args[i].slice(eq + 1);
+    const value = next !== undefined && (eq !== -1 || !next.startsWith('-')) ? next : undefined;
+    if (verb === 'update' && optionIs(name, '--status', 4)) {
+      if (HAS_VARIABLE.test(value ?? '')) return 'an az command with a status that the guard cannot read';
+      if (value?.toLowerCase() === 'completed') return 'the completion of a pull request on Azure DevOps';
+    } else if (optionIs(name, '--auto-complete', 4)) {
+      if (HAS_VARIABLE.test(value ?? '')) return 'an az command with an auto-complete value that the guard cannot read';
+      if (value === undefined || !OFF_WORDS.has(value.toLowerCase())) return 'auto-complete of a pull request on Azure DevOps';
+    }
+  }
+  return null;
+}
+
 // An entry that the guard cannot read matches when its words include the words of the command.
 const holds = (args, need) => need.every((word) => args.includes(word));
 
-const LITERAL = { push: /\bpush\b/, merge: /\bmerge\b/ };
+const LITERAL = { push: /\bpush\b/, merge: /\bmerge\b|\bcompleted?\b/i };
 const UNREADABLE_VARIABLE = 'a command with a variable that the guard cannot read';
 
 // An entry of `!` is a command that the guard cannot read. It matches when it always does, or when
@@ -234,7 +269,8 @@ const MATCH = {
         continue;
       }
       if (e.args[0] === '?' && holds(e.args, ['gh', 'pr', 'merge'])) return 'a command that the guard cannot read, with a merge in it';
-      const reason = mergeReason(e);
+      if (e.args[0] === '?' && (holds(e.args, ['az', 'repos', 'pr']) || holds(e.args, ['az.cmd', 'repos', 'pr'])) && e.args.some((a) => a === 'completed' || a.startsWith('--auto'))) return 'a command that the guard cannot read, with a completion in it';
+      const reason = azReason(e) ?? mergeReason(e);
       if (reason) return reason;
     }
     return null;
