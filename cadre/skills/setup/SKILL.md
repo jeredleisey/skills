@@ -1,12 +1,12 @@
 ---
 name: setup
-description: Set up cadre in a GitHub repo. Check Node and the gh account, apply presets, ask the questions, and write the charter in a pull request. Run again to add new fields after a cadre update.
+description: Set up cadre in a GitHub or Azure DevOps repo. Check Node and the account, apply presets, ask the questions, and write the charter in a pull request. Run again to add new fields after a cadre update.
 disable-model-invocation: true
 ---
 
 # Setup
 
-Setup teaches cadre how one repo works. It writes the **charter** at `docs/agents/cadre-charter.md` in a pull request, so that the team reviews it like code. Only the human starts setup. This version supports GitHub repos.
+Setup teaches cadre how one repo works. It writes the **charter** at `docs/agents/cadre-charter.md` in a pull request, so that the team reviews it like code. Only the human starts setup. This version supports GitHub and Azure DevOps (ADO) repos.
 
 If a human did not start this setup in this session, stop. Tell the parent to ask the human to run /cadre:setup.
 
@@ -23,13 +23,12 @@ If the path `${CLAUDE_PLUGIN_ROOT}` shows as empty or literal, use the folder tw
 ### 2. Find the repo and check the account
 
 1. Run `git rev-parse --show-toplevel`. Use that folder as the repo root for the rest of setup.
-2. Run `git remote get-url origin`. Read the host and `<owner>/<repo>` from it.
-3. Accept an https URL or an ssh URL such as `git@host:owner/repo.git`. Remove a final `.git`.
-4. If there is no remote, end setup. Say that this version needs a GitHub remote.
-5. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" gh <owner>/<repo> [host]`. Add the host only when it is not `github.com`.
-6. A `stop:` line names `gh auth switch`. A 404 can mean the wrong account, so never say that the repo does not exist.
+2. Run `git remote get-url origin`. If there is no remote, end setup. Say that this version needs a GitHub or ADO remote.
+3. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" remote "<url>"`. An `unknown:` line ends setup. The line `ok ado org=<org> repo=<repo> project=<project>` means ADO. The project is the rest of the line, and it can hold a space. The line `ok not-ado` means GitHub.
+4. GitHub: read the host and `<owner>/<repo>` from the URL. Accept an https URL or an ssh URL such as `git@host:owner/repo.git`. Remove a final `.git`. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" gh <owner>/<repo> [host]`. Add the host only when it is not `github.com`. A `stop:` line names `gh auth switch`. A 404 can mean the wrong account, so never say that the repo does not exist.
+5. ADO: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" ado "<org>" "<project>"`. ADO works through a token in the variable `AZURE_DEVOPS_EXT_PAT`. A `stop:` line names it. An empty variable is the first thing to check, and the check never prints the token. Do not run `az login` as a fix: the token is the way in.
 
-Done when the line is `ok gh <owner>/<repo>`.
+Done when the line is `ok gh <owner>/<repo>` or `ok ado <org>/<project>`.
 
 ### 3. Find the presets
 
@@ -42,7 +41,7 @@ Then act on the line:
 - `count` is 2 or more: show the plugin ids. The human chooses one, or none of them. Then treat it as count 1. Never mix two presets.
 - `unknown: <reason>`: say the reason and end setup.
 
-A human can change any preset answer. A preset is a default, never a lock. This version supports GitHub only. If a preset `tracker` answer names another tracker, say that this version cannot use it. Ignore that answer, and keep the GitHub tracker of step 2. A preset value of `skill_pack` must be one of the three choices of step 6. If not, treat it as not set, and say why. If the charter already holds an answer and the preset gives another, keep the charter answer. Show the preset value as a note. A preset never lowers a branch policy or a guard, and never sets a secret. Show each key with its note. Tell the human about each key that the reference does not list, and ignore that key.
+A human can change any preset answer. A preset is a default, never a lock. The tracker comes from the remote of step 2. If a preset `tracker` answer names another tracker than the remote shows, say so. Ignore that answer, and keep the tracker of step 2. A preset value of `skill_pack` must be one of the three choices of step 6. If not, treat it as not set, and say why. If the charter already holds an answer and the preset gives another, keep the charter answer. Show the preset value as a note. A preset never lowers a branch policy or a guard, and never sets a secret. Show each key with its note. Tell the human about each key that the reference does not list, and ignore that key.
 
 Step 3 feeds the questions of step 6. If step 4 finds a charter that is `ok`, show the preset answers as notes only.
 
@@ -52,7 +51,7 @@ Done when you hold one preset or none.
 
 Read the charter from the default branch, so that a feature branch never shows `missing`.
 
-1. Find the default branch: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`.
+1. Find the default branch. GitHub: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`. ADO: run `git remote set-head origin --auto`, then `git symbolic-ref --short refs/remotes/origin/HEAD`, and remove the `origin/` prefix.
 2. Run `git fetch origin`.
 3. Make a new empty temporary folder. Run `git show origin/<default branch>:docs/agents/cadre-charter.md`, and write the output to `docs/agents/cadre-charter.md` under that folder. If the command fails, the charter is `missing`.
 4. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" <temporary folder>`.
@@ -69,9 +68,9 @@ Done when you know which questions to ask.
 
 ### 5. Report the branch policy
 
-Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-policy.mjs" <owner>/<repo> [host]`. Add the host only when it is not `github.com`. The script changes nothing.
+GitHub: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-policy.mjs" <owner>/<repo> [host]`. Add the host only when it is not `github.com`. ADO: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-policy-ado.mjs" "<org>" "<project>" "<repo>"`. The script changes nothing.
 
-Say each line to the human. A `gap:` line names a rule that GitHub does not enforce on the default branch. The hooks only slow an agent and stop a slip. The branch policy of the repo is the guard that holds.
+Say each line to the human. A `gap:` line names a rule that the tracker does not enforce on the default branch. On ADO, the script cannot read the permission "Bypass policies when pushing". Tell the human to check who holds it. The hooks only slow an agent and stop a slip. The branch policy of the repo is the guard that holds.
 
 The hooks guard the Bash tool only. They do not cover these:
 
@@ -81,7 +80,7 @@ The hooks guard the Bash tool only. They do not cover these:
 - shell aliases, a function that wraps a push, and a script on disk
 - a local `refs/remotes/origin/*` that a helper rewrote
 - `gh api` merges
-- `az repos pr update --status completed` and auto-complete on Azure DevOps
+- `az devops invoke` and REST calls that complete a pull request or turn on auto-complete on ADO
 
 The branch policy of the repo covers all of them, and it is the guard that holds. This step reports its gaps.
 
@@ -93,7 +92,14 @@ Done when the human has heard each line.
 
 ### 6. Ask the questions
 
-Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. The tracker comes from step 2. A preset from step 3 can give the answers and the defaults. The tracker goes in the body of the charter. The skill pack goes in its front matter, as `skill_pack`. Ask one question at a time and wait for each answer. Do not ask again about an answer that the human confirmed in step 3. Show a preset default as `default: <value>`, and let the human type another value.
+Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. The tracker comes from step 2. A preset from step 3 can give the answers and the defaults. The tracker goes in the body of the charter. The skill pack goes in its front matter, as `skill_pack`. Ask one question at a time and wait for each answer. On an ADO repo, ask the two ADO questions below first. Do not ask again about an answer that the human confirmed in step 3. Show a preset default as `default: <value>`, and let the human type another value.
+
+ADO questions:
+
+- Which area path do the items of this repo use? Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/ado-setup.mjs" area "<org>" "<project>" "<repo>"`. A `match:` line gives the proposal. A `root:` line gives the project root: say its warning, and ask for another path. A preset can give the default. Always ask. `unknown:` ends setup.
+- Which work item type holds the orchestrator item? Offer `Task` or the type that a preset gives. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/ado-setup.mjs" type "<org>" "<project>" "<type>"`. A `refuse:` line means that the type does not work: say its reason, and offer its `propose:` type. Never accept a refused type. `unknown:` ends setup.
+
+Questions for every repo:
 
 1. Which skill pack does this repo use? Offer three choices:
    - `mattpocock-skills`. Whether the answer came from a preset or from this question, say that the human types `/mattpocock-skills:setup-matt-pocock-skills` by hand, because that skill is human-only. The two setups stay separate. Cadre never reads or writes the files of that tool.
@@ -114,13 +120,13 @@ Done when each question has an answer, or the human says "none".
 
 1. Use the default branch and the fetch of step 4.
 2. Work in a worktree, not in the clone. Run `git worktree add .claude/worktrees/cadre-charter -b cadre-charter origin/<default branch>`. If the branch name exists, add a number to it. Do all edits in that worktree.
-3. Write `docs/agents/cadre-charter.md` in the form of [the charter reference](../orchestrate/references/charter.md).
+3. Write `docs/agents/cadre-charter.md` in the form of [the charter reference](../orchestrate/references/charter.md). On ADO, write `tracker: ado`, `ado_org`, and `ado_project` in the front matter. Write the area path and the item type in the `## Tracker` section. On GitHub, write none of them.
 4. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" --schema`. Put its number in `charter_schema`.
 5. Read `version` in `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`. Put `cadre <version>` in `written_by`.
 6. Make sure that `.gitignore` has the line `.claude/worktrees/`. Add it if not.
 7. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" <worktree>`. The line must be `ok`. If not, fix the file.
 8. Commit the files. Push with `git push -u origin cadre-charter`.
-9. Open the pull request with `gh pr create --base <default branch> --head cadre-charter`. The body says what the charter holds.
+9. Open the pull request. GitHub: `gh pr create --base <default branch> --head cadre-charter`. ADO: `az repos pr create --source-branch cadre-charter --target-branch <default branch> --title "<title>" --description "<text>" --repository "<repo>" --project "<project>" --organization https://dev.azure.com/<org>`. Never add `--auto-complete`. The body says what the charter holds.
 10. Say the URL. Say that the human reviews and merges it, and that `/cadre:orchestrate` works after the merge.
 
 Done when the pull request is open and the check printed `ok` on the branch.

@@ -1,9 +1,15 @@
 // Checks that /cadre:setup runs before it asks a question. Each prints one line.
 // Usage: node setup-check.mjs node
 //        node setup-check.mjs gh <owner/repo> [host]
+//        node setup-check.mjs remote <url>
+//        node setup-check.mjs ado <org> <project>
 // Output and exit code:
 //   ok node <version>       exit 0   Node 22 or later is installed
 //   ok gh <owner/repo>      exit 0   the gh account can see the repo
+//   ok ado org=<org> repo=<repo> project=<project>   exit 0   the remote is an Azure DevOps (ADO) URL. The project is
+//                                    the rest of the line, URL-decoded, and it can hold a space.
+//   ok not-ado              exit 0   the remote is not an ADO URL
+//   ok ado <org>/<project>  exit 0   the token in AZURE_DEVOPS_EXT_PAT can read the project
 //   stop: <what to do>      exit 1   setup must stop and tell the human this
 //   unknown: <reason>       exit 2   the check cannot tell. This is never a pass.
 //   usage message on stderr          exit 64  wrong arguments
@@ -11,7 +17,10 @@
 // "command not found" for `node` is the same stop.
 // CADRE_NODE_CMD replaces `node --version` (a shell command). A test uses it.
 // CADRE_GH_CMD replaces `gh` (a shell command). The script adds: api [--hostname <host>] repos/<owner>/<repo>
+// CADRE_ADO_CMD replaces the ADO client (a shell command, see ado.mjs). The ado check stops on a 302, a 401,
+// a 203, or an empty body, and the line names AZURE_DEVOPS_EXT_PAT. A 404 and a 403 stop with their own line.
 import { spawnSync } from 'node:child_process';
+import { isAuthFailure, PAT_HINT, parseRemote, projectUrl, request } from './ado.mjs';
 
 const MIN_NODE = 22;
 const INSTALL_NODE = `Install Node ${MIN_NODE} or later from https://nodejs.org (a managed laptop may need your IT team), then type /cadre:setup again.`;
@@ -57,10 +66,43 @@ function checkGh(repo, host) {
   say(`unknown: gh failed: ${r.text.split('\n')[0].slice(0, 200) || `exit ${r.status}`}`, 2);
 }
 
+function checkRemote(url) {
+  if (!url) say('unknown: no remote URL', 2);
+  let found;
+  try {
+    found = parseRemote(url);
+  } catch (e) {
+    say(`unknown: ${e.message}`, 2);
+  }
+  say(found ? `ok ado org=${found.org} repo=${found.repo} project=${found.project}` : 'ok not-ado', 0);
+}
+
+// A read of the work item types of the project proves three things: the host, the project, and the token scope.
+function checkAdo(org, project) {
+  let r;
+  try {
+    r = request('GET', `${projectUrl(org, project)}/_apis/wit/workitemtypes?api-version=7.1`);
+  } catch (e) {
+    say(`unknown: ${e.message}`, 2);
+  }
+  if (isAuthFailure(r.status, r.body)) say(`stop: ADO did not accept the token (HTTP ${r.status}). ${PAT_HINT} Then type /cadre:setup again.`, 1);
+  if (r.status === 404) say(`stop: ADO cannot see the project ${project} in ${org} (HTTP 404). Check the names of the organization and the project, and that the token covers this organization.`, 1);
+  if (r.status === 403) say(`stop: the token has no access to the project ${project} (HTTP 403). Make a token with the scope Work Items (Read) and Code (Read), then type /cadre:setup again.`, 1);
+  if (r.status !== 200) say(`unknown: ADO answered HTTP ${r.status}`, 2);
+  try {
+    if (typeof JSON.parse(r.body) !== 'object') throw new Error('x');
+  } catch {
+    say('unknown: the answer of ADO is not JSON', 2);
+  }
+  say(`ok ado ${org}/${project}`, 0);
+}
+
 const [check, ...rest] = process.argv.slice(2);
 if (check === 'node' && rest.length === 0) checkNode();
+else if (check === 'remote' && rest.length === 1) checkRemote(rest[0]);
+else if (check === 'ado' && rest.length === 2) checkAdo(rest[0], rest[1]);
 else if (check === 'gh' && rest.length >= 1 && rest.length <= 2) checkGh(rest[0], rest[1]);
 else {
-  console.error('usage: node setup-check.mjs node | gh <owner/repo> [host]');
+  console.error('usage: node setup-check.mjs node | gh <owner/repo> [host] | remote <url> | ado <org> <project>');
   process.exit(64);
 }

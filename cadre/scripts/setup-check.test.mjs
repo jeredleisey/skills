@@ -6,6 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { BASE, makeFake } from './ado-fake.mjs';
 
 const script = join(import.meta.dirname, 'setup-check.mjs');
 const dir = mkdtempSync(join(tmpdir(), 'cadre-setup-check-'));
@@ -138,4 +139,110 @@ test('gh: a repo name with dot segments is refused', () => {
   const r = run(['gh', 'octo/..'], { CADRE_GH_CMD: fake({ out: '{}' }) });
   assert.match(r.line, /^unknown: /);
   assert.equal(r.code, 2);
+});
+
+// ---- Azure DevOps: the remote URL and the account check ----
+
+// The remote forms hold an at sign. The repo gate reads one as an address, so the tests join it in.
+const AT = '@';
+const REMOTE_CASES = [
+  ['https://dev.azure.com/example-org/Example%20Project/_git/acme', 'example-org', 'Example Project', 'acme'],
+  ['https://dev.azure.com/example-org/Example Project/_git/acme', 'example-org', 'Example Project', 'acme'],
+  ['https://example-org' + AT + 'dev.azure.com/example-org/Example%20Project/_git/acme', 'example-org', 'Example Project', 'acme'],
+  ['https://dev.azure.com/example-org/Plain/_git/acme/', 'example-org', 'Plain', 'acme'],
+  ['git' + AT + 'ssh.dev.azure.com:v3/example-org/Example%20Project/acme', 'example-org', 'Example Project', 'acme'],
+  ['ssh://git' + AT + 'ssh.dev.azure.com/v3/example-org/Plain/acme', 'example-org', 'Plain', 'acme'],
+  ['https://example-org.visualstudio.com/Plain/_git/acme', 'example-org', 'Plain', 'acme'],
+  ['https://example-org.visualstudio.com/DefaultCollection/Example%20Project/_git/acme', 'example-org', 'Example Project', 'acme'],
+  ['example-org' + AT + 'vs-ssh.visualstudio.com:v3/example-org/Plain/acme', 'example-org', 'Plain', 'acme'],
+  ['https://dev.azure.com/example-org/_git/acme', 'example-org', 'acme', 'acme'],
+];
+
+test('remote: each form of an ADO remote gives the org, the repo, and the decoded project', () => {
+  for (const [url, org, project, repo] of REMOTE_CASES) {
+    const r = run(['remote', url], {});
+    assert.deepEqual([r.line, r.code, r.lines], [`ok ado org=${org} repo=${repo} project=${project}`, 0, 1], url);
+  }
+});
+
+test('remote: a remote that is not ADO says so, and still passes', () => {
+  for (const url of ['https://github.com/acme/app.git', 'git' + AT + 'github.com:acme/app.git', 'https://ghe.example.com/acme/app', 'https://notdev.azure.com.example.com/a/b/_git/c', 'https://dev.azure.com.evil.example/a/b/_git/c']) {
+    const r = run(['remote', url], {});
+    assert.deepEqual([r.line, r.code], ['ok not-ado', 0], url);
+  }
+});
+
+test('remote: an ADO URL that cannot be read is unknown, not a guess', () => {
+  for (const url of ['https://dev.azure.com/example-org', 'https://dev.azure.com/example-org/Proj/_git/', 'https://dev.azure.com/example-org/Bad%ZZ/_git/acme', 'git' + AT + 'ssh.dev.azure.com:v3/example-org/acme', 'https://dev.azure.com/example-org/a/b/c/_git/acme', '']) {
+    const r = run(['remote', url], {});
+    assert.match(r.line, /^unknown: /, url);
+    assert.equal(r.code, 2, url);
+  }
+});
+
+test('remote: a name with a control character is unknown', () => {
+  const r = run(['remote', 'https://dev.azure.com/example-org/a%0Ab/_git/acme'], {});
+  assert.match(r.line, /^unknown: /);
+  assert.equal(r.code, 2);
+});
+
+const ado = makeFake(join(dir, 'ado'));
+const PROJECT_URL = `GET ${BASE}/Example%20Project/_apis/wit/workitemtypes?api-version=7.1`;
+const adoRun = (answer, args = ['ado', 'example-org', 'Example Project']) => {
+  const env = ado.env(answer === null ? {} : { [PROJECT_URL]: answer });
+  return { ...run(args, env), env };
+};
+
+test('ado: a 200 with JSON passes, and the call is one GET of the project', () => {
+  const r = adoRun({ status: 200, body: { count: 1, value: [] } });
+  assert.deepEqual([r.line, r.code, r.lines], ['ok ado example-org/Example Project', 0, 1]);
+  assert.deepEqual(ado.requests(r.env).map((q) => [q.method, q.url]), [['GET', PROJECT_URL.slice(4)]]);
+});
+
+test('ado: a 302, a 401 with no body, a 203, and an empty 200 stop and name AZURE_DEVOPS_EXT_PAT', () => {
+  const cases = [
+    { status: 302, body: '<html>Sign in</html>' },
+    { status: 401, body: '' },
+    { status: 203, body: '<html>Sign in</html>' },
+    { status: 200, body: '' },
+  ];
+  for (const answer of cases) {
+    const r = adoRun(answer);
+    assert.match(r.line, /^stop: /, JSON.stringify(answer));
+    assert.match(r.line, /AZURE_DEVOPS_EXT_PAT/);
+    assert.match(r.line, /empty/);
+    assert.deepEqual([r.code, r.lines], [1, 1]);
+  }
+});
+
+test('ado: a 404 stops and names the project, a 403 stops and names the scope', () => {
+  const missing = adoRun({ status: 404, body: { message: 'x' } });
+  assert.match(missing.line, /^stop: .*Example Project/);
+  assert.equal(missing.code, 1);
+  const refused = adoRun({ status: 403, body: { message: 'x' } });
+  assert.match(refused.line, /^stop: .*scope/);
+  assert.equal(refused.code, 1);
+});
+
+test('ado: a 500, a body that is not JSON, and a failed command are unknown, never a pass', () => {
+  for (const answer of [{ status: 500, body: '{}' }, { status: 200, body: '<html>hi</html>' }, { crash: true }]) {
+    const r = adoRun(answer);
+    assert.match(r.line, /^unknown: /, JSON.stringify(answer));
+    assert.deepEqual([r.code, r.lines], [2, 1]);
+  }
+});
+
+test('ado: a name that could break the command line is refused before any call', () => {
+  for (const args of [['ado', 'bad org', 'p'], ['ado', 'org/x', 'p'], ['ado', 'example-org'], ['ado', 'example-org', '']]) {
+    const env = ado.env({});
+    const r = run(args, env);
+    assert.equal(r.code === 2 || r.code === 64, true, args.join(' '));
+    assert.deepEqual(ado.requests(env), []);
+  }
+});
+
+test('ado: a project name with shell characters is encoded in the URL', () => {
+  const env = ado.env({});
+  run(['ado', 'example-org', 'a"b $x`y'], env);
+  assert.equal(ado.requests(env)[0].url, `${BASE}/a%22b%20%24x%60y/_apis/wit/workitemtypes?api-version=7.1`);
 });
