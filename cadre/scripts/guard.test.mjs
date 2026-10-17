@@ -595,3 +595,24 @@ test('git send-pack and a setting of alias, remote push, or push.default beside 
   ], w);
   passes('push', ['git config user.name x', 'git config alias.co checkout', 'git config --get alias.co', 'git -c core.pager=cat log'], w);
 });
+
+// ---- a tilde expands only at the start of a word (or after : or =), so RUNNER~1 is a plain path ----
+
+test('a tilde inside a word, such as the Windows short name RUNNER~1, is a literal path', () => {
+  const w = world('main');
+  const dir = join(w.repo, '..', 'RUNNER~1', 'other');
+  mkdirSync(dir, { recursive: true });
+  spawnSync('git', ['init', '-q', '-b', 'feature'], { cwd: dir });
+  const path = slash(dir);
+  passes('push', [`git -C ${path} push`, `cd ${path} && git push`, `git --git-dir=${path}/.git push`, `git push origin HEAD~1:topic`], w);
+  const onMain = world('feature');
+  const dirMain = join(onMain.repo, '..', 'RUNNER~1', 'other');
+  mkdirSync(dirMain, { recursive: true });
+  spawnSync('git', ['init', '-q', '-b', 'main'], { cwd: dirMain });
+  asks('push', [`git -C ${slash(dirMain)} push`, `cd ${slash(dirMain)} && git push`], onMain);
+});
+
+test('a tilde at the start of a word still asks', () => {
+  const w = world('feature');
+  asks('push', ['git -C ~/x push', 'git -C ~user/x push', 'cd ~user/x && git push', 'git --git-dir=~/x/.git push', 'git push origin ~x'], w);
+});
