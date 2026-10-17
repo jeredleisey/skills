@@ -10,6 +10,7 @@
 // equal (matchKind Exact, or none) or a prefix (matchKind Prefix).
 // The checks, in this order:
 //   a review is required         a policy of type "Minimum number of reviewers" with a minimum of 1 or more
+//                                (a second gap when each such policy counts the vote of the author, creatorVoteCounts)
 //   build validation             a policy of type Build
 //   comment resolution           a policy of type "Comment requirements"
 //   direct push, force push      ADO blocks both on a branch that has a blocking policy. With none, one gap
@@ -82,7 +83,9 @@ const live = policies.filter(
 const has = (typeId, test = () => true) => live.some((p) => p.type?.id?.toLowerCase() === typeId && test(p));
 
 const gaps = [];
-if (!has(TYPE.reviewers, (p) => Number(p.settings.minimumApproverCount) >= 1)) gaps.push('gap: no blocking policy requires a review');
+const needs = (p) => Number(p.settings.minimumApproverCount) >= 1;
+if (!has(TYPE.reviewers, needs)) gaps.push('gap: no blocking policy requires a review');
+else if (!has(TYPE.reviewers, (p) => needs(p) && p.settings.creatorVoteCounts !== true)) gaps.push("gap: the author's own vote counts toward the minimum of reviewers");
 if (!has(TYPE.build)) gaps.push('gap: no blocking build validation policy');
 if (!has(TYPE.comments)) gaps.push('gap: no blocking policy requires comment resolution');
 if (live.length === 0) {

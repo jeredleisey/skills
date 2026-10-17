@@ -30,7 +30,7 @@ const policy = (typeId, over = {}, settings = {}) => ({
   settings: { scope: [scope()], ...settings },
   ...over,
 });
-const reviewers = (over, settings) => policy(REVIEWERS, over, { minimumApproverCount: 2, ...settings });
+const reviewers = (over, settings) => policy(REVIEWERS, over, { minimumApproverCount: 2, creatorVoteCounts: false, ...settings });
 const build = (over, settings) => policy(BUILD, over, settings);
 const comments = (over, settings) => policy(COMMENTS, over, settings);
 const all = () => [reviewers(), build(), comments()];
@@ -164,4 +164,13 @@ test('usage: the wrong argument count gives exit 64, and a bad org gives unknown
   const r = run({}, ['bad org', 'p', 'r']);
   assert.deepEqual([r.lines.length, r.code], [1, 2]);
   assert.deepEqual(ado.requests(r.env), []);
+});
+
+test('a reviewers policy that counts the vote of the author is a gap, unless another policy does not', () => {
+  const own = (extra) => reviewers({}, { creatorVoteCounts: true, ...extra });
+  assert.deepEqual(withPolicies([own(), build(), comments()]).lines, ["gap: the author's own vote counts toward the minimum of reviewers"]);
+  assert.deepEqual(withPolicies([own(), reviewers(), build(), comments()]).lines, ['ok']);
+  assert.deepEqual(withPolicies([reviewers({}, { creatorVoteCounts: undefined }), build(), comments()]).lines, ['ok']);
+  const none = withPolicies([own({ minimumApproverCount: 0 }), build(), comments()]).lines;
+  assert.deepEqual(none, ['gap: no blocking policy requires a review']);
 });

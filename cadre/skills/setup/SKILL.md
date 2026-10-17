@@ -24,7 +24,7 @@ If the path `${CLAUDE_PLUGIN_ROOT}` shows as empty or literal, use the folder tw
 
 1. Run `git rev-parse --show-toplevel`. Use that folder as the repo root for the rest of setup.
 2. Run `git remote get-url origin`. If there is no remote, end setup. Say that this version needs a GitHub or ADO remote.
-3. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" remote "<url>"`. An `unknown:` line ends setup. The line `ok ado org=<org> repo=<repo> project=<project>` means ADO. The project is the rest of the line, and it can hold a space. The line `ok not-ado` means GitHub.
+3. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" remote "<url>"`. An `unknown:` line ends setup. The line `ok ado-remote {"org":"<org>","repo":"<repo>","project":"<project>"}` means ADO. Read the three names from the JSON: a repo or a project can hold a space. The line `ok not-ado` means GitHub.
 4. GitHub: read the host and `<owner>/<repo>` from the URL. Accept an https URL or an ssh URL such as `git@host:owner/repo.git`. Remove a final `.git`. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" gh <owner>/<repo> [host]`. Add the host only when it is not `github.com`. A `stop:` line names `gh auth switch`. A 404 can mean the wrong account, so never say that the repo does not exist.
 5. ADO: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" ado "<org>" "<project>"`. ADO works through a token in the variable `AZURE_DEVOPS_EXT_PAT`. A `stop:` line names it. An empty variable is the first thing to check, and the check never prints the token. Do not run `az login` as a fix: the token is the way in.
 
@@ -68,7 +68,7 @@ Done when you know which questions to ask.
 
 ### 5. Report the branch policy
 
-GitHub: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-policy.mjs" <owner>/<repo> [host]`. Add the host only when it is not `github.com`. ADO: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-policy-ado.mjs" "<org>" "<project>" "<repo>"`. The script changes nothing.
+GitHub: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-policy.mjs" <owner>/<repo> [host]`. Add the host only when it is not `github.com`. ADO: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-policy-ado.mjs" "<org>" "<project>" "<repo>"`. The script changes nothing. It assumes that a blocking policy on a branch also blocks a direct push and a force push there, as ADO documents for branch policies. It does not read the permission of each user.
 
 Say each line to the human. A `gap:` line names a rule that the tracker does not enforce on the default branch. On ADO, the script cannot read the permission "Bypass policies when pushing". Tell the human to check who holds it. The hooks only slow an agent and stop a slip. The branch policy of the repo is the guard that holds.
 

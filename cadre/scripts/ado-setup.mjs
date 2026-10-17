@@ -7,7 +7,7 @@
 //   root: <project> <warning>  no area matches. Propose the project root, and say that items land there.
 // type output:
 //   ok type: <name>                                         exit 0   the type is enabled and has a state in
-//                                                                    the category Proposed and one in Completed
+//                                                                    each category: Proposed, InProgress, Completed
 //   refuse: <reason>. propose: <type>. <reason>             exit 1   disabled, missing, or without those states
 //   refuse: <reason>. No other enabled type fits.           exit 1
 // The proposal is Task when it is enabled and fits. Else it is the first fitting type of the requirement
@@ -68,7 +68,7 @@ function area() {
 }
 
 function type() {
-  const list = read('the work item types', 'wit/workitemtypes?api-version=7.1').value;
+  const list = read('the work item types', 'wit/workitemtypes?api-version=7.1')?.value;
   if (!Array.isArray(list)) unknown('the work item types answer has no list');
   const byName = new Map(list.filter((t) => typeof t?.name === 'string').map((t) => [t.name.toLowerCase(), t]));
   const hasState = (t, category) => Array.isArray(t.states) && t.states.some((s) => s?.category === category);
@@ -76,7 +76,7 @@ function type() {
   const problem = (t, label) => {
     if (!t) return `${label} is not a work item type of this project`;
     if (t.isDisabled === true) return `${t.name} is disabled in this project`;
-    for (const category of ['Proposed', 'Completed']) if (!hasState(t, category)) return `${t.name} has no state in the category ${category}`;
+    for (const category of ['Proposed', 'InProgress', 'Completed']) if (!hasState(t, category)) return `${t.name} has no state in the category ${category}`;
     return null;
   };
   const chosen = byName.get(name.toLowerCase());
@@ -86,7 +86,7 @@ function type() {
   const fits = (candidate) => candidate.toLowerCase() !== name.toLowerCase() && problem(byName.get(candidate.toLowerCase()), candidate) === null;
   let proposal = fits('Task') ? byName.get('task').name : null;
   if (proposal === null) {
-    const categories = read('the work item type categories', 'wit/workitemtypecategories?api-version=7.1').value;
+    const categories = read('the work item type categories', 'wit/workitemtypecategories?api-version=7.1')?.value;
     if (!Array.isArray(categories)) unknown('the categories answer has no list');
     for (const level of ['Microsoft.RequirementCategory', 'Microsoft.TaskCategory']) {
       const members = categories.find((c) => c?.referenceName === level)?.workItemTypes;

@@ -3,6 +3,7 @@
 // The table is a JSON file named by FAKE_ADO_ROUTES. Its keys are "METHOD url". A value is
 //   { status, body, continuation }  body is an object (sent as JSON) or a string (sent as it is)
 //   { crash: true }                 the command fails with exit 1
+//   [answer, answer, ...]           the nth call of the same key gets the nth answer (the last repeats)
 // A key that is not in the table answers 404. Each request is appended to <table>.log as one JSON line.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -18,7 +19,10 @@ const table = process.env.FAKE_ADO_ROUTES;
 const routes = JSON.parse(readFileSync(table, 'utf8'));
 const body = bodyFile && existsSync(bodyFile) ? readFileSync(bodyFile, 'utf8') : null;
 appendFileSync(table + '.log', JSON.stringify({ method, url, body }) + '\\n');
-const hit = routes[method + ' ' + url];
+const key = method + ' ' + url;
+const earlier = readFileSync(table + '.log', 'utf8').split('\\n').filter(Boolean).filter((l) => { const q = JSON.parse(l); return q.method + ' ' + q.url === key; }).length - 1;
+const entry = routes[key];
+const hit = Array.isArray(entry) ? entry[Math.min(earlier, entry.length - 1)] : entry;
 if (!hit) { process.stdout.write('404\\n{"message":"no such route"}'); process.exit(0); }
 if (hit.crash) { console.error('fake: crash'); process.exit(1); }
 const text = typeof hit.body === 'string' ? hit.body : JSON.stringify(hit.body ?? {});

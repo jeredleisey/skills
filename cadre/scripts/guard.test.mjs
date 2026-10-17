@@ -730,6 +730,7 @@ test('az repos pr update asks for each form of completion and of auto-complete',
     'az repos pr update --id 5 --status abandoned --status completed',
     'az repos pr update --id 5 --stat completed',
     'az repos pr update --id 5 --auto-comp true',
+    'az repos pr update --id 5 --au true',
     'az repos pr update --id 5 -o json --status completed',
     'az repos pr create --title x --auto-complete true',
     'az repos pr create --title x --auto-complete',
@@ -757,6 +758,8 @@ test('az is matched in each wrapper and path form that the guard handles for gh'
     "find . -exec az repos pr update --id 5 --status completed ';'",
     'az \\\nrepos pr update --id 5 \\\n--status completed',
     'echo "az repos pr update --id 5 --status completed" | sh',
+    'echo "az repos pr update --id 5 --au true" | sh',
+    'echo "az repos pr create --title x --auto-complete" | sh',
     'sh <<EOF\naz repos pr update --id 5 --auto-complete\nEOF',
   ]);
 });
@@ -770,6 +773,7 @@ test('az with a variable that the guard cannot read asks when completion or auto
     '$AZ repos pr update --id 5 --status completed',
   ]);
   passes('merge', ['az repos pr update --id 5 --title $T', 'az repos pr show --id $N', '$AZ account show']);
+  asks('merge', ['$AZ repos pr create --title x --auto-complete']);
 });
 
 test('az commands that do not complete a pull request pass', () => {
@@ -809,4 +813,16 @@ test('a personal deny of merge makes az ask even when the charter allows it', ()
   charter(w, 'allow: [merge]\n');
   personal(w, '{"deny": ["merge"]}');
   assertDecision(run(w, 'merge', hook(w, AZ_DONE)), 'ask');
+});
+
+test('the word complete or completed alone does not ask: only an az pull request command with it does', () => {
+  passes('merge', [
+    'echo "$x thought complete"',
+    'echo "the job is completed"',
+    '$X says completed',
+    '$X --auto-complete',
+    'echo "$x completed" | sh',
+    'echo "az account show completed" | sh',
+    'git commit -m "update completed"',
+  ]);
 });
