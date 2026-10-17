@@ -8,6 +8,8 @@ disable-model-invocation: true
 
 Setup teaches cadre how one repo works. It writes the **charter** at `docs/agents/cadre-charter.md` in a pull request, so that the team reviews it like code. Only the human starts setup. This version supports GitHub repos.
 
+If a human did not start this setup in this session, stop. Tell the parent to ask the human to run /cadre:setup.
+
 Never push to the default branch. Never merge the pull request. The human reviews and merges it.
 
 A check script prints one line. A line that starts with `stop:` or `unknown:` ends setup. Say the line to the human and do nothing more.
@@ -16,7 +18,7 @@ A check script prints one line. A line that starts with `stop:` or `unknown:` en
 
 ### 1. Check Node
 
-Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" node`. If the shell says that `node` is not found, stop. Say: install Node 22 or later, then type /cadre:setup again. Done when the line is `ok node <version>`.
+If the path `${CLAUDE_PLUGIN_ROOT}` shows as empty or literal, use the folder two levels above this skill's base directory. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" node`. If the shell says that `node` is not found, stop. Say: install Node 22 or later, then type /cadre:setup again. Done when the line is `ok node <version>`.
 
 ### 2. Find the repo and check the account
 
@@ -31,7 +33,14 @@ Done when the line is `ok gh <owner>/<repo>`.
 
 ### 3. Read the charter that exists
 
-Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" <repo root>`.
+Read the charter from the default branch, so that a feature branch never shows `missing`.
+
+1. Find the default branch: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`.
+2. Run `git fetch origin`.
+3. Make a new empty temporary folder. Run `git show origin/<default branch>:docs/agents/cadre-charter.md`, and write the output to `docs/agents/cadre-charter.md` under that folder. If the command fails, the charter is `missing`.
+4. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" <temporary folder>`.
+
+Then act on the line:
 
 - `missing`: this is a first setup. Ask every question in step 4.
 - `ok`: the charter is current. Show its fields. Ask the human what to change, and ask only about that.
@@ -43,7 +52,7 @@ Done when you know which questions to ask.
 
 ### 4. Ask the questions
 
-Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. Ask one question at a time and wait for each answer.
+Read `AGENTS.md`, `CLAUDE.md`, and the docs first. Ask only about the gaps. The tracker comes from step 2. The tracker and the skill pack go in the body of the charter. Ask one question at a time and wait for each answer.
 
 1. Which skill pack does this repo use? Offer three presets:
    - `mattpocock-skills`. Say that the human types `/mattpocock-skills:setup-matt-pocock-skills` by hand, because that skill is human-only. The two setups stay separate. Cadre never reads or writes the files of that tool.
@@ -61,8 +70,8 @@ Done when each question has an answer, or the human says "none".
 
 ### 5. Write the charter in a pull request
 
-1. Find the default branch: `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`.
-2. Work in a worktree, not in the clone. Run `git worktree add .claude/worktrees/cadre-charter -b cadre-charter <default branch>`. If the branch name exists, add a number to it. Do all edits in that worktree.
+1. Use the default branch and the fetch of step 3.
+2. Work in a worktree, not in the clone. Run `git worktree add .claude/worktrees/cadre-charter -b cadre-charter origin/<default branch>`. If the branch name exists, add a number to it. Do all edits in that worktree.
 3. Write `docs/agents/cadre-charter.md` in the form of [the charter reference](../orchestrate/references/charter.md).
 4. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" --schema`. Put its number in `charter_schema`.
 5. Read `version` in `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`. Put `cadre <version>` in `written_by`.
