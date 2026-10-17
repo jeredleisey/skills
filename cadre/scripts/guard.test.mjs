@@ -471,18 +471,16 @@ test('a charter committed only on the current branch does not count', () => {
   gitIn(w.repo, 'commit', '-q', '-m', 'charter');
   assertDecision(push(w), 'ask');
   gitIn(w.repo, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
-  assertDecision(push(w), 'ask');
-  gitIn(w.repo, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main');
   pass(push(w));
 });
 
-test('the charter comes from origin/<default>, where CADRE_DEFAULT_BRANCH names the default', () => {
+test('the charter comes from origin/<default>, where CADRE_DEFAULT_BRANCH names a default outside the usual names', () => {
   const w = world();
   commitCharter(w, front('guards: off\n'));
-  gitIn(w.repo, 'update-ref', 'refs/remotes/origin/develop', 'HEAD');
+  gitIn(w.repo, 'update-ref', 'refs/remotes/origin/release', 'HEAD');
   gitIn(w.repo, 'update-ref', '-d', 'refs/remotes/origin/main');
   assertDecision(push(w), 'ask');
-  pass(run(w, 'push', hook(w, 'git push origin develop'), { CADRE_DEFAULT_BRANCH: 'develop' }));
+  pass(run(w, 'push', hook(w, 'git push origin release'), { CADRE_DEFAULT_BRANCH: 'release' }));
 });
 
 test('without origin/HEAD the default branch is any of main, master, dev, develop, trunk, and init.defaultBranch', () => {
@@ -615,4 +613,76 @@ test('a tilde inside a word, such as the Windows short name RUNNER~1, is a liter
 test('a tilde at the start of a word still asks', () => {
   const w = world('feature');
   asks('push', ['git -C ~/x push', 'git -C ~user/x push', 'cd ~user/x && git push', 'git --git-dir=~/x/.git push', 'git push origin ~x'], w);
+});
+
+// ---- third review: redirections, the candidate branches of the charter, agent_type, option prefixes ----
+
+test('a redirection is not a refspec: a bare push on main still asks, for both callers', () => {
+  const m = world('main');
+  for (const c of ['git push origin 2>&1', 'git push -u origin 2>&1 | tail -5', 'git push > push.log', 'git push origin >/dev/null', 'git push origin &>/dev/null', 'git push origin &>>log', 'git push 2>>log', 'git push origin >| out', 'git push origin 1>&2', 'git push >&2', 'git push origin main 2>/dev/null', 'git push origin 2> err.log']) {
+    assertDecision(run(m, 'push', hook(m, c)), 'ask');
+    assertDecision(run(m, 'push', hook(m, c, { agent_id: 'a1' })), 'deny');
+  }
+  passes('push', ['git push origin feat 2>&1', 'git push origin feat >/dev/null 2>&1', 'git status 2>&1', 'echo a>b'], m);
+  const f = world('feature');
+  passes('push', ['git push origin 2>&1', 'git push > push.log'], f);
+});
+
+test('a redirection into a shell still counts as input to it', () => {
+  const w = world();
+  asks('push', ['sh < script-text <<EOF\ngit push origin main\nEOF', 'bash <<< "git push origin main" 2>&1'], w);
+});
+
+test('the charter is read from every candidate default branch, and the strictest one wins', () => {
+  const w = world();
+  commitCharter(w, front('guards: on\n'));
+  writeCharter(w, front('guards: off\n'));
+  gitIn(w.repo, 'add', 'docs');
+  gitIn(w.repo, 'commit', '-q', '-m', 'evil');
+  gitIn(w.repo, 'update-ref', 'refs/remotes/origin/evil', 'HEAD');
+  gitIn(w.repo, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/evil');
+  assertDecision(push(w), 'ask');
+  assertDecision(merge(w), 'ask');
+});
+
+test('a candidate branch with no charter, or with guards on, keeps the guards on', () => {
+  const w = world();
+  gitIn(w.repo, 'commit', '-q', '--allow-empty', '-m', 'base');
+  commitCharter(w, front('guards: off\n'));
+  pass(push(w));
+  gitIn(w.repo, 'update-ref', 'refs/remotes/origin/develop', 'HEAD~1');
+  assertDecision(push(w), 'ask');
+  gitIn(w.repo, 'update-ref', '-d', 'refs/remotes/origin/develop');
+  pass(push(w));
+});
+
+test('allow is the intersection over the candidate branches', () => {
+  const w = world();
+  commitCharter(w, front('allow: [merge, push]\n'));
+  gitIn(w.repo, 'update-ref', 'refs/remotes/origin/master', 'HEAD');
+  pass(merge(w));
+  commitCharter(w, front('allow: [push]\n'));
+  assertDecision(merge(w), 'ask');
+});
+
+test('agent_type alone counts as a helper call', () => {
+  const w = world();
+  // Docs: agent_id is set inside a subagent or a teammate. agent_type is set there too, and when the
+  // session runs with --agent. Either field means that the caller is not the plain main session.
+  assertDecision(push(w, { agent_type: 'coder' }), 'deny');
+  assertDecision(run(w, 'merge', hook(w, 'gh pr merge 5', { agent_type: 'coder' })), 'deny');
+  pass(run(w, 'push', hook(w, 'git push origin feature', { agent_type: 'coder' })));
+});
+
+test('git accepts a unique prefix of a long option, and an ambiguous prefix asks', () => {
+  const w = world();
+  asks('push', ['git push --forc origin feat', 'git push --force-w origin feat', 'git push --delet origin feat', 'git push --del origin feat', 'git push --mirr', 'git push --pru origin', 'git push --rep=origin main', 'git push --recurse-submodules=check --all', 'git push --a origin feat', 'git push --re origin feat', 'git push --no- origin feat'], w);
+  passes('push', ['git push --no-verify origin feat', 'git push --dry-run origin feat', 'git push --follow-tags origin feat', 'git push --set-upstream origin feat', 'git push --tags'], w);
+});
+
+test('-4 and -6 are flags, and --help passes', () => {
+  const m = world('main');
+  asks('push', ['git push -4 origin', 'git push -6 origin'], m);
+  passes('push', ['git push --help', 'git push -h'], m);
+  passes('merge', ['gh pr merge --help', 'gh pr merge -h'], m);
 });
