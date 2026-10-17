@@ -10,8 +10,8 @@ Front matter holds only what a script or a hook reads.
 | --- | --- |
 | `charter_schema` | An integer. It rises only when an old charter cannot work. |
 | `written_by` | `cadre <version>`, the version that wrote the file. |
-| `tracker` | `kind`, `host`, and `repo`. |
-| `skill_pack` | `mattpocock-skills`, `superpowers`, or `none`. |
+
+A ticket that adds a script or a hook that reads another field adds that field here.
 
 ## The body
 
@@ -21,14 +21,15 @@ The body is for agents. Say only what an agent cannot derive from the repo.
 ---
 charter_schema: 1
 written_by: cadre <version>
-tracker:
-  kind: github
-  host: github.com
-  repo: <owner>/<repo>
-skill_pack: <preset>
 ---
 
 # Charter
+
+## Tracker
+<kind, for example GitHub; host; owner and repo>
+
+## Skill pack
+<`mattpocock-skills`, `superpowers`, or `none`>
 
 ## Owners
 | Path | Owner | Note |

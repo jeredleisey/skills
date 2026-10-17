@@ -54,7 +54,7 @@ test('ok: the charter was written by a newer cadre with the same schema', () => 
 
 test('ok: nested fields, lists, comments, and CRLF line ends do not disturb the check', () => {
   const t = setup('0.2.0');
-  const extra = 'tracker:\n  kind: github\n  repo: o/r\n# a comment\nallow:\n- merge\nskill_pack: none\n';
+  const extra = 'nested:\n  kind: x\n  repo: o/r\n# a comment\nlist:\n- one\nflat: none\n';
   charter(t.repo, front(1, '0.2.0', extra).replace(/\n/g, '\r\n'));
   assert.equal(run(t, [t.repo]).line, 'ok');
 });
@@ -160,4 +160,30 @@ test('--schema prints the plugin schema and nothing else', () => {
   const r = run(t, ['--schema']);
   assert.deepEqual([r.line, r.code, r.lines], ['1', 0, 1]);
   assert.equal(run(t, ['--schema'], { CADRE_SCHEMA: '3' }).line, '3');
+});
+
+test('ok: a byte order mark before the front matter is skipped', () => {
+  const t = setup('0.2.0');
+  charter(t.repo, '\uFEFF' + front(1, '0.2.0'));
+  assert.equal(run(t, [t.repo]).line, 'ok');
+});
+
+test('ok: quoted values are read', () => {
+  const t = setup('0.2.0');
+  charter(t.repo, '---\ncharter_schema: "1"\nwritten_by: \'cadre 0.2.0\'\n---\n');
+  assert.equal(run(t, [t.repo]).line, 'ok');
+});
+
+test('unknown, never ok: written_by is repeated', () => {
+  const t = setup('0.2.0');
+  charter(t.repo, front(1, '0.2.0', 'written_by: cadre 0.1.0\n'));
+  const r = run(t, [t.repo]);
+  assert.match(r.line, /^unknown: /);
+  assert.equal(r.code, 2);
+});
+
+test('ok: a Windows-style path argument works', { skip: process.platform !== 'win32' }, () => {
+  const t = setup('0.2.0');
+  charter(t.repo, front(1, '0.2.0'));
+  assert.equal(run(t, [t.repo.replace(/\//g, '\\')]).line, 'ok');
 });

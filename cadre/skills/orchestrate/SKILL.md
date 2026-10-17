@@ -16,14 +16,15 @@ Two kinds of step need care:
 
 ### 0. Start
 
-First, in the repo root, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs"`. Act on its one line:
+First, in the repo root, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs"`. If the path shows as an empty or literal `${CLAUDE_PLUGIN_ROOT}`, use the folder two levels above this skill's base directory. Act on its one line:
 
 - `ok`: continue.
-- `older-cadre`: continue. Say "A newer cadre has new options. Type /cadre:setup to see them."
+- `older-cadre`: continue. Say "cadre <version> has new options. Type /cadre:setup to see them." Take the version from `.claude-plugin/plugin.json` of the plugin.
 - `missing`: stop. Say "This repo has no charter. Type /cadre:setup, then ask me again."
 - `stale <old> <new>`: stop. Say "The charter is older than this cadre. Type /cadre:setup, then ask me again."
 - `plugin-too-old`: stop. Say "The charter is newer than this cadre. Update cadre, then ask me again."
-- `unknown: <reason>`: stop. Say the reason.
+- `unknown: <reason>`: stop. Say the reason and "Fix the charter file or type /cadre:setup, then try again."
+- No line, or any line other than these six: stop. Tell the human that the charter check failed, and show the output.
 
 Next, each orchestrator has a name and a handoff note. The notes of a project form its **roster**. Start in one of three ways, as [references/roster.md](references/roster.md) tells:
 
