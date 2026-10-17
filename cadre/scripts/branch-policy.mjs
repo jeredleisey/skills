@@ -2,7 +2,7 @@
 // Usage: node branch-policy.mjs <owner/repo> [host]      (the default host is github.com)
 // Output and exit code:
 //   gap: <what is missing>   one line for each gap, then exit 0
-//   ok                       exit 0   no gap: rules or protection cover all four checks
+//   ok                       exit 0   no gap: rules or protection cover all five checks
 //   unknown: <reason>        exit 2   the script cannot read the policy. This is never ok.
 // The five checks, each covered by a ruleset rule or by classic branch protection:
 //   a pull request is required, a review is required, force push is blocked, delete is blocked,
