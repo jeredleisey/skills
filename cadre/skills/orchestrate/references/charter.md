@@ -17,7 +17,7 @@ A ticket that adds a script or a hook that reads another field adds that field h
 
 ## Guards
 
-The guards are `push` and `merge`. A hook reads `guards` and `allow` from the charter on `origin/<default branch>`, never from the working tree. They pass the orchestrator only. A helper is always denied. A missing or unreadable charter counts as guards on.
+The guards are `push` and `merge`. A hook reads `guards` and `allow` from the charter on `origin/<default branch>`, never from the working tree. They pass the orchestrator only. A helper is always denied. A missing or unreadable charter counts as guards on. The hooks stop a slip. The branch policy of the repo is the guard that holds, and `/cadre:setup` reports its gaps and what the hooks miss.
 
 A personal file `guards.json` in `$CADRE_HOME`, or `~/.cadre`, can only add: `{"guards": "on"}` or `{"deny": ["merge"]}`. It never turns a guard off.
 
