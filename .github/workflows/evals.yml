@@ -1,0 +1,24 @@
+name: evals
+
+# Manual only. The evals call a model and cost money. Run them before a release tag.
+# Never add pull_request or push here. A test in tools/run-evals.test.mjs checks this.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --global @anthropic-ai/claude-code
+      # The cases grant Bash. Claude Code runs it in a sandbox that needs these two packages.
+      - run: sudo apt-get install -y bubblewrap socat
+      - run: node tools/run-evals.mjs
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
