@@ -83,7 +83,7 @@ test('notes pass through', () => {
 });
 
 test('a file with CRLF line ends and a BOM is read', () => {
-  const text = '﻿{\r\n  "preset_schema": 1,\r\n  "answers": {"tracker": "ghe"}\r\n}\r\n';
+  const text = '\uFEFF{\r\n  "preset_schema": 1,\r\n  "answers": {"tracker": "ghe"}\r\n}\r\n';
   const r = run(listing([plugin('crlf@example-org', text)]));
   assert.equal(r.code, 0);
   assert.deepEqual(JSON.parse(r.line).presets[0].answers, { tracker: 'ghe' });
