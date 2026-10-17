@@ -1,8 +1,8 @@
 # Presets
 
-A preset is a file of default answers that a plugin ships. An org admin can ship one in any plugin. The file is `cadre-presets.json` at the root of that plugin. Setup finds it with `scripts/preset-discover.mjs`.
+A preset is a file of default answers that a plugin ships. An org admin can ship one in any plugin. The file is `cadre-presets.json` at the root of that plugin. Setup finds it with `scripts/preset-discover.mjs <repo root>` in the plugin root. A plugin enabled for one project counts only in that project. A user-wide plugin counts everywhere.
 
-A preset is a default. It is never a lock. The human can change every answer.
+A preset is a default. It is never a lock. The human can change every answer. A preset never overrides an answer that the charter holds. It never lowers a branch policy or a guard, and it never sets a secret.
 
 ## The file
 
@@ -22,7 +22,7 @@ A preset is a default. It is never a lock. The human can change every answer.
 | `defaults` | The default of a question that setup still asks. |
 | `notes` | One line for a key, shown with that key. |
 
-Each of the last three is optional, and each is an object. A value can be any JSON value except `null`.
+Each of the last three is optional, and each is an object. A value in `answers` or `defaults` can be any JSON value except `null`. A value in `notes` is a string.
 
 ## The question keys
 
