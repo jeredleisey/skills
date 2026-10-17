@@ -14,9 +14,11 @@
 // child output before it prints.
 //
 // Variables, for tests:
+//   CADRE_TEST=1         lets the two variables below take effect. Without it, they are ignored.
 //   CADRE_EVAL_KEY_CMD   a shell command that prints the key. Default: the `security` command below.
 //   CADRE_EVAL_CMD       a JSON array, the eval command. Default: ["claude","plugin","eval"].
 //   CADRE_EVAL_REPORT    the path of the JSON report. Default: a file in a new temp folder.
+//   CADRE_EVAL_KEEP=1    keep each run folder and its trace. A kept folder may hold secrets: delete it.
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -43,11 +45,15 @@ const CONFIG = {
 };
 
 const fail = (reason, code = 2) => ({ code, reason });
+const testMode = (env) => env.CADRE_TEST === '1' || env.NODE_ENV === 'test';
+// Every text that the runner prints goes through mask, so the key never shows.
+let secret = '';
+const mask = (text) => (secret ? String(text ?? '').split(secret).join('***') : String(text ?? ''));
 
 // Return { key } or { code, reason }.
 function readKey(env) {
   if (env.ANTHROPIC_API_KEY) return { key: env.ANTHROPIC_API_KEY };
-  const cmd = env.CADRE_EVAL_KEY_CMD || (process.platform === 'darwin' ? CONFIG.keychainCmd : '');
+  const cmd = (testMode(env) && env.CADRE_EVAL_KEY_CMD) || (process.platform === 'darwin' ? CONFIG.keychainCmd : '');
   if (!cmd) return fail('no API key: set ANTHROPIC_API_KEY (the keychain is read on macOS only)');
   const r = spawnSync(cmd, { shell: true, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   if (r.error || r.status !== 0) return fail(`cannot read the API key: the key command failed (exit ${r.status ?? 'none'})`);
@@ -56,7 +62,7 @@ function readKey(env) {
 }
 
 function evalCommand(env) {
-  if (!env.CADRE_EVAL_CMD) return ['claude', 'plugin', 'eval'];
+  if (!testMode(env) || !env.CADRE_EVAL_CMD) return ['claude', 'plugin', 'eval'];
   try {
     const cmd = JSON.parse(env.CADRE_EVAL_CMD);
     if (Array.isArray(cmd) && cmd.length > 0 && cmd.every((x) => typeof x === 'string')) return cmd;
@@ -65,7 +71,7 @@ function evalCommand(env) {
 }
 
 // The arguments hold no secret. The target comes first: --allow-tools and --json read what follows.
-function evalArgs(reportPath) {
+function evalArgs(reportPath, keep) {
   return [
     CONFIG.pluginDir,
     '--trust-plugin',
@@ -77,8 +83,8 @@ function evalArgs(reportPath) {
     '--model', CONFIG.agentModel,
     '--judge-model', CONFIG.judgeModel,
     '--no-publish',
-    '--keep-temp', // keep each run sandbox, with its trace.jsonl, for review
     '--allow-tools', 'Bash',
+    ...(keep ? ['--keep-temp'] : []),
     '--json', reportPath,
   ];
 }
@@ -116,8 +122,9 @@ function judge(report) {
     const runs = c.arms?.with ?? [];
     const passed = runs.filter(runPassed).length;
     const safety = CONFIG.safety.includes(name);
-    const bad = safety && (runs.length === 0 || passed < runs.length);
-    if (bad) problems.push(`safety case ${name}: ${passed} of ${runs.length} runs passed, all must`);
+    if (runs.length !== CONFIG.runs) problems.push(`the case ${name} has ${runs.length} runs, expected ${CONFIG.runs}`);
+    const bad = safety && (runs.length !== CONFIG.runs || passed < runs.length);
+    if (bad) problems.push(`safety case ${name}: ${passed} of ${runs.length} runs passed, all ${CONFIG.runs} must`);
     lines.push(`${bad ? 'FAIL' : 'ok  '}  ${name}  score ${caseScore(c).toFixed(2)}  runs ${passed}/${runs.length}${safety ? '  safety' : ''}`);
   }
   const overall = report.aggregates?.overallScore;
@@ -132,18 +139,18 @@ function main() {
   if (!cmd) return fail('CADRE_EVAL_CMD is not a JSON array of strings');
   const k = readKey(env);
   if (k.reason) return k;
+  secret = k.key;
 
   const dir = mkdtempSync(join(tmpdir(), 'cadre-evals-'));
   try {
     const reportPath = env.CADRE_EVAL_REPORT || join(dir, 'report.json');
-    const r = spawnSync(cmd[0], [...cmd.slice(1), ...evalArgs(reportPath)], {
+    const r = spawnSync(cmd[0], [...cmd.slice(1), ...evalArgs(reportPath, env.CADRE_EVAL_KEEP === '1')], {
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
       env: { ...env, ANTHROPIC_API_KEY: k.key },
     });
-    const show = (text) => (text ?? '').split(k.key).join('***');
-    process.stdout.write(show(r.stdout));
-    process.stderr.write(show(r.stderr));
+    process.stdout.write(mask(r.stdout));
+    process.stderr.write(mask(r.stderr));
     if (r.error) return fail(`cannot start the eval command: ${r.error.code || r.error.message}`);
 
     let report = null;
@@ -160,7 +167,7 @@ function main() {
     if (readProblem) return fail(readProblem);
 
     const { lines, problems, overall } = judge(report);
-    for (const l of lines) console.log(l);
+    for (const l of lines) console.log(mask(l));
     const cost = typeof report.costUsd === 'number' ? `$${report.costUsd.toFixed(2)}` : 'unknown';
     console.log(`overall ${typeof overall === 'number' ? overall.toFixed(2) : 'none'}, threshold ${CONFIG.threshold}`);
     console.log(`total cost ${cost}`);
@@ -174,5 +181,5 @@ function main() {
 }
 
 const result = main();
-if (result.reason) console.error(`${result.code === 1 ? 'FAIL: ' : 'error: '}${result.reason}`);
+if (result.reason) console.error(mask(`${result.code === 1 ? 'FAIL: ' : 'error: '}${result.reason}`));
 process.exit(result.code);
