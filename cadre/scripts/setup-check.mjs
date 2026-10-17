@@ -30,7 +30,8 @@ const missing = (r) => r.status === 127 || /not found|not recognized|ENOENT|cann
 
 function checkNode() {
   const r = exec(process.env.CADRE_NODE_CMD || 'node --version');
-  if (!r.ok) say(`stop: Node is not installed or not on PATH. ${INSTALL_NODE}`, 1);
+  if (!r.ok && missing(r)) say(`stop: Node is not installed or not on PATH. ${INSTALL_NODE}`, 1);
+  if (!r.ok) say(`unknown: the Node version command failed: ${r.text.split('\n')[0].slice(0, 200) || `exit ${r.status}`}`, 2);
   const m = /^v(\d+)\.\d+\.\d+/.exec(r.text);
   if (!m) say('unknown: the Node version output is not a version', 2);
   if (Number(m[1]) < MIN_NODE) say(`stop: Node ${m[1]} is too old. ${INSTALL_NODE}`, 1);
@@ -38,8 +39,8 @@ function checkNode() {
 }
 
 function checkGh(repo, host) {
-  if (!/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(repo ?? '')) say('unknown: the repo is not <owner>/<repo>', 2);
-  if (host !== undefined && !/^[A-Za-z0-9.-]+$/.test(host)) say('unknown: the host is not a host name', 2);
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(repo ?? '')) say('unknown: the repo is not <owner>/<repo>', 2);
+  if (host !== undefined && !/^[A-Za-z0-9][A-Za-z0-9.-]*$/.test(host)) say('unknown: the host is not a host name', 2);
   const args = ['api', ...(host ? ['--hostname', host] : []), `repos/${repo}`];
   const r = exec(`${process.env.CADRE_GH_CMD || 'gh'} ${args.join(' ')}`);
   if (r.ok) say(`ok gh ${repo}`, 0);
@@ -48,6 +49,9 @@ function checkGh(repo, host) {
   }
   if (/HTTP 401/.test(r.text)) {
     say(`stop: gh is not signed in for ${repo} (HTTP 401). Type "gh auth switch" to pick an account, or "gh auth login", then type /cadre:setup again.`, 1);
+  }
+  if (/gh auth login|not logged in/i.test(r.text)) {
+    say('stop: gh is not signed in. Type "gh auth login", or "gh auth switch" to pick another account, then type /cadre:setup again.', 1);
   }
   if (missing(r)) say('stop: gh is not installed or not on PATH. Install the GitHub CLI from https://cli.github.com, then type /cadre:setup again.', 1);
   say(`unknown: gh failed: ${r.text.split('\n')[0].slice(0, 200) || `exit ${r.status}`}`, 2);

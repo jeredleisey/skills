@@ -1,5 +1,6 @@
 // Check the charter of a repo against this plugin. Print one line.
 // Usage: node charter-check.mjs [repo-root]      (the default root is the current folder)
+//        node charter-check.mjs --schema         (print the plugin schema, exit 0)
 // Output and exit code:
 //   ok                       exit 0   same schema, and the charter is not older than the plugin
 //   older-cadre              exit 0   same schema, written by an older cadre: continue with a note
@@ -12,12 +13,13 @@
 // Any other front matter is skipped. The parser is strict about the lines at the top level.
 // The plugin version comes from .claude-plugin/plugin.json of the plugin that holds this script.
 // The plugin schema is the constant below. Raise it only when an old charter cannot work.
-// A test can set CADRE_SCHEMA to a positive integer to replace the constant.
+// Only a test sets CADRE_SCHEMA, to a positive integer, to replace the constant.
 import { readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const PLUGIN_SCHEMA = 1;
 const CHARTER = 'docs/agents/cadre-charter.md';
+const POSITIVE_INT = /^[1-9][0-9]*$/;
 const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?$/;
 
 function say(line, code) {
@@ -74,14 +76,15 @@ function readPluginVersion() {
   return p;
 }
 
-const root = resolve(process.argv[2] ?? '.');
-const file = join(root, ...CHARTER.split('/'));
-
 let schema = PLUGIN_SCHEMA;
 if (process.env.CADRE_SCHEMA !== undefined) {
-  if (!/^[1-9][0-9]*$/.test(process.env.CADRE_SCHEMA)) unknown('CADRE_SCHEMA is not a positive integer');
+  if (!POSITIVE_INT.test(process.env.CADRE_SCHEMA)) unknown('CADRE_SCHEMA is not a positive integer');
   schema = Number(process.env.CADRE_SCHEMA);
 }
+if (process.argv[2] === '--schema') say(String(schema), 0);
+
+const root = resolve(process.argv[2] ?? '.');
+const file = join(root, ...CHARTER.split('/'));
 
 try {
   if (!statSync(root).isDirectory()) unknown(`${root} is not a folder`);
@@ -104,7 +107,7 @@ try {
   unknown(`${CHARTER}: ${e.message}`);
 }
 
-if (!/^[1-9][0-9]*$/.test(fields.charter_schema)) unknown(`${CHARTER}: charter_schema is not a positive integer`);
+if (!POSITIVE_INT.test(fields.charter_schema)) unknown(`${CHARTER}: charter_schema is not a positive integer`);
 const written = /^cadre (\S+)$/.exec(fields.written_by);
 const writtenParts = written ? parts(written[1]) : null;
 if (!writtenParts) unknown(`${CHARTER}: written_by is not "cadre <version>"`);

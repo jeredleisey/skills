@@ -16,14 +16,14 @@ Two kinds of step need care:
 
 ### 0. Start
 
-First, in the repo root, run the charter check: `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs"`. It prints one line. Act on that line:
+First, in the repo root, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs"`. Act on its one line:
 
 - `ok`: continue.
-- `older-cadre`: continue, and say "A newer cadre has new options. Type `/cadre:setup` to see them."
-- `missing`: stop and say "This repo has no charter. Type `/cadre:setup`, then ask me again."
-- `stale <old> <new>`: stop and say "The charter is older than this cadre. Type `/cadre:setup`, then ask me again."
-- `plugin-too-old`: stop and say "The charter is newer than this cadre. Update cadre, then ask me again."
-- `unknown: <reason>`: stop and say the reason. Never continue.
+- `older-cadre`: continue. Say "A newer cadre has new options. Type /cadre:setup to see them."
+- `missing`: stop. Say "This repo has no charter. Type /cadre:setup, then ask me again."
+- `stale <old> <new>`: stop. Say "The charter is older than this cadre. Type /cadre:setup, then ask me again."
+- `plugin-too-old`: stop. Say "The charter is newer than this cadre. Update cadre, then ask me again."
+- `unknown: <reason>`: stop. Say the reason.
 
 Next, each orchestrator has a name and a handoff note. The notes of a project form its **roster**. Start in one of three ways, as [references/roster.md](references/roster.md) tells:
 
@@ -31,7 +31,7 @@ Next, each orchestrator has a name and a handoff note. The notes of a project fo
 - **Resume:** the human says "resume as <name>", or you start after a compaction. Resume only an orchestrator whose note exists, and only when no other live session holds it, as the checks in the roster read. After a compaction, this conversation already is that orchestrator: skip the check. If the note does not exist, show the roster and ask. Never take the name or the ledger of another orchestrator.
 - **New:** the human asks for a new orchestrator. Give it a free name, a purpose, and a note with an empty ledger.
 
-Done when you are one orchestrator with its own note, and the resume steps in [references/handoff.md](references/handoff.md) are done for a resume.
+Done when the check line is `ok` or `older-cadre`, you are one orchestrator with its own note, and the resume steps in [references/handoff.md](references/handoff.md) are done for a resume.
 
 ### 1. Load the charter
 
