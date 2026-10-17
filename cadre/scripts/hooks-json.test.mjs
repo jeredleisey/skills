@@ -17,7 +17,7 @@ function handlers() {
 }
 
 test('hooks.json parses and has one PreToolUse handler for each guard', () => {
-  const guards = handlers().map((h) => /guard\.mjs"? (\w+)$/.exec(h.command)?.[1]);
+  const guards = handlers().map((h) => h.args?.[1]);
   assert.deepEqual(guards.sort(), ['merge', 'push']);
 });
 
@@ -25,16 +25,22 @@ test('each handler blocks on failure and on a timeout, and has an if filter that
   for (const h of handlers()) {
     assert.equal(h.type, 'command');
     assert.equal(h.onFailure, 'block');
+    // Docs state case-insensitive matching for PowerShell and WebFetch rules, not for Bash. One lowercase
+    // entry is kept. The script lowercases the command word and strips .exe itself.
     assert.match(h.if, /^Bash\(\*(git|gh)\*\)$/);
     // Docs: a hook that times out counts as a failure, and onFailure block then blocks the call.
     assert.equal(h.timeout, 10);
   }
 });
 
-test('each command runs an existing script of the plugin through node', () => {
+test('each command runs an existing script of the plugin through node, in exec form', () => {
+  // Docs: exec form (command plus args) spawns node with no shell, so it works on Windows and macOS.
   for (const h of handlers()) {
-    const m = /^node "\$\{CLAUDE_PLUGIN_ROOT\}\/([^"]+)" (push|merge)$/.exec(h.command);
-    assert.ok(m, `command form: ${h.command}`);
+    assert.equal(h.command, 'node');
+    assert.equal(h.args.length, 2);
+    const m = /^\${CLAUDE_PLUGIN_ROOT}\/(.+)$/.exec(h.args[0]);
+    assert.ok(m, `script argument: ${h.args[0]}`);
+    assert.ok(['push', 'merge'].includes(h.args[1]));
     assert.ok(existsSync(join(plugin, ...m[1].split('/'))), `${m[1]} exists`);
   }
 });

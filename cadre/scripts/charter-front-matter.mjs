@@ -14,7 +14,7 @@ function unquote(value) {
 }
 
 export function parseFrontMatter(text, names) {
-  const lines = text.replace(/^﻿/, '').split(/\r?\n/);
+  const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/);
   if (lines[0] !== '---') throw new Error('the front matter does not start on line 1');
   const end = lines.indexOf('---', 1);
   if (end === -1) throw new Error('the front matter has no closing ---');

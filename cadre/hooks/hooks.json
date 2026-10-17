@@ -7,14 +7,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/guard.mjs\" push",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/guard.mjs", "push"],
             "if": "Bash(*git*)",
             "onFailure": "block",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/guard.mjs\" merge",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/guard.mjs", "merge"],
             "if": "Bash(*gh*)",
             "onFailure": "block",
             "timeout": 10

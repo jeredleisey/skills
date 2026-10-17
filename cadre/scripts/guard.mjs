@@ -27,6 +27,7 @@ import { parseFrontMatter } from './charter-front-matter.mjs';
 const GUARDS = ['push', 'merge'];
 const CHARTER = 'docs/agents/cadre-charter.md';
 const FALLBACK = ['main', 'master', 'dev', 'develop', 'trunk'];
+const HAS_VARIABLE = /[$`]/;
 const SPECIAL = /[$*?[~`{]/;
 
 // ---- the shell scanner: split a command line into commands, each a list of words ----
@@ -40,9 +41,10 @@ function closeParen(text, from) {
   return text.length;
 }
 
-// Push each command of `text` onto `out`. Text in single quotes is data. A $( ) span or a pair of
+// Push each command of `text` onto `out`. `state.unbalanced` becomes true at a quote with no end.
+// Text in single quotes is data. A $( ) span or a pair of
 // backticks is a command of its own, also inside double quotes. A comment is data.
-function scan(text, out) {
+function scan(text, out, state) {
   let words = [];
   let cur = null;
   const endWord = () => {
@@ -58,13 +60,14 @@ function scan(text, out) {
   const nested = (i) => {
     if (text.startsWith('$(', i)) {
       const end = closeParen(text, i + 2);
-      scan(text.slice(i + 2, end), out);
+      scan(text.slice(i + 2, end), out, state);
       return end + 1;
     }
     if (text[i] === '`') {
       const end = text.indexOf('`', i + 1);
       const stop = end === -1 ? text.length : end;
-      scan(text.slice(i + 1, stop), out);
+      if (end === -1) state.unbalanced = true;
+      scan(text.slice(i + 1, stop), out, state);
       return stop + 1;
     }
     return -1;
@@ -78,6 +81,7 @@ function scan(text, out) {
       i = after;
     } else if (c === "'") {
       const end = text.indexOf("'", i + 1);
+      if (end === -1) state.unbalanced = true;
       const stop = end === -1 ? text.length : end;
       cur = (cur ?? '') + text.slice(i + 1, stop);
       i = stop + 1;
@@ -94,6 +98,7 @@ function scan(text, out) {
           i += 2;
         } else cur += text[i++];
       }
+      if (i >= text.length) state.unbalanced = true;
       i++;
     } else if (c === '\\') {
       cur = (cur ?? '') + (text[i + 1] ?? '');
@@ -112,6 +117,49 @@ function scan(text, out) {
     }
   }
   endCommand();
+}
+
+// Cut each heredoc body out of the text. A body is data, not shell text. Return the kept text, the
+// bodies, and `unterminated`: the text before the body of a heredoc that has no end tag, else null.
+function stripHeredocs(text) {
+  const lines = text.split('\n');
+  const kept = [];
+  const bodies = [];
+  let unterminated = null;
+  let quote = null;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    kept.push(line);
+    const tags = [];
+    for (let k = 0; k < line.length; k++) {
+      const c = line[k];
+      if (quote === null && c === '\\') k++;
+      else if (quote === '"' && c === '\\') k++;
+      else if (quote === null && (c === "'" || c === '"')) quote = c;
+      else if (quote === c) quote = null;
+      else if (quote === null && c === '<' && line[k + 1] === '<' && line[k + 2] !== '<' && line[k - 1] !== '<') {
+        const m = /^(-?)[ \t]*(?:'([^']*)'|"([^"]*)"|\\?([A-Za-z_0-9]+))/.exec(line.slice(k + 2));
+        if (m) tags.push({ dash: m[1] === '-', tag: m[2] ?? m[3] ?? m[4] });
+      }
+    }
+    for (const { dash, tag } of tags) {
+      const body = [];
+      let j = i + 1;
+      for (; j < lines.length; j++) {
+        const l = lines[j].replace(/\r$/, '');
+        if ((dash ? l.replace(/^\t+/, '') : l) === tag) break;
+        body.push(lines[j]);
+      }
+      bodies.push(body.join('\n'));
+      if (j >= lines.length) {
+        unterminated = kept.join('\n');
+        i = lines.length;
+        break;
+      }
+      i = j;
+    }
+  }
+  return { text: kept.join('\n'), bodies, unterminated };
 }
 
 const SHELLS = new Set(['bash', 'sh', 'zsh', 'dash', 'ksh']);
@@ -208,13 +256,18 @@ const FIND_EXEC = new Set(['-exec', '-execdir', '-ok', '-okdir']);
 // `find -exec` are opened, so that the command inside is seen. An entry with args[0] of `?` holds
 // the words of a command that the guard cannot read.
 function commandsOf(text, dir, depth = 0) {
+  if (depth > 4) throw new Error('nesting of bash -c, sh -c, eval, or ssh is deeper than 4 levels');
   const raw = [];
-  scan(text.replace(/\\\r?\n/g, ''), raw);
-  if (depth > 5) return [{ args: ['?', ...tokensOf(raw.flat())], dir }];
+  const state = { unbalanced: false };
+  const doc = stripHeredocs(text.replace(/\\\r?\n/g, ''));
+  scan(doc.text, raw, state);
   const out = [];
+  if (doc.unterminated !== null) out.push({ args: ['?', ...tokensOf([doc.unterminated])], dir });
+  if (state.unbalanced) out.push({ args: ['?', ...tokensOf([doc.text])], dir });
   let feeds = false;
   for (let words of raw) {
     let unreadable = false;
+    let viaXargs = false;
     for (;;) {
       if (words[0] === undefined) break;
       if (KEYWORDS.has(words[0]) || /^[A-Za-z_][A-Za-z0-9_]*=/.test(words[0])) {
@@ -224,6 +277,7 @@ function commandsOf(text, dir, depth = 0) {
       const wrapper = norm(words[0]);
       if (!Object.hasOwn(WRAPPERS, wrapper)) break;
       const rest = unwrap(wrapper, words.slice(1));
+      viaXargs ||= wrapper === 'xargs';
       if (rest === null) {
         unreadable = true;
         break;
@@ -242,6 +296,13 @@ function commandsOf(text, dir, depth = 0) {
     if (words.length === 0) continue;
     const name = norm(words[0]);
     const args = [name, ...words.slice(1)];
+    // xargs appends arguments that the guard cannot see, so it asks for a push or a merge.
+    if (viaXargs && name === 'git' && args.includes('push')) out.push({ args: ['!'], guard: 'push', always: true, text });
+    if (viaXargs && name === 'gh' && args.includes('pr') && args.includes('merge')) out.push({ args: ['!'], guard: 'merge', always: true, text });
+    if (HAS_VARIABLE.test(words[0])) {
+      out.push({ args: ['!'], guard: 'both', always: false, text });
+      continue;
+    }
     if (name === 'cd' || name === 'pushd' || name === 'popd') {
       dir = afterCd(dir, args, text);
       continue;
@@ -250,7 +311,10 @@ function commandsOf(text, dir, depth = 0) {
       const c = args.findIndex((a, i) => i > 0 && /^-[a-z]*c$/.test(a));
       if (c !== -1 && args[c + 1] !== undefined) out.push(...commandsOf(args[c + 1], dir, depth + 1));
       else if (isBareShell(args)) feeds = true;
-    } else if (name === 'eval') out.push(...commandsOf(args.slice(1).join(' '), dir, depth + 1));
+    } else if (name === 'eval') {
+      if (args.slice(1).some((a) => HAS_VARIABLE.test(a))) out.push({ args: ['!'], guard: 'both', always: true, text });
+      out.push(...commandsOf(args.slice(1).join(' '), dir, depth + 1));
+    }
     else if (name === 'find') {
       args.forEach((a, i) => {
         if (!FIND_EXEC.has(a)) return;
@@ -259,9 +323,9 @@ function commandsOf(text, dir, depth = 0) {
         out.push(...commandsOf(args.slice(i + 1, end).map(quote).join(' '), dir, depth + 1));
       });
     }
-    out.push({ args, dir });
+    out.push({ args, dir, text });
   }
-  if (feeds) out.push({ args: ['?', ...tokensOf(raw.flat())], dir });
+  if (feeds) out.push({ args: ['?', ...tokensOf([...raw.flat(), ...doc.bodies])], dir });
   return out;
 }
 
@@ -285,9 +349,12 @@ function knownDefault(repo, remote) {
 }
 
 function defaultBranches(repo, remote) {
-  const known = knownDefault(repo, remote);
-  if (known) return new Set([known]);
+  // The usual names always count, so a moved origin/HEAD cannot lift the guard.
   const names = new Set(FALLBACK);
+  for (const r of [remote, 'origin']) {
+    const known = knownDefault(repo, r);
+    if (known) names.add(known);
+  }
   if (repo.cwd === null) return names;
   const init = git(['config', 'init.defaultBranch'], repo);
   if (init) names.add(init);
@@ -304,10 +371,17 @@ const GIT_VALUE_OPTIONS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--na
 const PUSH_VALUE_OPTIONS = new Set(['--push-option', '--receive-pack', '--exec']);
 const UNREADABLE = 'a push with a target that the guard cannot read';
 
+// A git setting that can turn another command into a push, or change where a push goes.
+const changesPush = (setting) => {
+  const key = setting.split('=')[0].toLowerCase();
+  return key.startsWith('alias.') || /^remote\..*\.push$/.test(key) || key === 'push.default';
+};
+
 const place = (cwd, to) => (cwd === null || to === undefined || SPECIAL.test(to) ? null : resolve(cwd, to));
 
-function pushReason({ args, dir }) {
+function pushReason({ args, dir, text }) {
   const repo = { cwd: dir, gitDir: null };
+  const settings = [];
   let i = 1;
   while (i < args.length && args[i].startsWith('-')) {
     const a = args[i];
@@ -315,13 +389,22 @@ function pushReason({ args, dir }) {
     let value;
     if (GIT_VALUE_OPTIONS.has(opt)) value = a.startsWith('--') && a.includes('=') ? a.slice(a.indexOf('=') + 1) : args[++i];
     i++;
+    if (opt === '-c') settings.push(value ?? '');
     if (opt === '-C' || opt === '--work-tree') repo.cwd = place(repo.cwd, value);
     else if (opt === '--git-dir') {
       if (place(repo.cwd, value) === null) repo.cwd = null;
       else repo.gitDir = place(repo.cwd, value);
     }
   }
-  if (args[i] !== 'push') return null;
+  const sub = args[i] ?? '';
+  if (HAS_VARIABLE.test(sub)) return 'a git command that the guard cannot read';
+  if (sub === 'send-pack') return 'a send-pack, which pushes';
+  if (sub === 'config') {
+    const [key, value] = args.slice(i + 1).filter((a) => !a.startsWith('-'));
+    if (value !== undefined) settings.push(`${key}=${value}`);
+  }
+  if (settings.some(changesPush) && /push/i.test(text ?? '')) return 'a setting that changes what a push does';
+  if (sub !== 'push') return null;
   let force = false;
   let del = false;
   let wide = false;
@@ -378,6 +461,7 @@ function pushReason({ args, dir }) {
   return null;
 }
 
+const MERGE_FLAGS = new Set(['--auto', '--merge', '-m', '--squash', '-s', '--rebase', '-r', '--admin']);
 const GH_VALUE_OPTIONS = new Set(['-R', '--repo', '--hostname']);
 
 function mergeReason({ args }) {
@@ -386,15 +470,31 @@ function mergeReason({ args }) {
     if (GH_VALUE_OPTIONS.has(args[i])) i++;
     else if (!args[i].startsWith('-')) words.push(args[i]);
   }
-  return args[0] === 'gh' && words[0] === 'pr' && words[1] === 'merge' && !args.includes('--disable-auto') ? 'a merge of a pull request' : null;
+  if (args[0] !== 'gh') return null;
+  if (HAS_VARIABLE.test(words[0] ?? '') || (words[0] === 'pr' && HAS_VARIABLE.test(words[1] ?? ''))) return 'a gh command that the guard cannot read';
+  if (words[0] !== 'pr' || words[1] !== 'merge') return null;
+  // Only a command that just turns auto-merge off passes.
+  const disableOnly = args.includes('--disable-auto') && !args.some((a) => MERGE_FLAGS.has(a));
+  return disableOnly ? null : 'a merge of a pull request';
 }
 
 // An entry that the guard cannot read matches when its words include the words of the command.
 const holds = (args, need) => need.every((word) => args.includes(word));
 
+const LITERAL = { push: /\bpush\b/, merge: /\bmerge\b/ };
+const UNREADABLE_VARIABLE = 'a command with a variable that the guard cannot read';
+
+// An entry of `!` is a command that the guard cannot read. It matches when it always does, or when
+// the command text holds the word of the guard.
+const unreadableFor = (e, guard) => e.args[0] === '!' && (e.guard === 'both' || e.guard === guard) && (e.always || LITERAL[guard].test(e.text));
+
 const MATCH = {
   push: (entries) => {
     for (const e of entries) {
+      if (e.args[0] === '!') {
+        if (unreadableFor(e, 'push')) return UNREADABLE_VARIABLE;
+        continue;
+      }
       if (e.args[0] === '?' && holds(e.args, ['git', 'push'])) return 'a command that the guard cannot read, with a push in it';
       if (e.args[0] === 'git') {
         const reason = pushReason(e);
@@ -405,6 +505,10 @@ const MATCH = {
   },
   merge: (entries) => {
     for (const e of entries) {
+      if (e.args[0] === '!') {
+        if (unreadableFor(e, 'merge')) return UNREADABLE_VARIABLE;
+        continue;
+      }
       if (e.args[0] === '?' && holds(e.args, ['gh', 'pr', 'merge'])) return 'a command that the guard cannot read, with a merge in it';
       const reason = mergeReason(e);
       if (reason) return reason;
@@ -450,6 +554,7 @@ function decide(guard, input) {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) throw new Error('the hook input is not an object');
   const command = input.tool_input?.command;
   if (typeof command !== 'string') throw new Error('tool_input.command is not a string');
+  if (command.includes('\0')) throw new Error('the command holds a NUL byte');
   const cwd = typeof input.cwd === 'string' && input.cwd !== '' ? input.cwd : process.cwd();
   const reason = MATCH[guard](commandsOf(command, cwd));
   if (reason === null) return null;

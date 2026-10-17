@@ -73,7 +73,17 @@ Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/branch-policy.mjs" <owner>/<repo> [host
 
 Say each line to the human. A `gap:` line names a rule that GitHub does not enforce on the default branch. The hooks only slow an agent and stop a slip. The branch policy of the repo is the guard that holds.
 
-The hooks do not cover `gh api` merges, `az repos pr update` and auto-complete on Azure DevOps, shell aliases, or a script on disk. The branch policy covers them.
+The hooks guard the Bash tool only. They do not cover these:
+
+- the PowerShell tool
+- interpreters such as `python3 -c`, `node -e`, `perl`, and `ruby`
+- `su -c`, `tmux`, `script`, and `osascript`
+- shell aliases, a function that wraps a push, and a script on disk
+- a local `refs/remotes/origin/*` that a helper rewrote
+- `gh api` merges
+- `az repos pr update --status completed` and auto-complete on Azure DevOps
+
+The branch policy of the repo covers all of them, and it is the guard that holds. This step reports its gaps.
 
 Use the lines when the human answers the merge question of step 6.
 

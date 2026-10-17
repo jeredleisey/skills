@@ -129,13 +129,13 @@ test('git global options before push do not hide it', () => {
   assertDecision(run(w, 'push', hook(w, 'git -C other -c a.b=c push origin main')), 'ask');
 });
 
-test('the default branch comes from CADRE_DEFAULT_BRANCH, then from origin/HEAD, else main and master', () => {
+test('the default branch comes from CADRE_DEFAULT_BRANCH or origin/HEAD, and the usual names stay guarded', () => {
   const w = world();
-  assertDecision(run(w, 'push', hook(w, 'git push origin develop'), { CADRE_DEFAULT_BRANCH: 'develop' }), 'ask');
-  pass(run(w, 'push', hook(w, 'git push origin main'), { CADRE_DEFAULT_BRANCH: 'develop' }));
-  spawnSync('git', ['symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/trunk'], { cwd: w.repo });
-  assertDecision(run(w, 'push', hook(w, 'git push origin trunk')), 'ask');
-  pass(run(w, 'push', hook(w, 'git push origin main')));
+  assertDecision(run(w, 'push', hook(w, 'git push origin release'), { CADRE_DEFAULT_BRANCH: 'release' }), 'ask');
+  pass(run(w, 'push', hook(w, 'git push origin other'), { CADRE_DEFAULT_BRANCH: 'release' }));
+  spawnSync('git', ['symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/stable'], { cwd: w.repo });
+  assertDecision(run(w, 'push', hook(w, 'git push origin stable')), 'ask');
+  pass(run(w, 'push', hook(w, 'git push origin other')));
 });
 
 test('chained and nested commands match', () => {
@@ -507,4 +507,91 @@ test('agent_id that is empty or null counts as a helper call', () => {
     assertDecision(run(w, 'merge', hook(w, 'gh pr merge 5', { agent_id: id })), 'deny');
   }
   pass(run(w, 'push', hook(w, 'git push origin feature', { agent_id: '' })));
+});
+
+// ---- second review: heredocs, quotes, the default branch, variables, xargs, NUL, depth, aliases ----
+
+test('a heredoc body is data: an apostrophe in it does not swallow the next command', () => {
+  const w = world();
+  const doc = "git commit -F - <<'EOF'\nfix: don't crash\nEOF\n";
+  asks('push', [doc + 'git push origin main', 'cat <<EOF\nit\'s\nEOF\ngit push -f origin feat', 'cat <<-EOF\n\tx\n\tEOF\ngit push origin main', 'cat <<"EOF"\n"unbalanced\nEOF\ngit push origin main'], w);
+  assertDecision(run(w, 'push', hook(w, doc + 'git push origin main', { agent_id: 'a1' })), 'deny');
+  asks('merge', ["cat <<EOF\nit's\nEOF\ngh pr merge 5"], w);
+  passes('push', ["cat <<'EOF'\ngit push origin main\nEOF", doc + 'git status', 'cat <<< "git push origin main"'], w);
+});
+
+test('a heredoc with no end tag asks when the text before it holds a push', () => {
+  const w = world();
+  asks('push', ['git push origin feature <<EOF\nabc', 'git push origin main <<EOF\nabc'], w);
+  passes('push', ['echo hi <<EOF\nabc'], w);
+});
+
+test('an unbalanced quote asks when the whole text holds a push or a merge', () => {
+  const w = world();
+  asks('push', ["echo don't; git push origin feature"], w);
+  asks('merge', ["echo don't; gh pr merge 5"], w);
+  passes('push', ["echo don't; git status", "echo don't; gh pr merge 5"], w);
+});
+
+test('a helper cannot lift the default-branch guard by moving origin/HEAD', () => {
+  const w = world();
+  spawnSync('git', ['symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/feat'], { cwd: w.repo });
+  assertDecision(run(w, 'push', hook(w, 'git push origin main')), 'ask');
+  assertDecision(run(w, 'push', hook(w, 'git push origin main', { agent_id: 'a1' })), 'deny');
+  assertDecision(run(w, 'push', hook(w, 'git push origin feat')), 'ask');
+  for (const name of ['master', 'dev', 'develop', 'trunk']) assertDecision(run(w, 'push', hook(w, `git push origin ${name}`)), 'ask');
+  passes('push', ['git push origin other'], w);
+});
+
+test('a variable where the guard needs a word asks', () => {
+  const w = world();
+  asks('push', ['eval $cmd', 'g=git; $g push origin main', 'git $x', 'git -C . $x', '$(echo git) push origin main', 'git $(echo push) origin main', 'git ${IFS}push', '`echo git` push origin feature'], w);
+  asks('merge', ['eval $cmd', 'gh $x merge', 'gh pr $(echo merge) 5', 'g=gh; $g pr merge 5', 'gh pr ${x} 5'], w);
+  passes('push', ['echo $HOME', 'ls $x', 'git status $x', 'git log $(git rev-parse HEAD)', 'cd $DIR && git status', '$g status'], w);
+  passes('merge', ['gh pr view $N', 'gh api $URL', '$g status'], w);
+});
+
+test('xargs that runs a push or a merge asks, because it appends arguments', () => {
+  const w = world();
+  asks('push', ['xargs git push origin feature', 'echo x | xargs -I{} git push origin feature'], w);
+  asks('merge', ['xargs gh pr merge', 'echo 5 | xargs -n1 gh pr merge'], w);
+  passes('push', ['xargs git status', 'xargs echo git push', 'echo x | xargs ls'], w);
+  passes('merge', ['xargs gh pr view'], w);
+});
+
+test('a NUL byte blocks, and nesting deeper than 4 levels blocks', () => {
+  const w = world();
+  const r = run(w, 'push', hook(w, 'git status\0git push origin main'));
+  assert.equal(r.code, 2);
+  assert.match(r.err, /NUL/);
+  const wrap = (inner, n, outer) => (n === 0 ? inner : wrap(`${outer} ${quoteSh(inner)}`, n - 1, outer));
+  const quoteSh = (t) => `'${t.replace(/'/g, `'\\''`)}'`;
+  for (const outer of ['bash -c', 'eval']) {
+    pass(run(w, 'push', hook(w, wrap('git status', 4, outer))));
+    const deep = run(w, 'push', hook(w, wrap('git status', 5, outer)));
+    assert.equal(deep.code, 2, outer);
+    assert.match(deep.err, /deeper than 4/);
+  }
+});
+
+test('gh pr merge --disable-auto passes only when nothing else asks for a merge', () => {
+  const w = world();
+  asks('merge', ['gh pr merge 5 --disable-auto --auto', 'gh pr merge 5 --disable-auto --squash', 'gh pr merge 5 --disable-auto --admin', 'gh pr merge --rebase 5 --disable-auto', 'gh pr merge 5 --auto --disable-auto'], w);
+  passes('merge', ['gh pr merge 5 --disable-auto', 'gh pr merge --disable-auto'], w);
+});
+
+test('git send-pack and a setting of alias, remote push, or push.default beside a push ask', () => {
+  const w = world();
+  asks('push', [
+    'git send-pack origin main',
+    'git -C . send-pack --all origin',
+    'git -c alias.p=push p origin feature',
+    'git -c remote.origin.push=HEAD:main push origin feature',
+    'git -c push.default=matching push',
+    'git config alias.p push && git p origin feature',
+    'git config --global alias.p "push --force" && git p',
+    'git config remote.origin.push HEAD:main && git push origin feature',
+    'git config push.default current',
+  ], w);
+  passes('push', ['git config user.name x', 'git config alias.co checkout', 'git config --get alias.co', 'git -c core.pager=cat log'], w);
 });
