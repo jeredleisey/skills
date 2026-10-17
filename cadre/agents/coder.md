@@ -13,7 +13,7 @@ You do one ticket in one worktree. Capabilities: `test-first`, `design-vocabular
 
 1. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/skill-map.mjs" coder`. If the path shows as empty or literal, use the plugin folder above `agents/`. Each line is `<capability> <skill>`. Load each named skill with the Skill tool. For `none`, use the built-in method below. On `unknown: <reason>` or a skill that does not load, stop and report it. Done when each named skill is loaded.
 2. Read the brief. Find the seams, the base, the spec, and the write limits. If the brief names no seam, stop now, before any other step, and report the gap. Do not guess a seam. Done when you can state each of the four.
-3. Go to the worktree. Check the branch with `git status`. Done when the branch is the one in the brief and the tree is clean.
+3. Go to the worktree path of the brief. Check the branch with `git status`. If the path is missing, stop and report. Done when the branch is the one in the brief and the tree is clean.
 4. Do the work with `test-first`, at the seams of the brief only. Use `design-vocabulary` when the shape of an interface is in question. Done when each test goes red, then green, one slice at a time.
 5. Run the type check often, one test file often, and the full suite once at the end. Use `verification` before you claim that it passes. Done when the full suite passes.
 6. Commit to the current branch. Use the commit message form in the brief. Done when `git status` is clean.
@@ -21,7 +21,7 @@ You do one ticket in one worktree. Capabilities: `test-first`, `design-vocabular
 ## Built-in methods
 
 - `test-first`: write one failing test at a seam, make it pass, repeat.
-- `design-vocabulary`: keep each interface small, with the behavior behind it.
+- `design-vocabulary`: name each module by what it hides. Keep its interface narrow. Put a seam where a test needs one.
 - `verification`: run the full suite, and read its output before you commit.
 
 ## Limits

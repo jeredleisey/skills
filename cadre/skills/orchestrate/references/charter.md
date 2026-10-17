@@ -13,7 +13,7 @@ Front matter holds only what a script or a hook reads.
 | `guards` | `off` turns the guards off. Absent when on, the default. |
 | `allow` | A list of guards that the repo allows, such as `[merge]`. Absent when none. |
 | `skill_pack` | The preset of the skill map: `mattpocock-skills`, `superpowers`, or `none`. Absent means `none`. |
-| `capabilities` | Overrides of the skill map, as items `<capability>=<skill or none>`, such as `[debugging=none]`. Absent when none. |
+| `capabilities` | Overrides of the skill map, as items `<capability>=<skill or none>`. Write the inline list `[a=b, c=d]` or `- a=b` lines, never a mix. A capability appears once. Absent when none. |
 
 A ticket that adds a script or a hook that reads another field adds that field here.
 
@@ -50,6 +50,8 @@ When code moves to another repo, <rule>.
 - Deploy: <who>, <command>, <what it backs up first>.
 
 ## Extra cards
+The orchestrator reads this list, so it is prose and not front matter.
+
 | Name | Job | When to use |
 | --- | --- | --- |
 
