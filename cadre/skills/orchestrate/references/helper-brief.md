@@ -4,13 +4,13 @@ A helper starts with no context. Its brief is all that it knows. Write a brief t
 
 ## Start from a card
 
-When a role card fits the ticket ([roles.md](roles.md)), start the helper from the card (`coder`, `reviewer`, `researcher`, or `tester`). The card holds the role, the skills, the tools, and the limits of the role. Put in the brief only:
+When a role card fits the ticket ([roles.md](roles.md)), start the helper from the card (`coder`, `reviewer`, `researcher`, or `tester`). The card holds the role, the capabilities, the tools, and the limits of the role. Put in the brief only:
 
 - the ticket, and for `tester` the behavior or the bug,
 - for `researcher`, the question and the output path,
-- the worktree and the branch (the worktree is at `<repo>/.claude/worktrees/<branch>`),
+- the worktree and the branch,
 - the seams to test,
-- the base or fixed point,
+- the base or fixed point (for `reviewer`, also the branch),
 - the spec,
 - the write limits,
 - the form of the commit message,
@@ -32,7 +32,7 @@ You are <name>, a <type> agent. You do <ticket> in <repo>. I am <your name>, the
 <the ticket in your words, with each decision that the ticket leaves open>
 
 ## Limits
-- Worktree: <repo>/.claude/worktrees/<branch>, branch <name>, from <base>.
+- Worktree: <path>, branch <name>, from <base>.
 - Write only: <paths>.
 - Do not touch: <paths of other owners>.
 - Commit only. Do not push, merge, deploy, or change a live system.
@@ -51,5 +51,5 @@ Under <N> words: the commits, the files, the commands that you ran and their res
 - Each step ends on a check that tells done from not done.
 - The write limits name paths, not ideas.
 - The brief names each file that another owner changes now.
-- The brief says which skills the helper uses, for example a test-driven skill. A card needs no such line, because it lists its skills.
-- A review that the helper starts reaches you after its report. Plan to wait for it.
+- The brief says which skills the helper uses, for example a test-driven skill. A card needs no such line, because the charter maps its skills.
+- After a `coder` commit, you start a `reviewer`. Plan to wait for its report.

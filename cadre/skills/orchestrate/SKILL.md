@@ -48,7 +48,7 @@ When a peer works in the same repo, propose the split of tickets and files to th
 
 ### 4. Delegate
 
-Give each ticket to one helper, in its own worktree and branch, and label the ticket `cadre:work:<name>`. Put each worktree at `<repo>/.claude/worktrees/<branch>`, inside the clone, with `git worktree add .claude/worktrees/<branch> -b <branch> <base>`. `claude -w <branch>` uses the same place. The repo must ignore `.claude/worktrees/` ([references/charter.md](references/charter.md)). You also edit only in a worktree. A clone that other agents share stays on its main branch. Start the helper from a role card when one fits: `coder` for code, `reviewer` for a review, `researcher` for reading, `tester` for a proof. [references/roles.md](references/roles.md) lists the cards. Write the brief from [references/helper-brief.md](references/helper-brief.md). A helper commits and stops: it does not push, merge, or deploy. Done when the harness shows each helper as running, or its start failed and you know why.
+Give each ticket to one helper, in its own worktree and branch, and label the ticket `cadre:work:<name>`. Use the worktree that the harness makes, such as `claude -w <branch>`. You also edit only in a worktree. A clone that other agents share stays on its main branch. Start the helper from a role card when one fits: `coder` for code, `reviewer` for a review, `researcher` for reading, `tester` for a proof, or a card in the `Extra cards` list of the charter. [references/roles.md](references/roles.md) lists the cards. Write the brief from [references/helper-brief.md](references/helper-brief.md). A helper commits and stops: it does not push, merge, or deploy. Done when the harness shows each helper as running, or its start failed and you know why.
 
 ### 5. Verify
 
@@ -58,7 +58,7 @@ Treat each helper report as a claim. For each result:
 2. Read the diff for scope: only the files that the brief allowed.
 3. Scan the diff for secrets and for facts that a script must write.
 4. Compare the result to each acceptance criterion.
-5. Wait for the reviews that the helper started. They arrive after its report.
+5. After each `coder` commit, start a `reviewer` with the base of the brief as the fixed point, and the spec of the brief. Wait for its report.
 6. Sort each review finding as must-fix, should-fix, or nit. Fix each real must-fix and should-fix before the merge.
 
 Done when each criterion has evidence from a command that you ran, and no must-fix or should-fix stays open.

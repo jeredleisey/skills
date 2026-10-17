@@ -18,7 +18,7 @@ function goodRepo(extra = {}) {
     'tools/word-budget.json': JSON.stringify({ budget: 100 }),
     'README.md': 'See [skill](cadre/skills/orchestrate/SKILL.md).\n',
   };
-  for (const f of counted) files[f] = 'a few words here\n';
+  for (const f of counted) files[f] = f.includes('/agents/') ? 'a few words\n\n## Rules\n\nsame\n' : 'a few words here\n';
   return { ...files, ...extra };
 }
 
@@ -48,4 +48,10 @@ test('check: a denied word fails the run', () => {
   const w = String.fromCharCode(104, 101, 114, 109, 101, 115);
   const r = run('check.mjs', makeTree(goodRepo({ 'README.md': `uses ${w}\n` })));
   assert.equal(r.code, 1);
+});
+
+test('check: cards with different rules blocks fail the run', () => {
+  const r = run('check.mjs', makeTree(goodRepo({ 'cadre/agents/coder.md': 'a few words\n\n## Rules\n\nother\n' })));
+  assert.equal(r.code, 1);
+  assert.match(r.lines.join('\n'), /coder/);
 });
