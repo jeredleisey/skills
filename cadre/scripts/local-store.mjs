@@ -18,7 +18,7 @@ export const slug = (name) => String(name).trim().toLowerCase().replace(/[^a-z0-
 export function locate() {
   const r = spawnSync('git', ['rev-parse', '--git-common-dir'], { encoding: 'utf8', timeout: 20000 });
   if (r.status !== 0 || !r.stdout.trim()) throw new Error('this folder is not in a git repo');
-  const common = realpathSync(resolve(r.stdout.trim()));
+  const common = realpathSync.native(resolve(r.stdout.trim()));
   if (basename(common) !== '.git') throw new Error('the repo has no main clone (it is bare)');
   const clone = dirname(common);
   return { clone, common, folder: join(clone, '.cadre') };
