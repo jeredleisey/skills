@@ -25,7 +25,7 @@ test('each handler blocks on failure and has a narrow if filter', () => {
   for (const h of handlers()) {
     assert.equal(h.type, 'command');
     assert.equal(h.onFailure, 'block');
-    assert.match(h.if, /^Bash\((git|gh) \*\)$/);
+    assert.match(h.if, /^Bash\(\*(git|gh) \*\)$/);
   }
 });
 

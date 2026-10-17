@@ -293,3 +293,22 @@ test('a personal file does not loosen a charter that has the guards on, and an u
   mkdirSync(join(w.home, 'guards.json'));
   assertDecision(push(w), 'ask');
 });
+
+// ---- review findings: targets that the guard cannot read, wrappers, and one false positive ----
+
+test('a push target that the guard cannot read asks', () => {
+  const w = world();
+  for (const c of [
+    'git push origin $(echo main)',
+    'B=main; git push origin $B',
+    "git push origin 'refs/heads/*:refs/heads/*'",
+    'git push origin "*:*"',
+    'git push origin x:heads/main',
+    'xargs git push origin main',
+  ]) assertDecision(run(w, 'push', hook(w, c)), 'ask');
+});
+
+test('gh pr merge --disable-auto passes', () => {
+  const w = world();
+  pass(run(w, 'merge', hook(w, 'gh pr merge 5 --disable-auto')));
+});
