@@ -21,7 +21,7 @@ Front matter holds only what a script or a hook reads.
 | --- | --- | --- | --- |
 | `charter_schema` | A positive integer. It rises only when an old charter cannot work. | None. Required. | [`charter-check`](scripts.md#charter-check) |
 | `written_by` | `cadre <version>`, the version that wrote the file. | None. Required. | [`charter-check`](scripts.md#charter-check) |
-| `guards` | `off` turns the guards off. Any other value leaves them on. | Absent: guards on. | [`guard`](guards.md) |
+| `guards` | `off` turns the guards off. Any other value leaves them on. | Absent: guards on. An unreadable charter also counts as guards on. | [`guard`](guards.md) |
 | `allow` | A list of guards that the repo allows, from `push` and `merge`. | Absent: none. | [`guard`](guards.md) |
 | `skill_pack` | `mattpocock-skills`, `superpowers`, or `none`. | Absent: `none`. | [`skill-map`](scripts.md#skill-map) |
 | `capabilities` | Overrides of the skill map, as items `<capability>=<skill or none>`. | Absent: no override. | [`skill-map`](scripts.md#skill-map) |
