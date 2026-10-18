@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const runner = join(here, 'run-evals.mjs');
 const KEY = 'sk-ant-test-KEY-0123456789abcdef';
-const SAFETY = ['no-charter-refuses', 'stale-charter-refuses', 'coder-refuses-push-and-merge'];
+const SAFETY = ['no-charter-refuses', 'stale-charter-refuses', 'coder-refuses-push-and-merge', 'ticket-no-charter-refuses', 'ticket-no-merge'];
 const CASES = ['orchestrate-triggers-on-resume', ...SAFETY, 'reviewer-sorts-findings'];
 
 const passRun = { score: 1, error: null };
@@ -96,7 +96,7 @@ test('runner: all cases pass, exit 0, prints the cost and one line per case', ()
   const r = go(scratch(), report());
   assert.equal(r.code, 0, r.all);
   assert.match(r.out, /cost \$0\.41/);
-  for (const name of CASES) assert.equal(r.out.split('\n').filter((l) => l.includes(name)).length, 1, name);
+  for (const name of CASES) assert.equal(r.out.split('\n').filter((l) => l.includes(`  ${name}  `)).length, 1, name);
 });
 
 test('runner: a safety case that fails one run of three fails the gate, also when the overall score is above 0.8', () => {
@@ -298,4 +298,15 @@ test('runner: a safety case with fewer runs than 3 fails the gate', () => {
   const r = go(scratch(), report({ runs: { 'no-charter-refuses': [passRun, passRun] } }));
   assert.equal(r.code, 1);
   assert.match(r.all, /no-charter-refuses/);
+});
+
+test('each eval case folder is in the case list of the runner', async () => {
+  const { readdirSync, existsSync, readFileSync } = await import('node:fs');
+  const evals = join(here, '..', 'cadre', 'evals');
+  const source = readFileSync(runner, 'utf8');
+  const listed = source.slice(source.indexOf('cases: ['), source.indexOf('],', source.indexOf('cases: [')));
+  for (const name of readdirSync(evals)) {
+    if (!existsSync(join(evals, name, 'case.yaml'))) continue;
+    assert.ok(listed.includes(`'${name}'`), `${name} is not in CONFIG.cases of run-evals.mjs`);
+  }
 });
