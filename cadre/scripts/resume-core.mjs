@@ -6,6 +6,7 @@ import { join } from 'node:path';
 
 export const same = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
 export const list = (a) => (a.length ? a.join(',') : 'none');
+export const rowList = (a) => `[${a.join(',')}]`;
 
 const VALUE = { session: /^(none|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i, host: /^(none|[0-9a-f]{32})$/, since: /^\S+$/ };
 
@@ -77,4 +78,4 @@ export function pickCheckpoint(entries, assignee) {
 }
 
 export const okLine = ({ who, holder, checkpoint, state, bad, ended }) =>
-  `ok holder=${who} session=${holder.session} checkpoint=${checkpoint.id ?? 'none'} ignored=${list(checkpoint.ignored)} state=${state} bad-rows=${list(bad)} ended-rows=${list(ended)}`;
+  `ok holder=${who} session=${holder.session} checkpoint=${checkpoint.id ?? 'none'} ignored=${list(checkpoint.ignored)} state=${state} bad-rows=${rowList(bad)} ended-rows=${rowList(ended)}`;

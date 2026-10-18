@@ -224,7 +224,7 @@ The checks run in this order. The issue must carry the label `cadre:orchestrator
 
 | Output | Exit |
 | --- | --- |
-| `ok holder=<who> session=<id\|none> checkpoint=<comment id\|none> ignored=<list\|none> state=<open\|closed> bad-rows=<list\|none> ended-rows=<list\|none>` | 0 |
+| `ok holder=<who> session=<id\|none> checkpoint=<comment id\|none> ignored=<list\|none> state=<open\|closed> bad-rows=[<n>,...] ended-rows=[<n>,...]` | 0 |
 | `not-owner login=<login> assignee=<login>` | 1 |
 | `unknown: <reason>` | 2 |
 | usage message on stderr | 64 |
@@ -238,8 +238,8 @@ The fields of the `ok` line are the same for each resume script:
 | `checkpoint` | The id of the newest trusted checkpoint, or `none`. |
 | `ignored` | Comma list of the ids of checkpoints with a marker time more than 5 minutes ahead of now, or `none`. |
 | `state` | `open` or `closed`. |
-| `bad-rows` | Comma list of ledger rows with a wrong cell count, or a Granted by that is not the assignee. Row 1 is the first row after the header. |
-| `ended-rows` | Comma list of ledger rows whose When holds `session <id>` with an id other than `session-id`. |
+| `bad-rows` | List of ledger rows with a wrong cell count, or a Granted by that is not the assignee. Row 1 is the first row after the header. It looks like `[2,3]`. An empty list is `[]`. |
+| `ended-rows` | List of ledger rows whose When holds `session <id>` with an id other than `session-id`. It looks like `[6]`. An empty list is `[]`. |
 
 `unknown` reasons include: a pull request, a missing label, a number of assignees other than one, a `##` heading twice or inside a code fence, a code fence not closed, a missing section, a Holder that holds anything but `session`, `host`, and `since`, a wrong Ledger header, a `gh` call that failed, and output that is not JSON.
 

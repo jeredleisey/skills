@@ -127,7 +127,7 @@ test('the owner of a free orchestrator gets ok with holder=free', () => {
   assert.equal(r.code, 0);
   assert.equal(r.lines, 1);
   assert.deepEqual(fields(r.line), {
-    holder: 'free', session: 'none', checkpoint: 'none', ignored: 'none', state: 'open', 'bad-rows': 'none', 'ended-rows': 'none',
+    holder: 'free', session: 'none', checkpoint: 'none', ignored: 'none', state: 'open', 'bad-rows': '[]', 'ended-rows': '[]',
   });
   assert.match(r.line, /^ok /);
 });
@@ -172,11 +172,12 @@ test('a row that the owner did not grant is a bad row', () => {
     ['ada', 'merge', 'acme/widgets', 'pull requests', `2026-10-17 session ${SESSION}`],
     ['grace', 'push', 'acme/widgets', 'main', '2026-10-17 indefinite'],
     ['ADA', 'tag', 'acme/widgets', 'releases', '2026-10-17 indefinite'],
+    ['lin', 'tag', 'acme/widgets', 'releases', '2026-10-17 indefinite'],
   ];
   const r = run(['4', SESSION], { iss: issue({ body: body({ rows }) }) });
   const f = fields(r.line);
-  assert.equal(f['bad-rows'], '2');
-  assert.equal(f['ended-rows'], 'none');
+  assert.equal(f['bad-rows'], '[2,4]');
+  assert.equal(f['ended-rows'], '[]');
 });
 
 test('a session row of another session ended', () => {
@@ -186,7 +187,7 @@ test('a session row of another session ended', () => {
     ['ada', 'tag', 'acme/widgets', 'releases', '2026-10-17 indefinite'],
   ];
   const r = run(['4', SESSION], { iss: issue({ body: body({ rows }) }) });
-  assert.equal(fields(r.line)['ended-rows'], '1');
+  assert.equal(fields(r.line)['ended-rows'], '[1]');
 });
 
 test('with no session argument each session row ended', () => {
@@ -196,14 +197,14 @@ test('with no session argument each session row ended', () => {
     ['ada', 'push', 'acme/widgets', 'docs', `2026-10-17 session ${OLD_SESSION}`],
   ];
   const r = run(['4'], { iss: issue({ body: body({ rows }) }) });
-  assert.equal(fields(r.line)['ended-rows'], '1,3');
+  assert.equal(fields(r.line)['ended-rows'], '[1,3]');
 });
 
 test('a row that is both ungranted and ended is listed in each', () => {
   const rows = [['grace', 'push', 'acme/widgets', 'main', `2026-10-17 session ${OLD_SESSION}`]];
   const f = fields(run(['4', SESSION], { iss: issue({ body: body({ rows }) }) }).line);
-  assert.equal(f['bad-rows'], '1');
-  assert.equal(f['ended-rows'], '1');
+  assert.equal(f['bad-rows'], '[1]');
+  assert.equal(f['ended-rows'], '[1]');
 });
 
 test('a body with no Ledger section gives unknown', () => {
