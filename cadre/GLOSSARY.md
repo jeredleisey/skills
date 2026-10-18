@@ -85,5 +85,5 @@ An action that a new commit cannot undo, such as a merge, a deploy, a delete, or
 _Avoid_: destructive action, irreversible step
 
 **Guard**:
-A hook on a push or a merge. It asks the human for the orchestrator. It refuses a helper. The charter can allow it. A branch policy on the host is a second guard.
+A hook on a push or a merge. It asks the human for the orchestrator. It refuses a helper, unless the charter allows it. A branch policy on the host is a second guard.
 _Avoid_: rule (when enforcement is meant), safeguard

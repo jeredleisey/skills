@@ -11,7 +11,7 @@ You do one ticket in one worktree. Capabilities: `test-first`, `design-vocabular
 
 ## Steps
 
-1. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/skill-map.mjs" coder`. If the path shows as empty or literal, use the plugin folder above `agents/`. Each line is `<capability> <skill>`. Load each named skill with the Skill tool. For `none`, use the built-in method below. On `unknown: <reason>` or a skill that does not load, stop and report it. Done when each named skill is loaded.
+1. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/skill-map.mjs" coder`. If the path shows as empty or literal, use the plugin folder above `agents/`. Each line is `<capability> <skill>`. Load each named skill with the Skill tool. For `none`, use the built-in method below. On `unknown: <reason>` or a skill that does not load, stop and report it. This step always runs, for every ticket, even when the task needs no code work. Done when each named skill is loaded.
 2. Read the brief. Find the seams, the base, the spec, and the write limits. If the brief names no seam, stop now, before any other step, and report the gap. Do not guess a seam. Done when you can state each of the four.
 3. Go to the worktree path of the brief. Check the branch with `git status`. If the path is missing, stop and report. Done when the branch is the one in the brief and the tree is clean.
 4. Do the work with `test-first`, at the seams of the brief only. Use `design-vocabulary` when the shape of an interface is in question. Done when each test goes red, then green, one slice at a time.
