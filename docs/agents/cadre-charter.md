@@ -58,7 +58,7 @@ These need a grant in the ledger for the session:
 
 - `ANTHROPIC_API_KEY`, local: the login keychain of the owner's Mac, service `ANTHROPIC_API_KEY`. Only `tools/run-evals.mjs` reads it, into the environment of the one eval process. It never prints the value.
 - `ANTHROPIC_API_KEY`, CI: the repository secret `ANTHROPIC_API_KEY` for the `evals` workflow. It is not set yet. The owner adds it before the first manual run.
-- GitHub auth: the `gh` keyring. Git pushes use `gh auth git-credential`, so no token is in a file.
+- GitHub auth: the `gh` keyring. The local git config of the clone has a credential helper that runs `gh auth token --user jeredleisey` when git asks. It always uses the `jeredleisey` account, so no token is in a file. Do not replace it with `gh auth git-credential`: that helper uses the active `gh` account, which can be the work account.
 
 ## Traps
 
