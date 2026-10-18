@@ -31,6 +31,7 @@ test('budget: a count over the budget fails and shows both numbers', () => {
   assert.match(r.lines[0], /59/);
   assert.match(r.lines[0], /reference/); // the first remedy: move detail out of the counted files
   assert.match(r.lines[0], /reason in the pull request/); // the second: a raise with a reason
+  assert.match(r.lines[0], /Never cut a rule or a check/);
 });
 
 test('budget: a missing counted file fails', () => {
