@@ -20,7 +20,7 @@ Each ticket that changes code runs at least one coder and one reviewer. The tabl
 
 ## What it refuses
 
-- A helper never pushes, merges, deploys, or deletes. Its role card forbids these steps. A hook also denies a helper a push, a merge, and a delete of a remote branch through the Bash tool. See [Guards](#guards) for what the hooks do not cover.
+- A helper never pushes, merges, deploys, or deletes. Its role card forbids these steps. A hook also denies a helper each guarded step through the Bash tool: a push to the default branch, a force push, a delete of a remote branch, and a merge. See [Guards](#guards) for what the hooks do not cover.
 - The orchestrator merges or deploys only with a grant from you in its ledger. It first verifies the result, and a reviewer reads it.
 - The skills keep secret values out of the charter, the briefs, and the diffs. The charter holds the names of secret stores only.
 
