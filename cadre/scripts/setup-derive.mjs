@@ -31,7 +31,7 @@ import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { projectUrl, readJson } from './ado.mjs';
-import { livePolicies } from './branch-policy-ado.mjs';
+import { livePolicies } from './ado-policy-scope.mjs';
 import { say } from './out.mjs';
 
 const unknown = (reason) => say([`unknown: ${reason}`], 2);

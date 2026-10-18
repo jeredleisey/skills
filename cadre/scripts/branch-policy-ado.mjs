@@ -19,23 +19,8 @@
 // CADRE_ADO_CMD replaces the ADO client (see ado.mjs).
 import { projectUrl, readJson } from './ado.mjs';
 import { say } from './out.mjs';
-import { pathToFileURL } from 'node:url';
+import { livePolicies } from './ado-policy-scope.mjs';
 
-// The scope test and the policy filter. setup-derive.mjs imports them.
-export const covers = (entry, repoId, branch) => {
-  if (typeof entry?.refName !== 'string') return false;
-  const repoOk = entry.repositoryId === null || (typeof entry.repositoryId === 'string' && entry.repositoryId.toLowerCase() === repoId.toLowerCase());
-  const refOk = entry.matchKind === 'Prefix' ? branch.startsWith(entry.refName) : entry.refName === branch;
-  return repoOk && refOk;
-};
-export const livePolicies = (policies, repoId, branch) =>
-  policies.filter(
-    (p) => p?.isEnabled === true && p.isBlocking === true && p.isDeleted !== true && Array.isArray(p.settings?.scope) && p.settings.scope.some((entry) => covers(entry, repoId, branch)),
-  );
-
-
-// Run the script only when it is the entry point, not when another script imports the helpers.
-if (pathToFileURL(process.argv[1] ?? '').href === import.meta.url) {
 const unknown = (reason) => say([`unknown: ${reason}`], 2);
 
 const [org, project, repo, ...extra] = process.argv.slice(2);
@@ -98,4 +83,3 @@ if (live.length === 0) {
   gaps.push('gap: no blocking policy covers the branch, so it can take a force push');
 }
 say(gaps.length > 0 ? gaps : ['ok'], 0);
-}
