@@ -30,5 +30,5 @@ for (const path of counted) {
   }
   total += readFileSync(join(root, path), 'utf8').split(/\s+/).filter(Boolean).length;
 }
-if (findings.length === 0 && total > budget) findings.push(`word budget: ${total} words, budget ${budget}`);
+if (findings.length === 0 && total > budget) findings.push(`word budget: ${total} words, budget ${budget}. Move detail into a reference that this check does not count. Or raise the budget, with a reason in the pull request. Never cut a rule or a check to fit.`);
 finish(findings);
