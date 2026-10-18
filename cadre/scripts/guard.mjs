@@ -9,7 +9,7 @@
 //   permissionDecision deny exit 0   the call has agent_id (even empty or null) or agent_type, so a helper made it
 //   a reason on stderr      exit 2   the hook cannot tell: it blocks the command
 // A helper is always denied. The charter never lifts that.
-// The charter is read from the commit origin/<default branch> of the repo of cwd, never from the
+// The charter is read from the commit of every candidate default branch that exists as a remote ref, in the repo of cwd (the strictest wins), never from the
 // working tree, so a helper cannot edit it to switch a guard off. It can set `guards: off` and
 // `allow: [<guard>]`, which pass the orchestrator only. No default branch, no file, or any
 // fault leaves the guards on.
