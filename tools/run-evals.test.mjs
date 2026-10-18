@@ -312,3 +312,98 @@ test('each eval case folder is in the case list of the runner', async () => {
     assert.ok(listed.includes(`'${name}'`), `${name} is not in CONFIG.cases of run-evals.mjs`);
   }
 });
+
+// The per-run failure lines. A run that did not pass gets one indented line after its case line.
+const gradedFail = {
+  score: 0.5,
+  error: null,
+  graders: [
+    { name: 'refuses-without-charter', scored: true, passed: false, message: 'the agent ran Bash and got: bwrap: No permission to create namespace' },
+    { name: 'says-why', scored: true, passed: true },
+    { id: 'unscored-one', scored: false, passed: false },
+    { id: 'judge-7', scored: true, passed: false, detail: 'x'.repeat(500) },
+  ],
+};
+
+function caseLines(out, name) {
+  const lines = out.split('\n');
+  const at = lines.findIndex((l) => l.includes(`  ${name}  `));
+  const got = [];
+  for (const l of lines.slice(at + 1)) {
+    if (!/^\s+\S/.test(l)) break;
+    got.push(l);
+  }
+  return got;
+}
+
+test('runner: a failed run prints one indented line with its index and the failed grader names', () => {
+  const r = go(scratch(), report({ runs: { 'no-charter-refuses': [passRun, gradedFail, passRun] }, overall: 0.93 }));
+  const extra = caseLines(r.out, 'no-charter-refuses');
+  assert.equal(extra.length, 1, r.out);
+  assert.match(extra[0], /run 2/);
+  assert.match(extra[0], /refuses-without-charter/);
+  assert.match(extra[0], /judge-7/);
+  assert.match(extra[0], /No permission to create namespace/);
+  assert.ok(!extra[0].includes('says-why'));
+  assert.ok(!extra[0].includes('unscored-one'));
+  assert.ok(!extra[0].includes('x'.repeat(201)));
+});
+
+test('runner: a passed run prints no extra line', () => {
+  const r = go(scratch(), report());
+  for (const name of CASES) assert.deepEqual(caseLines(r.out, name), [], name);
+});
+
+test('runner: a run with an error or an abort prints that reason', () => {
+  const rep = report({
+    runs: {
+      'stale-charter-refuses': [{ score: 1, error: 'timed out after 300s' }, { score: 0, aborted: true, abortReason: 'cost_ceiling' }, passRun],
+    },
+  });
+  const extra = caseLines(go(scratch(), rep).out, 'stale-charter-refuses');
+  assert.equal(extra.length, 2);
+  assert.match(extra[0], /run 1.*timed out after 300s/);
+  assert.match(extra[1], /run 2.*(abort|cost_ceiling)/);
+});
+
+test('runner: the key never shows in a failure line', () => {
+  const leaky = { score: 0, error: `boom ${KEY}`, graders: [] };
+  const rep = report({ runs: { 'ticket-no-merge': [leaky, passRun, passRun] } });
+  const r = go(scratch(), rep);
+  assert.ok(!r.all.includes(KEY));
+  const withGrader = { score: 0, graders: [{ name: 'g', scored: true, passed: false, message: `leak ${KEY}` }] };
+  const r2 = go(scratch(), report({ runs: { 'ticket-no-merge': [withGrader, passRun, passRun] } }));
+  assert.ok(!r2.all.includes(KEY));
+  assert.match(r2.out, /\*\*\*/);
+});
+
+// The Ubuntu sandbox steps. They come before the paid step.
+test('workflow: the sandbox is prepared and proved before the paid step', () => {
+  const sysctl = workflow.indexOf('sudo sysctl -w "$key=0"');
+  const read = workflow.indexOf('key=kernel.apparmor_restrict_unprivileged_userns');
+  const bwrap = workflow.indexOf('bwrap --ro-bind / /');
+  const install = workflow.indexOf('apt-get install -y bubblewrap');
+  const paid = workflow.indexOf('node tools/run-evals.mjs');
+  assert.ok(sysctl > install, 'sysctl step after the install');
+  assert.ok(read >= 0 && read < sysctl, 'the value is read first');
+  assert.match(workflow, /absent/);
+  assert.ok(bwrap > sysctl, 'bwrap check after the sysctl step');
+  assert.ok(paid > bwrap, 'the paid step is last');
+  assert.match(workflow, /--unshare-all/);
+  assert.ok(workflow.indexOf('socat -V') > bwrap && workflow.indexOf('socat -V') < paid, 'socat is checked before the paid step');
+});
+
+test('runner: a key near the cut of a grader message leaves no part of the key in the output', () => {
+  const message = `${'a'.repeat(190)}${KEY}`;
+  const run = { score: 0, graders: [{ name: 'g', scored: true, passed: false, message }] };
+  const r = go(scratch(), report({ runs: { 'ticket-no-merge': [run, passRun, passRun] } }));
+  for (let n = 8; n <= KEY.length; n++) assert.ok(!r.all.includes(KEY.slice(0, n)), `prefix ${n}`);
+  assert.ok(!r.all.includes(KEY.slice(-8)));
+});
+
+test('runner: a failure line with many graders stays under 500 characters', () => {
+  const graders = Array.from({ length: 20 }, (_, i) => ({ name: `grader-${i}-${'n'.repeat(100)}`, scored: true, passed: false, message: 'm'.repeat(150) }));
+  const r = go(scratch(), report({ runs: { 'ticket-no-merge': [{ score: 0, graders }, passRun, passRun] } }));
+  const line = caseLines(r.out, 'ticket-no-merge')[0];
+  assert.ok(line.trim().length <= 520, String(line.length));
+});

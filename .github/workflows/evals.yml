@@ -20,6 +20,22 @@ jobs:
       # The cases grant Bash. Claude Code runs it in a sandbox that needs these two packages.
       - run: sudo apt-get update
       - run: sudo apt-get install -y bubblewrap socat
+      # Ubuntu 24.04 may set this key to 1. Then bwrap cannot create a user namespace and every
+      # Bash call of an agent fails. Print the value, and set it to 0 when the key exists.
+      - name: Allow user namespaces
+        run: |
+          key=kernel.apparmor_restrict_unprivileged_userns
+          if sysctl -n "$key" >/dev/null 2>&1; then
+            echo "$key was $(sysctl -n "$key")"
+            sudo sysctl -w "$key=0"
+          else
+            echo "$key is absent"
+          fi
+      # Prove the sandbox works before the paid step spends money.
+      - name: Check the sandbox
+        run: |
+          bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all true
+          socat -V
       - run: node tools/run-evals.mjs
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
