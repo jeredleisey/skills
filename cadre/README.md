@@ -1,6 +1,34 @@
 # cadre
 
-Cadre is a Claude Code plugin that runs a team of agents on a software repo. An orchestrator shapes the work and gives tickets to helpers in role cards. It verifies what they return. Each repo states its rules in a charter that your team reviews like code.
+Cadre is a Claude Code plugin that runs agents on a software repo with the discipline of a team.
+
+## What you get
+
+- **Your rules, stated once.** Each repo states its rules in a charter: who merges, who deploys, what only a person may do. Your team reviews the charter like code.
+- **A pull request you can trust.** A helper does the ticket in its own worktree. The session that runs the ticket verifies the result, and a separate reviewer reads it before you see the pull request.
+- **A record anyone can resume.** The orchestrator keeps its state in one issue. A new session, or a teammate, continues from that issue.
+
+## What it costs
+
+Each ticket that changes code runs at least one coder and one reviewer. The table shows the helper tokens of three tickets in one session of this repo. The session that runs the ticket adds its own context on top.
+
+| Ticket | Helper tokens |
+| --- | --- |
+| Small: one output format, one review round | about 170,000 |
+| Medium: a new script, two review rounds | about 220,000 |
+| Large: a skill rewrite, two review rounds | about 350,000 |
+
+## What it refuses
+
+- A helper never pushes, merges, deploys, or deletes. Its role card forbids these steps. A hook also denies a helper each guarded step through the Bash tool: a push to the default branch, a force push, a delete of a remote branch, and a merge. See [Guards](#guards) for what the hooks do not cover.
+- The orchestrator merges or deploys only with a grant from you in its ledger. It first verifies the result, and a reviewer reads it.
+- The skills keep secret values out of the charter, the briefs, and the diffs. The charter holds the names of secret stores only.
+
+The branch policy of your repo is still the guard that holds. Cadre slows an agent and stops a slip. It is not a security boundary.
+
+## How it works
+
+An orchestrator shapes the work and gives tickets to helpers in role cards: coder, reviewer, researcher, and tester. It treats each helper report as a claim, and it verifies the claim before it acts.
 
 ## Requirements
 
