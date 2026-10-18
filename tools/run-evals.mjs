@@ -105,12 +105,13 @@ function runPassed(run) {
 }
 
 const clip = (text, max = 200) => {
-  const t = String(text ?? '').replace(/\s+/g, ' ').trim();
+  const t = mask(text).replace(/\s+/g, ' ').trim();
   return t.length > max ? `${t.slice(0, max - 3)}...` : t;
 };
 
 // Say why a run did not pass: its error or abort reason, else the scored graders that failed.
-// Only names, ids, and short messages are used. No path field of the report is read.
+// The code prints only names, ids, and short messages. It reads no path field of the report.
+// clip masks the text first, then cuts it, so a cut never keeps a part of the key.
 function whyFailed(run) {
   if (!run || typeof run !== 'object') return 'the run has no data';
   if (run.error) return `error: ${clip(typeof run.error === 'string' ? run.error : run.error.message ?? JSON.stringify(run.error))}`;
@@ -119,9 +120,9 @@ function whyFailed(run) {
   if (failed.length) {
     const parts = failed.map((g) => {
       const note = g.message ?? g.detail ?? g.reason;
-      return `${g.name ?? g.id ?? 'unnamed grader'}${note ? ` (${clip(note)})` : ''}`;
+      return `${clip(g.name ?? g.id ?? 'unnamed grader', 80)}${note ? ` (${clip(note)})` : ''}`;
     });
-    return `failed graders: ${parts.join(', ')}`;
+    return clip(`failed graders: ${parts.join(', ')}`, 500);
   }
   return typeof run.score === 'number' ? `score ${run.score}, no grader detail in the report` : 'no score and no grader detail in the report';
 }

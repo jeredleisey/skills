@@ -27,13 +27,15 @@ jobs:
           key=kernel.apparmor_restrict_unprivileged_userns
           if sysctl -n "$key" >/dev/null 2>&1; then
             echo "$key was $(sysctl -n "$key")"
-            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+            sudo sysctl -w "$key=0"
           else
             echo "$key is absent"
           fi
       # Prove the sandbox works before the paid step spends money.
       - name: Check the sandbox
-        run: bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all true
+        run: |
+          bwrap --ro-bind / / --dev /dev --proc /proc --unshare-all true
+          socat -V
       - run: node tools/run-evals.mjs
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

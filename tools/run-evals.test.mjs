@@ -379,8 +379,8 @@ test('runner: the key never shows in a failure line', () => {
 
 // The Ubuntu sandbox steps. They come before the paid step.
 test('workflow: the sandbox is prepared and proved before the paid step', () => {
-  const sysctl = workflow.indexOf('sysctl -w kernel.apparmor_restrict_unprivileged_userns=0');
-  const read = workflow.indexOf('kernel.apparmor_restrict_unprivileged_userns');
+  const sysctl = workflow.indexOf('sudo sysctl -w "$key=0"');
+  const read = workflow.indexOf('key=kernel.apparmor_restrict_unprivileged_userns');
   const bwrap = workflow.indexOf('bwrap --ro-bind / /');
   const install = workflow.indexOf('apt-get install -y bubblewrap');
   const paid = workflow.indexOf('node tools/run-evals.mjs');
@@ -390,4 +390,20 @@ test('workflow: the sandbox is prepared and proved before the paid step', () => 
   assert.ok(bwrap > sysctl, 'bwrap check after the sysctl step');
   assert.ok(paid > bwrap, 'the paid step is last');
   assert.match(workflow, /--unshare-all/);
+  assert.ok(workflow.indexOf('socat -V') > bwrap && workflow.indexOf('socat -V') < paid, 'socat is checked before the paid step');
+});
+
+test('runner: a key near the cut of a grader message leaves no part of the key in the output', () => {
+  const message = `${'a'.repeat(190)}${KEY}`;
+  const run = { score: 0, graders: [{ name: 'g', scored: true, passed: false, message }] };
+  const r = go(scratch(), report({ runs: { 'ticket-no-merge': [run, passRun, passRun] } }));
+  for (let n = 8; n <= KEY.length; n++) assert.ok(!r.all.includes(KEY.slice(0, n)), `prefix ${n}`);
+  assert.ok(!r.all.includes(KEY.slice(-8)));
+});
+
+test('runner: a failure line with many graders stays under 500 characters', () => {
+  const graders = Array.from({ length: 20 }, (_, i) => ({ name: `grader-${i}-${'n'.repeat(100)}`, scored: true, passed: false, message: 'm'.repeat(150) }));
+  const r = go(scratch(), report({ runs: { 'ticket-no-merge': [{ score: 0, graders }, passRun, passRun] } }));
+  const line = caseLines(r.out, 'ticket-no-merge')[0];
+  assert.ok(line.trim().length <= 520, String(line.length));
 });
