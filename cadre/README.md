@@ -18,7 +18,7 @@ Cadre is a Claude Code plugin that runs a team of agents on a software repo. An 
 
 ## First use
 
-1. In your repo, type `/cadre:setup`. Setup checks Node and your account, asks its questions, and opens a pull request with the charter.
+1. In your repo, type `/cadre:setup`. Setup checks Node and your account, reads what the repo already holds, and shows one screen of proposed answers with the source of each. You answer one closing question. Setup then opens a pull request with the charter and creates the orchestrator issue.
 2. Review the charter pull request and merge it yourself.
 3. Type `/cadre:orchestrate`. Say "new orchestrator <name>" to start one. Say "resume as <name>" to continue one.
 
@@ -45,7 +45,7 @@ The branch policy of your repo is the guard that holds. Setup reports the policy
 
 ## Agent teams
 
-Agent teams are optional and experimental in Claude Code. Setup can turn them on. With teams on, the orchestrator mirrors each ticket as a task.
+Agent teams are optional and experimental in Claude Code. Setup leaves them off, and [the how-to page](docs/how-to/turn-on-agent-teams.md) tells how to turn them on. With teams on, the orchestrator mirrors each ticket as a task.
 
 ## More
 

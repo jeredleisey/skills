@@ -3,9 +3,9 @@
 Use this when the repo has no `origin`, or the remote is neither GitHub nor ADO. Cadre then offers the local tracker.
 
 1. Type `/cadre:setup`.
-2. Setup says that the repo has no remote, or names the host. For another host, it asks if it is GitHub Enterprise. Say no to use the local tracker.
-3. Confirm the local tracker. Setup runs `local-list.mjs init`. The command adds `/.cadre/` to `.git/info/exclude`.
-4. Answer the questions. Setup commits the charter to a branch named `cadre-charter`. It does not push and does not open a pull request.
+2. Setup says that the repo has no remote, so it uses the local tracker. For another host, it asks one yes-or-no question: is it GitHub Enterprise? Say no to use the local tracker.
+3. Setup runs `local-list.mjs init` with no confirm. The command adds `/.cadre/` to `.git/info/exclude`.
+4. Read the screen and answer the one closing question. A local repo has no repo facts, so most rows are defaults. Setup commits the charter to a branch named `cadre-charter`. It does not push and does not open a pull request.
 5. Review and merge that branch by hand.
 
 The tracker is on this machine only. For where it lives, who owns it, and what the charter holds, see [the orchestrator item](../reference/orchestrator-item.md) and [the charter](../reference/charter.md).

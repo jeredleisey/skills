@@ -9,6 +9,7 @@ Reference for the scripts in `cadre/scripts/`. Each section is one script that a
 - A script prints its result on stdout and exits.
 - Exit code 0 is a result. Exit code 1 is a refusal or a stop. Exit code 2 is `unknown: <reason>`. Exit code 64 is wrong arguments, with a usage message on stderr. A script uses only the codes in its section.
 - `unknown:` is never a pass. Treat it as a refusal.
+- `ado-policy-scope.mjs` is a shared module, not a command. `branch-policy-ado` and `setup-derive` import it to find the policies that cover the default branch.
 - The scripts of the ADO family and the local tracker use internal modules: `out`, `ado`, `resume-core`, `local-store`, `shell-words`, `charter-front-matter`, `ado-fake`, and `task-completed-throw`. They are not user-facing and have no section here.
 
 Environment variables marked **test-only** replace a program or a source so that a test can read a fixture. Do not set them in use.
@@ -19,11 +20,11 @@ Environment variables marked **test-only** replace a program or a source so that
 | `CLAUDE_PID` | user | `holder-check` |
 | `CADRE_DEFAULT_BRANCH` | user | `guard` |
 | `AZURE_DEVOPS_EXT_PAT` | user | `ado-call` and each script that calls ADO |
-| `CLAUDE_CONFIG_DIR` | user | `teams-setting` |
+| `CLAUDE_CONFIG_DIR` | user | `teams-setting`, `setup-derive` |
 | `CADRE_SCHEMA` | test-only | `charter-check` |
 | `CADRE_NODE_CMD` | test-only | `setup-check` |
-| `CADRE_GH_CMD` | test-only | `setup-check`, `resume-read`, `branch-policy` |
-| `CADRE_ADO_CMD` | test-only | `setup-check` and each ADO script |
+| `CADRE_GH_CMD` | test-only | `setup-check`, `resume-read`, `branch-policy`, `setup-derive` |
+| `CADRE_ADO_CMD` | test-only | `setup-check`, `setup-derive`, and each ADO script |
 | `CADRE_PLUGIN_LIST_CMD` | test-only | `preset-discover` |
 | `CADRE_RANDOM_CMD` | test-only | `host-id` |
 | `CLAUDE_AGENTS_JSON_CMD`, `CADRE_PROCESS_CMD` | test-only | `holder-check` |
@@ -108,6 +109,37 @@ Output lines that exit 1 start with `stop:` and say what the human must do:
 Exit 2 is `unknown: <reason>`: a command failed, the repo is not `<owner>/<repo>`, the host is not a host name, the ADO remote path is not readable, the ADO answer is another status, or the ADO answer is not JSON. Exit 64 is wrong arguments.
 
 A missing `node` cannot run this script. A "command not found" for `node` is the same stop.
+
+## setup-derive
+
+Read the setup answers that the repo already holds. It changes nothing. `/cadre:setup` runs it before it asks a question.
+
+```
+node setup-derive.mjs github <owner/repo> [host]
+node setup-derive.mjs ado <org> <project> <repo>
+```
+
+Run it in the repo root. The default host is `github.com`.
+
+| Output | Exit | Meaning |
+| --- | --- | --- |
+| `fact <key> <JSON value> source=<source>` | 0 | One line for each fact that was read. |
+| `unread <key> <reason>` | 0 | One fact cannot be read. The other facts still print. |
+| `unknown: <reason>` | 2 | A name is bad, or the tracker repo cannot be read. |
+
+The facts, in this order:
+
+| Key | Value | Source |
+| --- | --- | --- |
+| `default-branch` | The name of the default branch. | `repo settings` (GitHub) or `repo record` (ADO). |
+| `merge-methods` | A sorted list of `merge`, `rebase`, and `squash`. ADO adds `rebase-merge`. | GitHub: `repo settings`, then the id of each ruleset rule that narrows the list. ADO: `policy <id>` for each live merge strategy policy, or `no merge strategy policy`. |
+| `secrets` | The names of the secrets, never a value. | `gh secret list`. On ADO it is always `unread`, because the token cannot read pipeline variables. |
+| `live-clones` | The absolute paths of the clones that a marketplace of source type `directory` points at. | The marketplace files of the Claude config folder, or `no marketplace file`. |
+| `folders` | The top-level folders that git tracks at `HEAD`. | `git ls-tree HEAD`. |
+
+On GitHub, `merge-methods` is the repo settings `allow_*_merge`, narrowed by the `allowed_merge_methods` of each `pull_request` rule on the default branch. Settings that the account cannot see give `unread`. On ADO, it is the intersection of the lists of each enabled, blocking policy "Require a merge strategy" in scope of the default branch. With no policy, all methods are allowed.
+
+Exit 64 is wrong arguments. Environment: `CADRE_GH_CMD` and `CADRE_ADO_CMD` (test-only) replace `gh` and the ADO client. `CLAUDE_CONFIG_DIR` names the Claude config folder.
 
 ## preset-discover
 
@@ -466,7 +498,7 @@ The permission "Bypass policies when pushing" is not read.
 
 ## teams-setting
 
-Turn on agent teams in one settings file, so that `/cadre:setup` can offer it.
+Turn on agent teams in one settings file. Setup does not call it. A human runs it, as the how-to page says.
 
 ```
 node teams-setting.mjs [local|project|user] [repo-root]

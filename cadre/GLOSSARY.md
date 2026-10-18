@@ -20,6 +20,10 @@ _Avoid_: skill set, toolset
 A kind of work that a role card asks for, such as `test-first` or `code-review`. The charter maps it to a skill: a `skill_pack` preset, plus overrides.
 _Avoid_: skill (when the kind of work is meant)
 
+**Standard grants**:
+The five ledger rows that setup proposes for a new orchestrator: create branches and worktrees, start helpers, push branches (never the default branch), open pull requests (no auto-merge), and edit and comment on issues. Each is reversible. Merge, release, paid evals, and settings are never in the set.
+_Avoid_: default permissions, allowlist
+
 **Preset**:
 A data file of default answers for setup that a plugin ships. A human can change every answer in it.
 _Avoid_: profile, lock

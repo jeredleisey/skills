@@ -27,17 +27,11 @@ Start Claude Code in the `cadre-scratch` clone. Type `/cadre:setup`.
 
 You see `ok node` with a version. Then you see `ok gh <owner>/cadre-scratch`. Setup then reports the branch policy of the repo. A new repo has none, so you see `gap:` lines. That is normal for this lesson.
 
-Setup asks its questions one at a time. For the scratch repo, answer like this:
+Setup then shows one screen. It is a table with the columns Row, Proposed value, and Source. Setup read the merge methods, the secret names, and the folders from the repo, and it proposes a default for each other row. Read the rows. The Merge row offers only the methods that your repo allows.
 
-1. Skill pack: `none`.
-2. Owners: "All files, one orchestrator."
-3. Merge: "I merge, by rebase."
-4. Documentation: "None."
-5. Only the human: "None."
-6. Secrets, traps, live clones: "None."
-7. Extra card: "None."
+Setup asks one closing question. Type this answer: "merge: rebase. orchestrator issue: name Scratch, purpose Practice run in a scratch repo." Setup shows the two changed rows and asks once more. Choose "Accept all (Recommended)".
 
-Setup may offer agent teams. Say no.
+Setup does not turn on agent teams. Its report says that they are off.
 
 You see a pull request URL. The pull request adds `docs/agents/cadre-charter.md`.
 
@@ -47,13 +41,13 @@ Open the pull request on GitHub. Read the charter. Merge it yourself. Then, in t
 
 Cadre never merges this pull request for you. You see the charter on `main`.
 
-## 4. Start an orchestrator
+## 4. Find the orchestrator
 
-Type `/cadre:orchestrate`. Say: "new orchestrator scratch".
+Setup also made an orchestrator issue, because the row was on. Type `/cadre:orchestrate`. Say: "resume as scratch".
 
-The orchestrator asks for a purpose if you did not give one. Say: "Practice run in a scratch repo."
+To make another orchestrator later, say "new orchestrator <name>". It asks for a purpose if you did not give one, and it offers the same five standard grants.
 
-You see a new issue in the repo, titled `Orchestrator: Scratch`. It has the label `cadre:orchestrator` and you are the assignee. Its body has four sections: Purpose, Repos, Ledger, and Holder. The Ledger is empty.
+You see the issue in the repo, titled `Orchestrator: Scratch`. It has the label `cadre:orchestrator` and you are the assignee. Its body has four sections: Purpose, Repos, Ledger, and Holder. The Ledger holds the five standard grants, each with you as Granted by.
 
 ## 5. Give it one ticket
 

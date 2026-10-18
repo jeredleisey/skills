@@ -44,7 +44,9 @@ A body write replaces the whole body. A second writer, or a stale copy of yours,
 
 ## New
 
-1. Get a name and a purpose from the human. Search for the name in open and closed issues: `gh issue list --label cadre:orchestrator --state all --limit 200 --json title`. Refuse a title that matches, ignoring case. If the list has 200 items, there may be more: ask the human to narrow the name.
+The standard grants are five ledger rows: create branches and worktrees, start helpers, push branches (never the default branch), open pull requests (no auto-merge), and edit and comment on issues. Each is reversible. Merge, release, paid evals, and settings are never in the set. `/cadre:setup` proposes this set on its one screen and writes it in the Ledger of the new issue, with the owner as Granted by, today's date, and `indefinite`. A new orchestrator from `/cadre:orchestrate` offers the same set, and the human can clear any row.
+
+1. Get a name and a purpose from the human. Setup gives both from its screen, so it does not ask. Search for the name in open and closed issues: `gh issue list --label cadre:orchestrator --state all --limit 200 --json title`. Refuse a title that matches, ignoring case. If the list has 200 items, there may be more: ask the human to narrow the name.
 2. If `gh label list` lacks `cadre:orchestrator`, run `gh label create cadre:orchestrator`.
 3. Create it with `gh issue create --title "Orchestrator: <Name>" --label cadre:orchestrator --assignee @me --body-file <file>`. The ledger is empty. The Holder is this session and this host.
 4. Read the issue back. Done when it shows the four sections and the owner as assignee.
