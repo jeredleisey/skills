@@ -77,7 +77,7 @@ You see the pull request merged, and `hello.txt` on `main`. The orchestrator the
 
 Close Claude Code. Open it again in the same clone. Type `/cadre:orchestrate`. Say: "resume as scratch".
 
-You see the orchestrator read its issue. It keeps the name `Scratch`. It keeps its ledger rows. It reads the newest checkpoint and checks each next step against the tracker.
+You see the orchestrator read its issue. It keeps the name `Scratch`. It keeps the five standard grants. It deletes the merge grant, because that grant ended with its session. It reads the newest checkpoint and checks each next step against the tracker.
 
 Open a second Claude Code session in the same folder while the first is still open. Say "resume as scratch" there. The resume is refused, and you see the pid and folder of the first session. Only one session holds a name.
 

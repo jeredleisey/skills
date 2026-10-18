@@ -156,7 +156,7 @@ Done when the human chose an option.
 4. Read `version` in `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`. Put `cadre <version>` in `written_by`.
 5. Make sure that `.gitignore` has the line `.claude/worktrees/`. Add it if not.
 6. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs" <worktree>`. The line must be `ok`. If not, fix the file.
-7. Commit the files. Local: make no push and no pull request. Say the branch name, and that the human reviews and merges it by hand, then go to step 8. Otherwise push with `git push -u origin cadre-charter`.
+7. Commit the files. Local: make no push and no pull request. Say the branch name, and that the human reviews and merges it by hand, then go to section 8, Create the orchestrator issue. Otherwise push with `git push -u origin cadre-charter`.
 8. Open the pull request. GitHub: `gh pr create --base <default branch> --head cadre-charter`. ADO: `az repos pr create --source-branch cadre-charter --target-branch <default branch> --title "<title>" --description "<text>" --repository "<repo>" --project "<project>" --organization https://dev.azure.com/<org>`. Never add `--auto-complete`.
 9. Say the URL. Say that the human merges it, and that `/cadre:orchestrate` works after the merge.
 
@@ -168,11 +168,11 @@ Skip this step when the Orchestrator issue row is off.
 
 Follow the New steps of [the orchestrator issue reference](../orchestrate/references/orchestrator-issue.md#new), in the form of the tracker: GitHub, [ADO](../orchestrate/references/orchestrator-issue.md#on-azure-devops) with the area path and the item type of step 5, or [local](../orchestrate/references/orchestrator-issue.md#on-the-local-tracker). Take the name and the purpose from the row. Do not ask.
 
-Put one Ledger row for each grant that is still on. Granted by is the login of the owner (ADO: the unique name. Local: the OS user name). Scope is `this repo`. When is today's date, then `indefinite`. Get the date with `node -e "console.log(new Date().toISOString().slice(0,10))"`. Write the Holder as `session: none`, `host: none`, `since: none`, because setup is not the orchestrator. A later `resume as <name>` then sees `free`. Local: `local-list.mjs new` makes an empty Ledger, so run `local-list.mjs put <name> Ledger <file>` with the rows after it.
+Put one Ledger row for each grant that is still on. Granted by is the login of the owner (ADO: the unique name. Local: the OS user name). Action is the text of the grant. Repo or host is the repo. Scope is `this repo`. When is today's date, then `indefinite`. Get the date with `node -e "console.log(new Date().toISOString().slice(0,10))"`. Write the Holder as `session: none`, `host: none`, `since: none`, because setup is not the orchestrator. A later `resume as <name>` then sees `free`. Local: `local-list.mjs new` makes an empty Ledger, so run `local-list.mjs put <name> Ledger <file>` after it. The file holds the header row, the separator row, and then the grant rows.
 
 Skip the issue, with no question, when the name is taken, when the list is full (200 items), or when ADO says `too many results`. Say in the report that the human can make one with `/cadre:orchestrate`.
 
-Done when the issue shows the four sections, the owner as assignee, a Ledger row for each standard grant that is on, and the Holder `none`. Or the row is off, or the issue was skipped.
+Done when the issue shows the four sections, the owner as assignee (local: the `owner:` line), a Ledger row for each standard grant that is on, and the Holder `none`. Or the row is off, or the issue was skipped.
 
 ### 9. Report
 
