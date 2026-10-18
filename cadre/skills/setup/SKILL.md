@@ -28,6 +28,8 @@ Nothing else asks.
 
 If the path `${CLAUDE_PLUGIN_ROOT}` shows as empty or literal, use the folder two levels above this skill's base directory. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" node`. If the shell says that `node` is not found, stop. Say: install Node 22 or later, then type /cadre:setup again.
 
+Done when the line is `ok node <version>`.
+
 ### 2. Find the repo, state the tracker, and check the account
 
 1. Run `git rev-parse --show-toplevel`. It is the repo root.
@@ -42,6 +44,8 @@ If the path `${CLAUDE_PLUGIN_ROOT}` shows as empty or literal, use the folder tw
 3. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" remote "<url>"`. An `unknown:` line ends setup. The line `ok ado-remote {"org":"<org>","repo":"<repo>","project":"<project>"}` means ADO. Read the three names from the JSON: a repo or a project can hold a space. The line `ok not-ado` means GitHub. Say the tracker. Do not ask.
 4. GitHub: read the host and `<owner>/<repo>` from the URL. Accept an https URL or an ssh URL such as `git@host:owner/repo.git`. Drop a final `.git`. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" gh <owner>/<repo> [host]`. Add the host only when it is not `github.com`. A `stop:` line names `gh auth switch`. A 404 can mean the wrong account.
 5. ADO: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/setup-check.mjs" ado "<org>" "<project>"`. ADO works through a token in the variable `AZURE_DEVOPS_EXT_PAT`. A `stop:` line names it. An empty variable is the first thing to check, and the check never prints the token. Do not run `az login` as a fix.
+
+Done when the line is `ok gh <owner>/<repo>`, `ok ado <org>/<project>`, or `ok init <folder>`.
 
 ### 3. Read the charter that exists
 
@@ -59,6 +63,8 @@ Then act on the line:
 - `plugin-too-old`: end setup. Say to update cadre, then type /cadre:setup again.
 - `unknown: <reason>`: say the reason. Tell the human to fix the front matter or remove the file. Do not overwrite it.
 
+Done when you know which rows the charter fills.
+
 ### 4. Gather the facts
 
 This step asks nothing.
@@ -75,6 +81,8 @@ This step asks nothing.
 4. Files. Read `AGENTS.md`, `CLAUDE.md`, and the README in the repo root. Take a fact from them only when the file states it: an owner, a deploy command, a documentation rule, a trap, a secret store. Source is `file <name>`. Do not guess an answer from the file of another tool.
 5. Skill pack. Run `claude plugin list`. If exactly one of `mattpocock-skills` and `superpowers` is installed, it is the default. Else the default is `none`. If the command fails, the default is `none`, and a note says so.
 
+Done when you hold each fact, each note, and each source.
+
 ### 5. Ask the ADO questions
 
 ADO only. Local and GitHub skip this step. Ask both before the screen.
@@ -83,6 +91,8 @@ ADO only. Local and GitHub skip this step. Ask both before the screen.
 - Which work item type holds the orchestrator item? Offer `Task` or the type that a preset gives. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/ado-setup.mjs" type "<org>" "<project>" "<type>"`. A `refuse:` line means that the type does not work: say its reason, and offer its `propose:` type. Never accept a refused type. `unknown:` ends setup.
 
 The area path and the type go in the `## Tracker` section of the charter.
+
+Done when the area path and the type pass their checks, or the tracker is not ADO.
 
 ### 6. Show the screen and ask the closing question
 
@@ -136,6 +146,8 @@ Then ask the closing question with the AskUserQuestion tool. Offer two options: 
 - A typed answer names the rows to change, such as "merge: squash" or "traps: add the shared clone". Apply it. Refuse a change that offers a merge method that `merge-methods` does not list, or a skill pack outside the three, or a secret value. Say why, and keep the proposed value. Show only the changed rows, with the source `human`. Ask the same question once more.
 - After the second question, a typed answer is applied and shown, and setup goes on. The pull request of step 7 is the last review.
 
+Done when the human chose an option.
+
 ### 7. Write the charter in a pull request
 
 1. Work in a worktree, not in the clone. Use the default branch of step 3. Run `git worktree add .claude/worktrees/cadre-charter -b cadre-charter origin/<default branch>`. Local: use `<default branch>` with no `origin/`. If the branch name exists, add a number to it. Do all edits in that worktree.
@@ -148,6 +160,8 @@ Then ask the closing question with the AskUserQuestion tool. Offer two options: 
 8. Open the pull request. GitHub: `gh pr create --base <default branch> --head cadre-charter`. ADO: `az repos pr create --source-branch cadre-charter --target-branch <default branch> --title "<title>" --description "<text>" --repository "<repo>" --project "<project>" --organization https://dev.azure.com/<org>`. Never add `--auto-complete`.
 9. Say the URL. Say that the human merges it, and that `/cadre:orchestrate` works after the merge.
 
+Done when the check printed `ok` on the branch, and the pull request is open (local: the branch is committed).
+
 ### 8. Create the orchestrator issue
 
 Skip this step when the Orchestrator issue row is off.
@@ -158,9 +172,13 @@ Put one Ledger row for each grant that is still on. Granted by is the login of t
 
 Skip the issue, with no question, when the name is taken, when the list is full (200 items), or when ADO says `too many results`. Say in the report that the human can make one with `/cadre:orchestrate`.
 
+Done when the issue shows the four sections, the owner as assignee, a Ledger row for each standard grant that is on, and the Holder `none`. Or the row is off, or the issue was skipped.
+
 ### 9. Report
 
 Say the URL of the pull request (or the branch name, local). Say the reference of the orchestrator issue, or that none was made. Say each row that the human changed. Say that agent teams are off, and that the how-to page "Turn on agent teams" tells how to turn them on.
+
+Done when the human has the report.
 
 ## Rules
 
