@@ -21,6 +21,8 @@ The charter field `tracker` picks the form: absent for a GitHub issue, `ado` for
 
 One human owns one orchestrator. The Granted by cell of each ledger row is the owner: the GitHub login, the ADO unique name (often an email address), or the OS user name.
 
+A ledger row is only as trustworthy as the edit rights on the item. Let only the owner and trusted people edit it (GitHub: who can edit issues; ADO: area permissions; local: the file's owner).
+
 ## Sections
 
 The body has four sections, found by their headings. A heading twice, a heading in a code fence, or a code fence that is not closed makes the item `unknown`.

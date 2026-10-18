@@ -8,7 +8,7 @@ A marketplace of Claude Code plugins, named `jeredleisey`.
 
 ## Docs
 
-Read the docs at <https://www.jeredleisey.com/skills/>, or in [`cadre/docs/`](cadre/docs/README.md).
+Read the docs at <https://cadre.jeredleisey.com/>, or in [`cadre/docs/`](cadre/docs/README.md).
 
 ## Install
 

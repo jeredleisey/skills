@@ -1,6 +1,5 @@
 // Read named top-level fields from the front matter of a charter.
-// The rules are those of charter-check.mjs, which keeps its own copy: its test copies that one
-// file alone, so it cannot import this module. Change both together.
+// charter-check.mjs and guard.mjs both use this module.
 //   - The front matter starts on line 1 with --- and ends at the next ---.
 //   - A blank line, a comment, an indented line, and a list line are skipped.
 //   - Any other line must be `key: value`, or the parser throws an Error with the reason.

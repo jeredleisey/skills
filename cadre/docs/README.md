@@ -1,6 +1,6 @@
 # cadre docs
 
-Cadre is a Claude Code plugin that runs a team of agents on a software repo. The docs follow the four kinds of the Diátaxis form. Read the site at <https://www.jeredleisey.com/skills/>, or read these files on GitHub.
+Cadre is a Claude Code plugin that runs a team of agents on a software repo. The docs follow the four kinds of the Diátaxis form. Read the site at <https://cadre.jeredleisey.com/>, or read these files on GitHub.
 
 ## Tutorials
 

@@ -29,6 +29,7 @@ since: <ISO UTC time, or none>
 ```
 
 - `Granted by` is the GitHub login of the owner. Row numbers count only the filled rows, from 1 under the header. `When` is an ISO date, then `session <id>` or `indefinite`.
+- A ledger row is only as trustworthy as the edit rights on the item. Let only the owner and trusted people edit it (GitHub: who can edit issues; ADO: area permissions; local: the file's owner).
 - The `host` is a random host id. Never write a device name: the issue can be public.
 
 ## Write the body

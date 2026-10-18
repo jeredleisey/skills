@@ -6,7 +6,7 @@
 // Output and exit code:
 //   nothing, exit 0         the command is not guarded, or the charter allows it for the orchestrator
 //   permissionDecision ask  exit 0   the orchestrator needs the word of the human
-//   permissionDecision deny exit 0   the call has agent_id (even empty or null), so a helper made it
+//   permissionDecision deny exit 0   the call has agent_id (even empty or null) or agent_type, so a helper made it
 //   a reason on stderr      exit 2   the hook cannot tell: it blocks the command
 // A helper is always denied. The charter never lifts that.
 // The charter is read from the commit origin/<default branch> of the repo of cwd, never from the
