@@ -9,7 +9,7 @@
 // The file is unknown when it is missing, a section is missing or twice, or a heading is in a code fence.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { auditLedger, holderWho, okLine, parseHolder, pickCheckpoint, same } from './resume-core.mjs';
+import { auditLedger, holderWho, markdownLedger, okLine, parseHolder, pickCheckpoint, same } from './resume-core.mjs';
 import { locate, localUser, parseFile, slug } from './local-store.mjs';
 import { say } from './out.mjs';
 
@@ -52,16 +52,10 @@ try {
   unknown(e.message);
 }
 
-const splitRow = (line) => line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
-const [header, ...rows] = section('Ledger').filter((l) => l.trim().startsWith('|'));
 let audit;
 try {
-  audit = auditLedger(
-    header ? splitRow(header) : null,
-    rows.map(splitRow).filter((cells) => !cells.every((c) => /^[:\s-]*$/.test(c))),
-    parsed.owner,
-    sessionArg,
-  );
+  const { header, rows } = markdownLedger(section('Ledger'));
+  audit = auditLedger(header, rows, parsed.owner, sessionArg);
 } catch (e) {
   unknown(e.message);
 }

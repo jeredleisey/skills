@@ -20,7 +20,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { orgUrl, projectUrl, readJson } from './ado.mjs';
 import { parseFrontMatter } from './charter-front-matter.mjs';
-import { auditLedger, holderWho, okLine, parseHolder, pickCheckpoint, same } from './resume-core.mjs';
+import { auditLedger, decodeHtml, holderWho, htmlLedger, htmlSections, okLine, parseHolder, pickCheckpoint, same } from './resume-core.mjs';
 import { say as done } from './out.mjs';
 
 const unknown = (reason) => done(`unknown: ${reason}`, 2);
@@ -90,19 +90,15 @@ const state = category === 'Completed' || category === 'Removed' ? 'closed' : 'o
 
 // ---- the description ----
 
-const decode = (t) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
+const decode = decodeHtml;
 const html = fields['System.Description'];
 if (typeof html !== 'string') unknown('the item has no description');
-const text = html.replace(/\r\n/g, '\n');
-
-const headings = [...text.matchAll(/<h2>([^<]*)<\/h2>/g)];
-if ((text.match(/<h2\b/gi) ?? []).length !== headings.length) unknown('a heading is not in the form <h2>Name</h2>');
-const sections = new Map();
-headings.forEach((h, i) => {
-  const title = decode(h[1]).trim().toLowerCase();
-  if (sections.has(title)) unknown(`the description has the heading ${decode(h[1]).trim()} twice`);
-  sections.set(title, text.slice(h.index + h[0].length, i + 1 < headings.length ? headings[i + 1].index : undefined));
-});
+let sections;
+try {
+  sections = htmlSections(html);
+} catch (e) {
+  unknown(e.message);
+}
 const section = (name) => sections.get(name.toLowerCase()) ?? unknown(`the description has no ${name} section`);
 
 // Holder: one <pre> block
@@ -118,20 +114,10 @@ try {
 }
 
 // Ledger: one table
-const tableBlock = /^\s*<table>([\s\S]*)<\/table>\s*$/.exec(section('Ledger'));
-if (!tableBlock || /<\/?table\b/i.test(tableBlock[1])) unknown('the Ledger section is not one <table>');
-const grid = [];
-for (const row of tableBlock[1].matchAll(/<tr>([\s\S]*?)<\/tr>/g)) {
-  const cells = [...row[1].matchAll(/<(th|td)>([^<]*)<\/\1>/g)];
-  if (row[1].replace(/<(th|td)>[^<]*<\/\1>/g, '').trim() !== '') unknown('a Ledger row holds markup inside or beside its cells');
-  grid.push({ kinds: cells.map((c) => c[1]), cells: cells.map((c) => decode(c[2]).trim()) });
-}
-if (tableBlock[1].replace(/<tr>[\s\S]*?<\/tr>/g, '').trim() !== '') unknown('the Ledger table holds something besides rows');
-const [headRow, ...bodyRows] = grid;
-if (!headRow || headRow.kinds.some((k) => k !== 'th') || bodyRows.some((r) => r.kinds.some((k) => k !== 'td'))) unknown('the Ledger table has no header row of <th> cells and rows of <td> cells');
 let audit;
 try {
-  audit = auditLedger(headRow.cells, bodyRows.map((r) => r.cells).filter((cells) => !cells.every((c) => c === '')), assignee, sessionArg);
+  const { header, rows } = htmlLedger(section('Ledger'));
+  audit = auditLedger(header, rows, assignee, sessionArg);
 } catch (e) {
   unknown(e.message);
 }

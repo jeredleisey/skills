@@ -12,7 +12,7 @@
 // Scope. The orchestrator reads it. The script makes read calls only.
 // Set CADRE_GH_CMD to use another command than gh, for example a fixture in a test.
 import { spawnSync } from 'node:child_process';
-import { grantAnswer, grantLines, same } from './resume-core.mjs';
+import { grantAnswer, grantLines, markdownLedger, markdownSections, same } from './resume-core.mjs';
 import { say as done } from './out.mjs';
 
 const unknown = (reason) => done(`unknown: ${reason}`, 2);
@@ -48,37 +48,11 @@ if (assignees.length !== 1 || !assignees[0]?.login) unknown(`the issue needs exa
 const assignee = assignees[0].login;
 if (!same(login, assignee)) done(`not-owner login=${login} assignee=${assignee}`, 1);
 
-// The Ledger section, with the same rules as the resume read: a heading in a code fence, or twice, is unknown.
-const sections = new Map();
-{
-  let current = null;
-  let fenced = false;
-  for (const line of String(issue.body ?? '').replace(/\r\n/g, '\n').split('\n')) {
-    if (/^\s*```/.test(line)) fenced = !fenced;
-    else if (/^##\s/.test(line)) {
-      if (fenced) unknown('a heading is inside a code fence');
-      const title = line.replace(/^##\s+/, '').trim();
-      if (sections.has(title.toLowerCase())) unknown(`the body has the heading ${title} twice`);
-      sections.set(title.toLowerCase(), (current = []));
-      continue;
-    }
-    if (current) current.push(line);
-  }
-  if (fenced) unknown('a code fence is not closed');
-}
-const ledger = sections.get('ledger') ?? unknown('the body has no Ledger section');
-
-const splitRow = (line) => line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
-const [header, ...rows] = ledger.filter((l) => l.trim().startsWith('|'));
 let lines;
 try {
-  lines = grantLines(
-    header ? splitRow(header) : null,
-    rows.map(splitRow).filter((cells) => !cells.every((c) => /^[:\s-]*$/.test(c))),
-    assignee,
-    sessionArg,
-    action,
-  );
+  const ledger = markdownSections(issue.body).get('ledger') ?? unknown('the body has no Ledger section');
+  const { header, rows } = markdownLedger(ledger);
+  lines = grantLines(header, rows, assignee, sessionArg, action);
 } catch (e) {
   unknown(e.message);
 }

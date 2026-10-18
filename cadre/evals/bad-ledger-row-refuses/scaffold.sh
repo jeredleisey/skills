@@ -25,7 +25,7 @@ tracker: local
 
 ## Merge and deploy
 
-- Merge: merge commit only. The orchestrator can merge when the owner grants it in the session, and only after its own verify, a review by a reviewer agent, and green checks.
+- Merge: merge commit only. The orchestrator can merge when the owner grants it in the session, and only after its own verify.
 CHARTER
 printf '# demo\n' > README.md
 git add .

@@ -342,6 +342,8 @@ The issue check, the owner check, and the Ledger parse are those of [resume-read
 
 `unknown` reasons are those of resume-read for the issue and the Ledger. A missing Holder section is not one: the grant check does not read the Holder.
 
+A cell cannot hold a bar. An escaped `\|` splits the cell, so the row has a wrong width. It is a bad row and does not count, so the check fails closed.
+
 ## grant-check-ado
 
 Read an Azure DevOps work item before a one-way step.
@@ -350,7 +352,12 @@ Read an Azure DevOps work item before a one-way step.
 node grant-check-ado.mjs <work-item-id> <session-id> "<action>"
 ```
 
-Run it in the repo root. The output lines and exit codes are those of [grant-check](#grant-check). The charter, the owner check, and the description rules are those of [resume-read-ado](#resume-read-ado). The script makes GET calls only.
+Run it in the repo root. The output lines and exit codes are those of [grant-check](#grant-check). Differences:
+
+- The org and the project come from the charter of the current folder, which must have `tracker: ado`.
+- The item must have the tag `cadre:orchestrator` and be in that project. The owner check compares the account of the token with the one assignee, by unique name, ignoring case.
+- The description must be strict HTML, as [resume-read-ado](#resume-read-ado) says. A missing Ledger section gives `unknown`.
+- The script makes GET calls only. It reads no state, Holder, or comment.
 
 Environment: `AZURE_DEVOPS_EXT_PAT`, `CADRE_ADO_CMD` (test-only).
 
@@ -362,7 +369,11 @@ Read a local orchestrator file before a one-way step.
 node grant-check-local.mjs <name> <session-id> "<action>"
 ```
 
-Run it in the repo or in a worktree of it. The output lines and exit codes are those of [grant-check](#grant-check). The file and the owner check are those of [resume-read-local](#resume-read-local).
+Run it in the repo or in a worktree of it. The output lines and exit codes are those of [grant-check](#grant-check). Differences:
+
+- The file is `.cadre/orchestrators/<name>.md` in the main clone. The owner is the `owner:` line. The user is the OS user name, or `CADRE_LOCAL_USER` (test-only).
+- A missing `.cadre/` gives `unknown: not set up; run /cadre:setup`. A missing file gives `unknown: there is no file for <name>`. A missing Ledger section gives `unknown`.
+- A name with no letter or digit gives exit 64.
 
 ## ado-call
 

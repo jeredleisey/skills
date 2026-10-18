@@ -4,7 +4,7 @@
 // grant-check.mjs. The file, the owner check, and the Ledger parse are those of resume-read-local.mjs.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { grantAnswer, grantLines, same } from './resume-core.mjs';
+import { grantAnswer, grantLines, markdownLedger, same } from './resume-core.mjs';
 import { locate, localUser, parseFile, slug } from './local-store.mjs';
 import { say as done } from './out.mjs';
 
@@ -35,17 +35,10 @@ const user = localUser();
 if (!same(user, parsed.owner)) done(`not-owner login=${user} assignee=${parsed.owner}`, 1);
 const ledger = parsed.sections.get('ledger') ?? unknown('the file has no Ledger section');
 
-const splitRow = (line) => line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
-const [header, ...rows] = ledger.filter((l) => l.trim().startsWith('|'));
 let lines;
 try {
-  lines = grantLines(
-    header ? splitRow(header) : null,
-    rows.map(splitRow).filter((cells) => !cells.every((c) => /^[:\s-]*$/.test(c))),
-    parsed.owner,
-    sessionArg,
-    action,
-  );
+  const { header, rows } = markdownLedger(ledger);
+  lines = grantLines(header, rows, parsed.owner, sessionArg, action);
 } catch (e) {
   unknown(e.message);
 }

@@ -79,6 +79,16 @@ test('a When that is neither indefinite nor this session does not count', () => 
   assert.deepEqual([r.lines, r.code], [['none'], 1]);
 });
 
+test('a When that only holds the word indefinite in a longer text does not count', () => {
+  const r = ask([row('ada', 'merge pull request', 'all', '2026-10-18 not indefinite, ask first')]);
+  assert.deepEqual([r.lines, r.code], [['none'], 1]);
+});
+
+test('an escaped bar in a cell makes the row bad, so it fails closed', () => {
+  const r = ask([row('ada', 'merge pull request', 'a \\| b', '2026-10-18 indefinite')]);
+  assert.deepEqual([r.lines, r.code], [['none'], 1]);
+});
+
 test('an action with no row gives none and exit 1', () => {
   const r = ask([row('ada', 'open pull request', 'all', '2026-10-18 indefinite')]);
   assert.deepEqual([r.lines, r.code], [['none'], 1]);

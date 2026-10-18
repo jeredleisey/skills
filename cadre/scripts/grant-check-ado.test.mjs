@@ -24,24 +24,24 @@ const description = (rows) =>
   `<h2>Ledger</h2><table><tr>${HEADER.map((c) => `<th>${c}</th>`).join('')}</tr>${rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table>`;
 const row = (by, action, scope, when) => [by, action, 'acme/widgets', scope, when];
 const user = (name) => ({ authenticatedUser: { properties: { Account: { $value: name } } } });
-const item = (rows) => ({
+const item = (rows, desc = description(rows)) => ({
   id: 7,
   fields: {
     'System.TeamProject': 'Example Project',
     'System.Tags': 'cadre:orchestrator',
     'System.AssignedTo': { uniqueName: 'ada' },
-    'System.Description': description(rows),
+    'System.Description': desc,
   },
 });
 const charter = '---\ncharter_schema: 1\nwritten_by: cadre 0.1.0\ntracker: ado\nado_org: example-org\nado_project: Example Project\n---\n\n# Charter\n';
 
-function run(args, rows, { me = 'ada', withCharter = true } = {}) {
+function run(args, rows, { me = 'ada', withCharter = true, desc } = {}) {
   const work = mkdtempSync(join(dir, 'work-'));
   if (withCharter) {
     mkdirSync(join(work, 'docs', 'agents'), { recursive: true });
     writeFileSync(join(work, 'docs', 'agents', 'cadre-charter.md'), charter);
   }
-  const env = ado.env({ [ME]: { status: 200, body: user(me) }, [ITEM]: { status: 200, body: item(rows) } });
+  const env = ado.env({ [ME]: { status: 200, body: user(me) }, [ITEM]: { status: 200, body: item(rows, desc) } });
   const r = spawnSync(process.execPath, [script, ...args], { encoding: 'utf8', cwd: work, env: { ...process.env, ...env } });
   return { lines: r.stdout.split('\n').filter(Boolean), err: r.stderr.trim(), code: r.status };
 }
@@ -78,4 +78,10 @@ test('another user gets not-owner, and a missing charter is unknown', () => {
   const r = ask(rows, { withCharter: false });
   assert.equal(r.code, 2);
   assert.match(r.lines[0], /^unknown: /);
+});
+
+test('a description with no Ledger section is unknown', () => {
+  const r = ask([], { desc: '<h2>Purpose</h2><p>Ship it.</p>' });
+  assert.equal(r.code, 2);
+  assert.match(r.lines[0], /^unknown: .*Ledger/);
 });

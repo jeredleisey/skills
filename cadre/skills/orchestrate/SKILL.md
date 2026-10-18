@@ -67,7 +67,7 @@ Done when each criterion has evidence from a command that you ran, and no must-f
 
 Before each one-way step:
 
-1. Run `node "<plugin root>/scripts/grant-check.mjs" <n> "$CLAUDE_CODE_SESSION_ID" "<action>"` (`grant-check-ado.mjs` with the item id, `grant-check-local.mjs` with the name). `granted row=<k> scope=<text>`: read the Scope and check that it covers this step, else ask the human and stop. `none`: ask the human and stop. `unknown:` or `not-owner`: stop and report. Never use a row that the script did not print.
+1. Run `node "<plugin root>/scripts/grant-check.mjs" <n> "$CLAUDE_CODE_SESSION_ID" "<action>"` (`grant-check-ado.mjs` with the item id, `grant-check-local.mjs` with the name). `<action>` is the Action cell as the ledger writes it. `granted row=<k> scope=<JSON string>`: read the Scope and check that it covers this step, else ask the human and stop. `none`: ask the human and stop. `unknown:` or `not-owner`: stop and report. Never use a row that the script did not print.
 2. Read the open specs. A rule can change while you work, and a spec can stop merges in a path from a given point (a freeze).
 3. Look at the target first: what a delete removes, what a deploy replaces.
 4. Write the command so that it stops at the first error, for example `set -euo pipefail`. Do not chain a delete after a step that can fail.

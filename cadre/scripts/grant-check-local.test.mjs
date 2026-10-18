@@ -2,7 +2,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -67,4 +67,13 @@ test('another user gets not-owner, and a missing file is unknown', () => {
   const m = ask(rows, undefined, ['nobody', SESSION, 'merge pull request']);
   assert.equal(m.code, 2);
   assert.match(m.lines[0], /^unknown: .*nobody/);
+});
+
+test('a file with no Ledger section is unknown', () => {
+  const repo = makeRepo([]);
+  const file = join(repo, '.cadre', 'orchestrators', 'rigel.md');
+  writeFileSync(file, readFileSync(file, 'utf8').replace(/## Ledger[\s\S]*?(?=## Holder)/, ''));
+  const r = exec(process.execPath, repo, [script, 'rigel', SESSION, 'merge pull request']);
+  assert.equal(r.code, 2);
+  assert.match(r.lines[0], /^unknown: .*Ledger/);
 });
