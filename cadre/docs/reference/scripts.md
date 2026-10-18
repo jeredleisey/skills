@@ -132,9 +132,9 @@ The facts, in this order:
 | Key | Value | Source |
 | --- | --- | --- |
 | `default-branch` | The name of the default branch. | `repo settings` (GitHub) or `repo record` (ADO). |
-| `merge-methods` | A sorted list of `merge`, `rebase`, and `squash`. ADO adds `rebase-merge`. | GitHub: `repo settings`, then the id of each ruleset rule that narrows the list. ADO: `policy <id>` for each live merge strategy policy, or `no merge strategy policy`. |
+| `merge-methods` | A sorted list of `merge`, `rebase`, and `squash`. ADO adds `rebase-merge`. | GitHub: `repo settings`, then `ruleset <ruleset id>` for each narrowing ruleset. ADO: `policy <id>` for each live merge strategy policy, or `no merge strategy policy`. |
 | `secrets` | The names of the secrets, never a value. | `gh secret list`. On ADO it is always `unread`, because the token cannot read pipeline variables. |
-| `live-clones` | The absolute paths of the clones that a marketplace of source type `directory` points at. | The marketplace files of the Claude config folder, or `no marketplace file`. |
+| `live-clones` | The absolute paths of the clones that a marketplace of source type `directory` points at. | The marketplace files of the Claude config folder, or `no marketplace file`. Only clones of this repo are listed, matched by the git common dir. |
 | `folders` | The top-level folders that git tracks at `HEAD`. | `git ls-tree HEAD`. |
 
 On GitHub, `merge-methods` is the repo settings `allow_*_merge`, narrowed by the `allowed_merge_methods` of each `pull_request` rule on the default branch. Settings that the account cannot see give `unread`. On ADO, it is the intersection of the lists of each enabled, blocking policy "Require a merge strategy" in scope of the default branch. With no policy, all methods are allowed.

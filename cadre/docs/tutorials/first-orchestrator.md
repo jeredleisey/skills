@@ -25,7 +25,7 @@ You see that the marketplace `jeredleisey` was added, and then that `cadre` is i
 
 Start Claude Code in the `cadre-scratch` clone. Type `/cadre:setup`.
 
-You see `ok node` with a version. Then you see `ok gh <owner>/cadre-scratch`. Setup then reports the branch policy of the repo. A new repo has none, so you see `gap:` lines. That is normal for this lesson.
+You see `ok node` with a version. Then you see `ok gh <owner>/cadre-scratch`. Setup then reads the branch policy of the repo. A new repo has none, so the Traps row of the screen lists the gaps. That is normal for this lesson.
 
 Setup then shows one screen. It is a table with the columns Row, Proposed value, and Source. Setup read the merge methods, the secret names, and the folders from the repo, and it proposes a default for each other row. Read the rows. The Merge row offers only the methods that your repo allows.
 
@@ -67,7 +67,7 @@ The orchestrator then reports to you. The end of its message has a numbered list
 
 Say yes to the merge. Give the permission in your own words, for example: "Yes, merge the pull request for hello.txt."
 
-The orchestrator adds a row to the Ledger of its issue. It then pushes the branch and opens a pull request. A push of an ordinary branch passes with no prompt.
+The orchestrator adds a sixth row to the Ledger of its issue, for the merge. It then pushes the branch and opens a pull request. A push of an ordinary branch passes with no prompt.
 
 When it runs `gh pr merge`, the cadre hook stops the command. You see a prompt that asks you to allow the merge. This is the guard. Allow it.
 
@@ -77,7 +77,7 @@ You see the pull request merged, and `hello.txt` on `main`. The orchestrator the
 
 Close Claude Code. Open it again in the same clone. Type `/cadre:orchestrate`. Say: "resume as scratch".
 
-You see the orchestrator read its issue. It keeps the name `Scratch`. It keeps the ledger row. It reads the newest checkpoint and checks each next step against the tracker.
+You see the orchestrator read its issue. It keeps the name `Scratch`. It keeps its ledger rows. It reads the newest checkpoint and checks each next step against the tracker.
 
 Open a second Claude Code session in the same folder while the first is still open. Say "resume as scratch" there. The resume is refused, and you see the pid and folder of the first session. Only one session holds a name.
 
