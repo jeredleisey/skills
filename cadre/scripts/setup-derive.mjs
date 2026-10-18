@@ -13,8 +13,9 @@
 //                    GitHub: the repo settings allow_*_merge, narrowed by allowed_merge_methods of each
 //                    pull_request rule on the default branch. A rule with no list does not narrow.
 //                    GitHub: settings that the account cannot see (not booleans) give unread.
-//                    ADO: the policy "Require a merge strategy" on the default branch (the older form with useSquashMerge is read too; the policies
-//                    that are enabled, blocking, not deleted, and in scope are intersected). With none, all four.
+//                    ADO: each policy "Require a merge strategy" that is enabled, blocking, not deleted,
+//                    and in scope of the default branch. Their lists are intersected. A policy with no
+//                    allow* setting is the older form, read from useSquashMerge. With no policy, all four.
 //   secrets          GitHub: the names from `gh secret list --json name`, never a value.
 //                    ADO: always unread, because the PAT cannot read pipeline variables.
 //   live-clones      absolute paths of the clones of this repo that a marketplace of source type

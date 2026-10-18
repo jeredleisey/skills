@@ -229,6 +229,13 @@ test('ado: the older policy form reads useSquashMerge, and with neither form the
   assert.match(runAdo({ [POLICIES]: list([mergePolicy({})]) }).lines[1], /^unread merge-methods policy 12 /);
 });
 
+test('ado: two live policies, one in the older form, are intersected', () => {
+  const both = list([mergePolicy({ allowSquash: true, allowNoFastForward: true }), mergePolicy({ useSquashMerge: true }, { id: 14 })]);
+  assert.match(runAdo({ [POLICIES]: both }).lines[1], /^fact merge-methods \["squash"\] source=policy 12, policy 14$/);
+  const none = list([mergePolicy({ allowSquash: true }), mergePolicy({ useSquashMerge: false }, { id: 14 })]);
+  assert.match(runAdo({ [POLICIES]: none }).lines[1], /^fact merge-methods \[\] source=policy 12, policy 14$/);
+});
+
 test('ado: a policy read that fails gives unread for merge-methods only', () => {
   const r = runAdo({ [POLICIES]: { status: 500, body: {} } });
   assert.match(r.lines[1], /^unread merge-methods ADO answered HTTP 500/);
