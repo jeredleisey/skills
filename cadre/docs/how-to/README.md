@@ -2,6 +2,7 @@
 
 A how-to guide is a set of steps for one task. It assumes you know the basics. Start with [the tutorial](../tutorials/first-orchestrator.md) if you do not.
 
+- [Do one ticket](do-one-ticket.md)
 - [Set up cadre on a GitHub repo](set-up-on-github.md)
 - [Set up cadre on an Azure DevOps repo](set-up-on-azure-devops.md)
 - [Use cadre on a repo with no remote](use-a-repo-with-no-remote.md)

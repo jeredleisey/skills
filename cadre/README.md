@@ -18,6 +18,10 @@ Cadre is a Claude Code plugin that runs a team of agents on a software repo. An 
 
 ## First use
 
+Try `/cadre:ticket <ticket>` first. It does one ticket with no orchestrator issue: a coder works in a worktree, you verify the result, a reviewer reads it, and you get one pull request with no auto-merge. It never merges or deploys. See [Do one ticket](docs/how-to/do-one-ticket.md).
+
+To run merges, deploys, or many tickets, use the orchestrator:
+
 1. In your repo, type `/cadre:setup`. Setup checks Node and your account, reads what the repo already holds, and shows one screen of proposed answers with the source of each. You answer one closing question. Setup then opens a pull request with the charter and creates the orchestrator issue.
 2. Review the charter pull request and merge it yourself.
 3. Type `/cadre:orchestrate`. Say "new orchestrator <name>" to start one. Say "resume as <name>" to continue one.
