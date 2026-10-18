@@ -397,7 +397,7 @@ Run it in the repo or in a worktree. The files are in `.cadre/` of the main clon
 | `unknown: <reason>` | 2 | A read or write failed, or a file is not valid. Never `none`. |
 | usage message on stderr | 64 | Wrong arguments. |
 
-A write holds the lock file `<file>.lock` (an exclusive create) from the read to the re-read. A lock that stays about 2 seconds gives `unknown: busy`. A lock older than 30 seconds is stale and the next write takes it over. The new text is checked as a read checks it, before the write. The write goes to a temp file in the same folder, then a rename. The script reads the file again. A file in the folder that is not valid gives `unknown`, so a list is never shorter than the truth.
+A write holds the lock file `<file>.lock` (an exclusive create) from the read to the re-read. A lock that stays about 2 seconds gives `unknown: busy`. A lock older than 30 seconds is stale and the next write takes it over. The new text is checked as a read checks it, before the write. The write goes to a temp file in the same folder, then a rename. When the rename fails with `EPERM`, `EBUSY`, or `EACCES`, the script tries it again. It makes at most 10 tries in about 1 second. On Windows, another process such as a virus scan can hold the file open for a short time. The script reads the file again. A file in the folder that is not valid gives `unknown`, so a list is never shorter than the truth.
 
 A ticket file has the lines `# <title>`, `state: open|closed`, and `work: <orchestrator>`. A person changes the `state` line of a ticket by hand.
 
@@ -480,7 +480,7 @@ node teams-setting.mjs [local|project|user] [repo-root]
 
 The repo root is the current folder by default. The `user` scope ignores it.
 
-The script sets `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` to `"1"` and keeps every other key. A missing file is created. A file that has the value stays as it is. A byte order mark is accepted. The write goes to a temp file in the same folder, then a rename.
+The script sets `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` to `"1"` and keeps every other key. A missing file is created. A file that has the value stays as it is. A byte order mark is accepted. The write goes to a temp file in the same folder, then a rename. When the rename fails with `EPERM`, `EBUSY`, or `EACCES`, the script tries it again, at most 10 tries in about 1 second.
 
 For `local`, `git check-ignore` tests the file. `CADRE_GIT_CMD` (test-only) replaces `git`.
 

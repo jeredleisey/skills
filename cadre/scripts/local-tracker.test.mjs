@@ -4,9 +4,10 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { renameWithRetry, writeAtomic } from './local-store.mjs';
 
 const list = join(import.meta.dirname, 'local-list.mjs');
 const resume = join(import.meta.dirname, 'resume-read-local.mjs');
@@ -408,4 +409,84 @@ test('latest: prints the newest trusted checkpoint block, and none when there is
   assert.match(r.line, /^cadre-checkpoint v1 \d{4}-/);
   assert.ok(r.line.includes('- old') && !r.line.includes('future'));
   assert.ok(r.line.endsWith('1. none'));
+});
+
+// The rename retry. A test injects `rename` and `wait`, so no test sleeps.
+const failing = (code, times = Infinity) => {
+  const calls = [];
+  const rename = (from, to) => {
+    calls.push([from, to]);
+    if (calls.length <= times) throw Object.assign(new Error(`${code}: rename`), { code });
+  };
+  return { calls, rename };
+};
+
+test('renameWithRetry: EPERM two times, then success, returns after 3 calls', () => {
+  const { calls, rename } = failing('EPERM', 2);
+  const waits = [];
+  renameWithRetry('a', 'b', { rename, wait: (ms) => waits.push(ms) });
+  assert.equal(calls.length, 3);
+  assert.equal(waits.length, 2);
+});
+
+test('renameWithRetry: EBUSY and EACCES are retried too', () => {
+  for (const code of ['EBUSY', 'EACCES']) {
+    const { calls, rename } = failing(code, 1);
+    renameWithRetry('a', 'b', { rename, wait: () => {} });
+    assert.equal(calls.length, 2);
+  }
+});
+
+test('renameWithRetry: EPERM at each try throws EPERM after exactly the limit', () => {
+  const { calls, rename } = failing('EPERM');
+  assert.throws(() => renameWithRetry('a', 'b', { tries: 4, rename, wait: () => {} }), { code: 'EPERM' });
+  assert.equal(calls.length, 4);
+});
+
+test('renameWithRetry: the default limit is 10 tries over about 1 second', () => {
+  const { calls, rename } = failing('EPERM');
+  const waits = [];
+  assert.throws(() => renameWithRetry('a', 'b', { rename, wait: (ms) => waits.push(ms) }), { code: 'EPERM' });
+  assert.equal(calls.length, 10);
+  assert.equal(waits.length, 9);
+  const total = waits.reduce((a, b) => a + b, 0);
+  assert.ok(total >= 500 && total <= 1500, `total wait ${total} ms`);
+});
+
+test('renameWithRetry: ENOENT throws at once after 1 call', () => {
+  const { calls, rename } = failing('ENOENT');
+  assert.throws(() => renameWithRetry('a', 'b', { rename, wait: () => assert.fail('no wait') }), { code: 'ENOENT' });
+  assert.equal(calls.length, 1);
+});
+
+test('writeAtomic: a rename that always fails leaves no temp file', () => {
+  const folder = join(dir, 'atomic-fail');
+  mkdirSync(folder);
+  const { calls, rename } = failing('EPERM');
+  assert.throws(() => writeAtomic(join(folder, 'x.md'), 'text', { tries: 3, rename, wait: () => {} }), { code: 'EPERM' });
+  assert.equal(calls.length, 3);
+  assert.deepEqual(readdirSync(folder), []);
+});
+
+test('writeAtomic: a rename that fails with ENOENT leaves no temp file', () => {
+  const folder = join(dir, 'atomic-enoent');
+  mkdirSync(folder);
+  const { calls, rename } = failing('ENOENT');
+  assert.throws(() => writeAtomic(join(folder, 'x.md'), 'text', { rename, wait: () => {} }), { code: 'ENOENT' });
+  assert.equal(calls.length, 1);
+  assert.deepEqual(readdirSync(folder), []);
+});
+
+test('writeAtomic: EPERM two times, then success, writes the new text', () => {
+  const folder = join(dir, 'atomic-ok');
+  mkdirSync(folder);
+  const file = join(folder, 'x.md');
+  const { rename } = failing('EPERM', 2);
+  const real = (from, to) => {
+    rename(from, to);
+    return renameSync(from, to);
+  };
+  writeAtomic(file, 'new text', { rename: real, wait: () => {} });
+  assert.equal(readFileSync(file, 'utf8'), 'new text');
+  assert.deepEqual(readdirSync(folder), ['x.md']);
 });

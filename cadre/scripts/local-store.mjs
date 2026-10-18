@@ -35,11 +35,34 @@ export function ensure(where, ...sub) {
   return path;
 }
 
+const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+
+// Rename a file. On Windows a rename over a file that another process holds open fails with EPERM, EBUSY,
+// or EACCES, often for a short time (a virus scan, the indexer). Try again with a longer wait each time:
+// 10 tries over about 1 second. After the last try, throw the last error. Any other error throws at once.
+// A test injects `rename` and `wait`.
+export function renameWithRetry(from, to, { tries = 10, rename = renameSync, wait = sleep } = {}) {
+  for (let i = 1; ; i++) {
+    try {
+      return rename(from, to);
+    } catch (e) {
+      if (!['EPERM', 'EBUSY', 'EACCES'].includes(e.code) || i >= tries) throw e;
+      wait(25 * i);
+    }
+  }
+}
+
 // Write a file in two steps: a temp file in the same folder, then a rename. A reader never sees half a file.
-export function writeAtomic(file, text) {
+// When the write fails, the temp file is removed. `options` goes to renameWithRetry.
+export function writeAtomic(file, text, options) {
   const temp = join(dirname(file), `.${basename(file)}.${process.pid}.tmp`);
-  writeFileSync(temp, text);
-  renameSync(temp, file);
+  try {
+    writeFileSync(temp, text);
+    renameWithRetry(temp, file, options);
+  } catch (e) {
+    rmSync(temp, { force: true });
+    throw e;
+  }
 }
 
 // Make a new file, or return false when the name exists. A temp file is linked to the final name,
@@ -128,7 +151,6 @@ export function validate(text) {
   return parsed;
 }
 
-const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 export const LOCK_WAIT_MS = 2000;
 export const LOCK_STALE_MS = 30000;
 
