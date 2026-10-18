@@ -8,6 +8,7 @@
 // It sets env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS to "1" and keeps every other key.
 // A missing file is created. A file that already has the value stays as it is. A BOM is accepted.
 // The write goes to a temporary file in the same folder, then a rename.
+// The rename is tried again on a Windows lock error (see renameWithRetry in local-store.mjs).
 // For local, git check-ignore tests the file. If git says "not ignored" (exit 1), a second line
 // follows. CADRE_GIT_CMD replaces git (a shell command). A test uses it.
 // Output and exit code:
@@ -15,9 +16,10 @@
 //   note: <path> is not in .gitignore; add it so it is not committed   (second line, local only)
 //   unknown: <reason>   exit 2   the file or the scope is wrong. Nothing is written.
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { renameWithRetry } from './local-store.mjs';
 
 const KEY = 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS';
 const isObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -53,7 +55,7 @@ if (settings.env?.[KEY] !== '1') {
   const temp = `${file}.${process.pid}.tmp`;
   try {
     writeFileSync(temp, `${JSON.stringify(settings, null, 2)}\n`);
-    renameSync(temp, file);
+    renameWithRetry(temp, file);
   } catch (e) {
     rmSync(temp, { force: true });
     fail(`cannot write ${file}: ${e.message}`);
