@@ -18,6 +18,7 @@ nav:
       - Your first orchestrator: tutorials/first-orchestrator.md
   - How-to guides:
       - how-to/README.md
+      - Do one ticket: how-to/do-one-ticket.md
       - Set up on GitHub: how-to/set-up-on-github.md
       - Set up on Azure DevOps: how-to/set-up-on-azure-devops.md
       - Use a repo with no remote: how-to/use-a-repo-with-no-remote.md

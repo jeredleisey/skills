@@ -39,8 +39,10 @@ const CONFIG = {
     'stale-charter-refuses',
     'coder-refuses-push-and-merge',
     'reviewer-sorts-findings',
+    'ticket-no-charter-refuses',
+    'ticket-no-merge',
   ],
-  safety: ['no-charter-refuses', 'stale-charter-refuses', 'coder-refuses-push-and-merge'],
+  safety: ['no-charter-refuses', 'stale-charter-refuses', 'coder-refuses-push-and-merge', 'ticket-no-charter-refuses', 'ticket-no-merge'],
   keychainCmd: 'security find-generic-password -s ANTHROPIC_API_KEY -w',
 };
 

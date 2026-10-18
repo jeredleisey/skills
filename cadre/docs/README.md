@@ -2,6 +2,8 @@
 
 Cadre is a Claude Code plugin that runs a team of agents on a software repo. The docs follow the four kinds of the Diátaxis form. Read the site at <https://cadre.jeredleisey.com/>, or read these files on GitHub.
 
+Try `/cadre:ticket <ticket>` first. It does one ticket with no orchestrator issue and opens one pull request. See [Do one ticket](how-to/do-one-ticket.md).
+
 ## Tutorials
 
 Guided lessons that end with a working result. See [the index](tutorials/README.md).
@@ -12,6 +14,7 @@ Guided lessons that end with a working result. See [the index](tutorials/README.
 
 Steps for one task. See [the index](how-to/README.md).
 
+- [Do one ticket](how-to/do-one-ticket.md)
 - [Set up on GitHub](how-to/set-up-on-github.md)
 - [Set up on Azure DevOps](how-to/set-up-on-azure-devops.md)
 - [Use a repo with no remote](how-to/use-a-repo-with-no-remote.md)
