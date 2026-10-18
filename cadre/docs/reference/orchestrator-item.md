@@ -36,6 +36,8 @@ The body has four sections, found by their headings. A heading twice, a heading 
 
 ### Ledger
 
+The ledger is a record of permissions, for discipline and audit. It is not a security boundary: anyone who can edit the item can write a row. The branch policy of the repo is the boundary.
+
 The header row must be, ignoring case: `Granted by | Action | Repo or host | Scope | When`. A separator row and an empty row are skipped.
 
 | Column | Content |
