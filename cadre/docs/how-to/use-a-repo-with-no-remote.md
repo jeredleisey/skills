@@ -8,11 +8,6 @@ Use this when the repo has no `origin`, or the remote is neither GitHub nor ADO.
 4. Answer the questions. Setup commits the charter to a branch named `cadre-charter`. It does not push and does not open a pull request.
 5. Review and merge that branch by hand.
 
-Know these facts:
-
-- The tracker lives in `.cadre/` in the main clone. It is on this machine only. Nothing commits it.
-- The owner is your OS user name.
-- A worktree reaches the same `.cadre/` folder.
-- Setup writes `tracker: local` in the charter.
+The tracker is on this machine only. For where it lives, who owns it, and what the charter holds, see [the orchestrator item](../reference/orchestrator-item.md) and [the charter](../reference/charter.md).
 
 Run each tracker command inside the repo or one of its worktrees. Never edit a tracker file by hand, except the `state:` line of a ticket.

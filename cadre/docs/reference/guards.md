@@ -39,8 +39,8 @@ The guard reads `git -C <dir>`, `--git-dir`, `--work-tree`, and `cd`. It accepts
 **Default branch names.** These count, with no network call:
 
 - `main`, `master`, `dev`, `develop`, `trunk`.
-- `CADRE_DEFAULT_BRANCH`.
-- The branch in `refs/remotes/<remote>/HEAD`, for the remote of the push and for `origin`.
+- `CADRE_DEFAULT_BRANCH`. When it is set, the remote HEAD is not read.
+- The branch in `refs/remotes/<remote>/HEAD`, for the remote of the push and for `origin`, only when `CADRE_DEFAULT_BRANCH` is not set.
 - `init.defaultBranch`.
 - The remote HEAD of the remote of the current branch.
 
@@ -124,6 +124,7 @@ The hook blocks the command with exit code 2 and the stderr text `cadre guard bl
 - The hook input is not JSON, or not an object.
 - `tool_input.command` is not a string.
 - The command holds a NUL byte.
+- The commands nest more than 4 levels deep (`bash -c`, `eval`, `ssh`).
 
 A fault while the guard reads the charter or the personal file does not block. The charter fault gives guards on. The personal file fault adds nothing. A `git` call that fails or takes more than 5 seconds gives no answer. For a push with no target, no answer counts as a match.
 

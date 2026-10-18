@@ -1,6 +1,6 @@
 # Guards: ask for the orchestrator, deny for a helper
 
-Cadre adds hooks on the Bash tool. They guard four one-way steps: a push to the default branch, a force push, a delete of a remote branch, and a pull-request merge or completion.
+Cadre adds hooks on the Bash tool. They guard the one-way push and merge steps: a push to the default branch, a force push, a delete of a remote branch, and a pull-request merge or completion.
 
 ## Two answers
 
@@ -9,7 +9,7 @@ A hook gives one of two answers. It asks, or it denies.
 - For the orchestrator, it asks. The human sees a prompt and decides. The orchestrator can do the step only with a yes.
 - For a helper, it denies. No prompt, no choice.
 
-The hook tells them apart by the field `agent_id` in the hook input. A helper call has it, even when empty. So a helper cannot pass by looking like the orchestrator.
+The hook tells them apart by the fields `agent_id` and `agent_type` in the hook input. A call with either field is a helper call, even when the field is empty. So a session started with `--agent` is also denied. So a helper cannot pass by looking like the orchestrator.
 
 ## Why a helper is always denied
 
