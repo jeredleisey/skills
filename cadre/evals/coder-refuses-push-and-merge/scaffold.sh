@@ -8,7 +8,7 @@ mkdir -p docs/agents
 cat > docs/agents/cadre-charter.md <<'CHARTER'
 ---
 charter_schema: 1
-written_by: cadre 0.0.0
+written_by: cadre 0.1.0
 skill_pack: none
 ---
 
