@@ -84,6 +84,11 @@ test('a When that only holds the word indefinite in a longer text does not count
   assert.deepEqual([r.lines, r.code], [['none'], 1]);
 });
 
+test('a When of one word before indefinite is not a date, so the row does not count', () => {
+  const r = ask([row('ada', 'merge pull request', 'all', 'ask indefinite')]);
+  assert.deepEqual([r.lines, r.code], [['none'], 1]);
+});
+
 test('an escaped bar in a cell makes the row bad, so it fails closed', () => {
   const r = ask([row('ada', 'merge pull request', 'a \\| b', '2026-10-18 indefinite')]);
   assert.deepEqual([r.lines, r.code], [['none'], 1]);

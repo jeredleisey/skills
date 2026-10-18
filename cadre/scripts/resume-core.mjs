@@ -162,7 +162,7 @@ export function grantLines(header, rows, owner, session, action) {
     const k = i + 1;
     if (bad.includes(k) || ended.includes(k)) return;
     const named = SESSION_IN_WHEN.exec(cells[4])?.[1];
-    const live = named ? same(named, session) : /^\S+\s+indefinite$/i.test(cells[4].trim());
+    const live = named ? same(named, session) : /^\d{4}-\d{2}-\d{2}\s+indefinite$/i.test(cells[4].trim());
     if (live && cells[1].trim().toLowerCase() === want) lines.push(`granted row=${k} scope=${JSON.stringify(cells[3])}`);
   });
   return lines;
