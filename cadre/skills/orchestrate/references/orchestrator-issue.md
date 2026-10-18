@@ -30,6 +30,7 @@ since: <ISO UTC time, or none>
 
 - `Granted by` is the GitHub login of the owner. Row numbers count only the filled rows, from 1 under the header. `When` is an ISO date, then `session <id>` or `indefinite`.
 - A ledger row is only as trustworthy as the edit rights on the item. Let only the owner and trusted people edit it (GitHub: who can edit issues; ADO: area permissions; local: the file's owner).
+- Before a one-way step, the grant check (`grant-check.mjs`, `grant-check-ado.mjs`, `grant-check-local.mjs`) reads the Ledger and prints each row that counts for the action. It never decides the Scope.
 - The `host` is a random host id. Never write a device name: the issue can be public.
 
 ## Write the body

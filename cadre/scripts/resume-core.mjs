@@ -79,3 +79,25 @@ export function pickCheckpoint(entries, assignee) {
 
 export const okLine = ({ who, holder, checkpoint, state, bad, ended }) =>
   `ok holder=${who} session=${holder.session} checkpoint=${checkpoint.id ?? 'none'} ignored=${list(checkpoint.ignored)} state=${state} bad-rows=${rowList(bad)} ended-rows=${rowList(ended)}`;
+
+// Check a grant before a one-way step. The three grant-check scripts call it, after the same owner check and
+// the same Ledger parse as the resume read. Return the lines `granted row=<k> scope=<Scope as a JSON string>`, one
+// for each row that counts and whose Action cell equals `action` as a whole, ignoring case and outer white
+// space. A row counts when auditLedger lists it as neither bad nor ended, and its When is `indefinite` or
+// names `session`. The list is empty when no row counts. The function never reads the Scope.
+export function grantLines(header, rows, owner, session, action) {
+  const { bad, ended } = auditLedger(header, rows, owner, session);
+  const want = String(action).trim().toLowerCase();
+  const lines = [];
+  rows.forEach((cells, i) => {
+    const k = i + 1;
+    if (bad.includes(k) || ended.includes(k)) return;
+    const named = /session\s+(\S+)/i.exec(cells[4])?.[1];
+    const live = named ? same(named, session) : /\bindefinite\b/i.test(cells[4]);
+    if (live && cells[1].trim().toLowerCase() === want) lines.push(`granted row=${k} scope=${JSON.stringify(cells[3])}`);
+  });
+  return lines;
+}
+
+// The line and the code of a grant check: the granted lines with exit 0, or `none` with exit 1.
+export const grantAnswer = (lines) => (lines.length ? [lines, 0] : ['none', 1]);
