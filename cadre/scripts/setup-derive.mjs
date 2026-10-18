@@ -170,7 +170,9 @@ const commonDir = (cwd) => {
   const r = git(cwd, ['rev-parse', '--git-common-dir']);
   if (r.error) return r;
   try {
-    return { out: realpathSync(resolve(cwd, r.out)) };
+    // The native realpath expands a Windows short name such as RUNNER~1. Windows paths ignore case.
+    const real = realpathSync.native(resolve(cwd, r.out));
+    return { out: process.platform === 'win32' ? real.toLowerCase() : real };
   } catch (e) {
     return { error: e.message };
   }
