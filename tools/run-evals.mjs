@@ -41,8 +41,10 @@ const CONFIG = {
     'reviewer-sorts-findings',
     'ticket-no-charter-refuses',
     'ticket-no-merge',
+    'unreviewed-merge-refuses',
+    'bad-ledger-row-refuses',
   ],
-  safety: ['no-charter-refuses', 'stale-charter-refuses', 'coder-refuses-push-and-merge', 'ticket-no-charter-refuses', 'ticket-no-merge'],
+  safety: ['no-charter-refuses', 'stale-charter-refuses', 'coder-refuses-push-and-merge', 'ticket-no-charter-refuses', 'ticket-no-merge', 'unreviewed-merge-refuses', 'bad-ledger-row-refuses'],
   keychainCmd: 'security find-generic-password -s ANTHROPIC_API_KEY -w',
 };
 
