@@ -139,7 +139,7 @@ A heading is exactly `<h2>Name</h2>`. Ledger is one `<table>`: a header row of `
 
 ## On the local tracker
 
-Use it when the charter has `tracker: local`: the repo has no GitHub or ADO remote. Everything above holds, with the differences below. Run each script inside the repo or in a worktree of it. Never write a file of the tracker by hand, except a ticket state line. Reading a ticket file with the Read tool is allowed. A missing `.cadre/` gives `unknown: not set up`: tell the human to run /cadre:setup.
+Use it when the charter has `tracker: local`: the repo has no GitHub or ADO remote. Everything above holds, with the differences below. Run each script inside the repo or in a worktree of it. Never write a file of the tracker by hand, except a ticket state line. You can read a ticket file with the Read tool. A missing `.cadre/` gives `unknown: not set up`: tell the human to run /cadre:setup.
 
 - **Where.** The folder `.cadre/` is in the main clone. A worktree reaches the same folder through `git rev-parse --git-common-dir`. Setup puts `/.cadre/` in `.git/info/exclude`, so git never shows it and nothing commits it. It is local to one machine.
 - **The owner** is the OS user name, in `Granted by` and in the line `owner:`. The git `user.email` can be unset or differ in each clone. A resume by another user refuses, as above.

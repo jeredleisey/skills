@@ -7,7 +7,7 @@
 //   unknown: <reason>                                                                                        exit 2
 //   usage message on stderr                                                                                  exit 64
 // The issue check, the owner check, and the Ledger parse are those of resume-read.mjs. A row counts when it is
-// not a bad row and not an ended row of that read, and its When is `indefinite` or names session-id. The Action
+// not a bad row and not an ended row of that read, and its When is `<YYYY-MM-DD> indefinite` or names session-id. The Action
 // cell must equal the action as a whole, ignoring case and outer white space. The script never decides the
 // Scope. The orchestrator reads it. The script makes read calls only.
 // Set CADRE_GH_CMD to use another command than gh, for example a fixture in a test.

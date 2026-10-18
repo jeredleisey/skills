@@ -330,7 +330,7 @@ node grant-check.mjs <issue-number> <session-id> "<action>"
 
 Environment: `CADRE_GH_CMD` (test-only) replaces `gh`.
 
-The issue check, the owner check, and the Ledger parse are those of [resume-read](#resume-read). A row counts when it is not a bad row and not an ended row of that read, and its When is `indefinite` or names `session-id`. The script never decides the Scope. The orchestrator reads it.
+The issue check, the owner check, and the Ledger parse are those of [resume-read](#resume-read). A row counts when it is not a bad row and not an ended row of that read, and its When is `<YYYY-MM-DD> indefinite` or names `session-id`. The script never decides the Scope. The orchestrator reads it.
 
 | Output | Exit |
 | --- | --- |

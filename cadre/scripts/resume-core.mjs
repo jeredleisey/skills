@@ -1,5 +1,6 @@
-// The rules of a resume that do not depend on the tracker: the Holder, the Ledger audit, the checkpoint.
-// resume-read.mjs (GitHub) and resume-read-ado.mjs (Azure DevOps) both call it, so the two read the same way.
+// The rules that do not depend on the tracker: the Markdown and HTML parse of the issue body, the Holder,
+// the Ledger audit, the checkpoint, and the grant match. The three resume reads and the three grant checks
+// all call it, so each one reads the issue the same way.
 // A function throws an Error with the reason when the input is not as expected. The caller prints `unknown: <reason>`.
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -107,7 +108,7 @@ export function markdownSections(body) {
 }
 
 // The cells of the Ledger table in Markdown lines. Return { header, rows }: `header` is null with no table, and
-// the separator rows and empty rows are removed. An escaped bar in a cell splits the cell, so the row has
+// the parse drops the separator rows and the empty rows. An escaped bar in a cell splits the cell, so the row has
 // a wrong width and it is a bad row: it fails closed.
 export function markdownLedger(lines) {
   const splitRow = (line) => line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());

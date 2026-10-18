@@ -90,7 +90,6 @@ const state = category === 'Completed' || category === 'Removed' ? 'closed' : 'o
 
 // ---- the description ----
 
-const decode = decodeHtml;
 const html = fields['System.Description'];
 if (typeof html !== 'string') unknown('the item has no description');
 let sections;
@@ -107,7 +106,7 @@ if (!holderBlock) unknown('the Holder section is not one <pre> block of text');
 let holder;
 let who;
 try {
-  holder = parseHolder(decode(holderBlock[1]).split('\n'));
+  holder = parseHolder(decodeHtml(holderBlock[1]).split('\n'));
   who = holderWho(holder, sessionArg);
 } catch (e) {
   unknown(e.message);
@@ -137,8 +136,8 @@ for (let pages = 0; ; pages++) {
     entries.push({
       id: c.id,
       author: String(c?.createdBy?.uniqueName ?? ''),
-      firstLine: first ? decode(first[1]).trim() : '',
-      headings: [...[...c.text.matchAll(/<h2>([^<]*)<\/h2>/gi)].map((m) => m[1]), ...[...c.text.matchAll(/^##[ \t]+(.*)$/gm)].map((m) => m[1])].map((h) => decode(h).trim().toLowerCase()),
+      firstLine: first ? decodeHtml(first[1]).trim() : '',
+      headings: [...[...c.text.matchAll(/<h2>([^<]*)<\/h2>/gi)].map((m) => m[1]), ...[...c.text.matchAll(/^##[ \t]+(.*)$/gm)].map((m) => m[1])].map((h) => decodeHtml(h).trim().toLowerCase()),
     });
   }
   const next = answer.continuationToken;
