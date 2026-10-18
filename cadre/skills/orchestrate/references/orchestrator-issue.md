@@ -61,7 +61,7 @@ Run `gh issue list --label cadre:orchestrator --state open --limit 200 --json nu
 2. Run `node "<plugin root>/scripts/resume-read.mjs" <n> "$CLAUDE_CODE_SESSION_ID"`. Act on its line:
    - `not-owner login=<l> assignee=<a>`: refuse, as above.
    - `unknown: <reason>`: refuse. Report the reason.
-   - `ok ...`: go on. The fields are `holder`, `session`, `checkpoint`, `ignored`, `state`, `bad-rows`, `ended-rows`.
+   - `ok ...`: go on. The fields are `holder`, `session`, `checkpoint`, `ignored`, `state`, `bad-rows`, `ended-rows`. The two row fields are lists, such as `[2,3]`. None is `[]`.
 3. Check the holder, from `holder=`. Do not try to tell a compaction from `--resume`: the session id decides.
    - `self`: the Holder has your session id. You hold the name: go to step 6.
    - `free`: take the name.
@@ -69,7 +69,7 @@ Run `gh issue list --label cadre:orchestrator --state open --limit 200 --json nu
    - `other-host`: **ask the human before you take the name.** This machine cannot see that session. Say the `session` and `since` values.
 4. If `state=closed`, the orchestrator is retired. Ask the human before you resume it, and reopen the issue with `gh issue reopen <n>`.
 5. Take the name: write `session`, `host`, and `since` in the Holder ([Write the body](#write-the-body)).
-6. Clean the ledger. **A row whose Granted by is not the owner is no grant.** Delete each row in `bad-rows` and report it. Delete each row in `ended-rows`, because it ended with its session. Delete all of them in one write, so that the numbers stay true.
+6. Clean the ledger. **A row whose Granted by is not the owner is no grant.** Delete each row in the `bad-rows` list and report it. Delete each row in the `ended-rows` list, because it ended with its session. Delete all of them in one write, so that the numbers stay true.
 7. Read the newest checkpoint: `gh api repos/{owner}/{repo}/issues/comments/<checkpoint> --jq .body`. If the field is `none`, there is no checkpoint yet. Report each comment id in `ignored`: its time is ahead of now.
 8. Check each item of "Next, in order" against the tracker: the issue state, the branch, the pull request. Do not announce that you are back.
 

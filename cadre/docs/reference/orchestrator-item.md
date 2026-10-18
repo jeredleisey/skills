@@ -48,8 +48,8 @@ The header row must be, ignoring case: `Granted by | Action | Repo or host | Sco
 
 Row numbers count the filled rows, from 1 under the header. Audit, done by each resume script:
 
-- A row is bad when it does not have 5 cells, or its Granted by is not the owner (compared ignoring case). It is listed in `bad-rows`.
-- A row has ended when its When holds `session <id>` with an id other than the id of the asking session. It is listed in `ended-rows`. With no asking session, each such row ended.
+- A row is bad when it does not have 5 cells, or its Granted by is not the owner (compared ignoring case). It is listed in `bad-rows`, as in `bad-rows=[2,3]`.
+- A row has ended when its When holds `session <id>` with an id other than the id of the asking session. It is listed in `ended-rows`, as in `ended-rows=[6]`. With no asking session, each such row ended.
 
 ### Holder
 

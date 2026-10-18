@@ -57,7 +57,7 @@ test('new makes the file in the clone, and git never shows the folder', () => {
   assert.deepEqual(readdirSync(join(repo, '.cadre', 'orchestrators')), ['rigel.md']); // no temp file stays
 });
 
-const OK_FREE = { holder: 'free', session: 'none', checkpoint: 'none', ignored: 'none', state: 'open', 'bad-rows': 'none', 'ended-rows': 'none' };
+const OK_FREE = { holder: 'free', session: 'none', checkpoint: 'none', ignored: 'none', state: 'open', 'bad-rows': '[]', 'ended-rows': '[]' };
 
 test('resume: the owner of a free orchestrator gets ok with holder=free', () => {
   const repo = makeRepo();
@@ -158,7 +158,7 @@ test('put: a Holder written by the script is read back as self, and the Ledger a
   const ledger = `| Granted by | Action | Repo or host | Scope | When |\n| --- | --- | --- | --- | --- |\n| ada | merge | acme | all | 2026-10-17 indefinite |\n| grace | merge | acme | all | 2026-10-17 indefinite |\n| ada | push | acme | all | 2026-10-17 session ${OTHER} |\n`;
   ls(repo, 'put', 'Rigel', 'Ledger', temp(ledger));
   const f = fields(rs(repo, ['rigel', SESSION]).line);
-  assert.deepEqual([f['bad-rows'], f['ended-rows'], f.holder], ['2', '3', 'self']);
+  assert.deepEqual([f['bad-rows'], f['ended-rows'], f.holder], ['[2]', '[3]', 'self']);
   assert.match(readFileSync(orchFile(repo, 'rigel'), 'utf8'), /## Purpose\nShip the report\.\n/); // the other sections stay
 });
 

@@ -105,7 +105,7 @@ test('the owner of a free orchestrator gets ok with the same fields as the GitHu
   const r = run(['7']);
   assert.deepEqual([r.code, r.lines], [0, 1]);
   assert.match(r.line, /^ok /);
-  assert.deepEqual(fields(r.line), { holder: 'free', session: 'none', checkpoint: 'none', ignored: 'none', state: 'open', 'bad-rows': 'none', 'ended-rows': 'none' });
+  assert.deepEqual(fields(r.line), { holder: 'free', session: 'none', checkpoint: 'none', ignored: 'none', state: 'open', 'bad-rows': '[]', 'ended-rows': '[]' });
 });
 
 test('the reads are GET calls of the user, the item, the states of its type, and the comments', () => {
@@ -269,8 +269,8 @@ test('a row that the owner did not grant is a bad row, and a row of the wrong wi
     ['ada', 'tag', 'acme/widgets', 'releases'],
   ];
   const f = fields(run(['7', SESSION], { it: withDescription(description({ rows })) }).line);
-  assert.equal(f['bad-rows'], '2,4');
-  assert.equal(f['ended-rows'], 'none');
+  assert.equal(f['bad-rows'], '[2,4]');
+  assert.equal(f['ended-rows'], '[]');
 });
 
 test('a session row of another session ended, and with no session each session row ended', () => {
@@ -280,8 +280,8 @@ test('a session row of another session ended, and with no session each session r
     ['ada', 'tag', 'acme/widgets', 'releases', '2026-10-17 indefinite'],
   ];
   const it = withDescription(description({ rows }));
-  assert.equal(fields(run(['7', SESSION], { it }).line)['ended-rows'], '1');
-  assert.equal(fields(run(['7'], { it }).line)['ended-rows'], '1,2');
+  assert.equal(fields(run(['7', SESSION], { it }).line)['ended-rows'], '[1]');
+  assert.equal(fields(run(['7'], { it }).line)['ended-rows'], '[1,2]');
 });
 
 test('escaped text in a cell is read as text, and an empty row is skipped', () => {
@@ -290,7 +290,7 @@ test('escaped text in a cell is read as text, and an empty row is skipped', () =
     ['', '', '', '', ''],
   ];
   const f = fields(run(['7'], { it: withDescription(description({ rows })) }).line);
-  assert.deepEqual([f['bad-rows'], f['ended-rows']], ['none', 'none']);
+  assert.deepEqual([f['bad-rows'], f['ended-rows']], ['[]', '[]']);
 });
 
 // ---- checkpoints ----
