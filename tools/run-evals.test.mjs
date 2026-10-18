@@ -304,7 +304,9 @@ test('each eval case folder is in the case list of the runner', async () => {
   const { readdirSync, existsSync, readFileSync } = await import('node:fs');
   const evals = join(here, '..', 'cadre', 'evals');
   const source = readFileSync(runner, 'utf8');
-  const listed = source.slice(source.indexOf('cases: ['), source.indexOf('],', source.indexOf('cases: [')));
+  const start = source.indexOf('cases: [');
+  assert.ok(start >= 0, 'run-evals.mjs has no cases list');
+  const listed = source.slice(start, source.indexOf('],', start));
   for (const name of readdirSync(evals)) {
     if (!existsSync(join(evals, name, 'case.yaml'))) continue;
     assert.ok(listed.includes(`'${name}'`), `${name} is not in CONFIG.cases of run-evals.mjs`);
