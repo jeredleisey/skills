@@ -1,0 +1,43 @@
+site_name: cadre
+site_url: https://www.jeredleisey.com/skills/
+repo_url: https://github.com/jeredleisey/skills
+docs_dir: cadre/docs
+use_directory_urls: true
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+plugins:
+  - search
+nav:
+  - Home: README.md
+  - Tutorials:
+      - tutorials/README.md
+      - Your first orchestrator: tutorials/first-orchestrator.md
+  - How-to guides:
+      - how-to/README.md
+      - Set up on GitHub: how-to/set-up-on-github.md
+      - Set up on Azure DevOps: how-to/set-up-on-azure-devops.md
+      - Use a repo with no remote: how-to/use-a-repo-with-no-remote.md
+      - Resume an orchestrator: how-to/resume-an-orchestrator.md
+      - Add an extra card: how-to/add-an-extra-card.md
+      - Allow a guard: how-to/allow-a-guard.md
+      - Turn on agent teams: how-to/turn-on-agent-teams.md
+      - Run the evals: how-to/run-the-evals.md
+      - Check a Windows install: how-to/check-a-windows-install.md
+  - Explanation:
+      - explanation/README.md
+      - The orchestrator model: explanation/orchestrator-model.md
+      - Guards, ask and deny: explanation/guards-ask-and-deny.md
+      - The tracker is the record: explanation/tracker-is-the-record.md
+      - The slim rule: explanation/slim-rule.md
+  - Reference:
+      - reference/README.md
+      - Scripts: reference/scripts.md
+      - The charter: reference/charter.md
+      - Guards: reference/guards.md
+      - The orchestrator item: reference/orchestrator-item.md
+      - Presets: reference/presets.md
+      - Role cards: reference/role-cards.md
