@@ -10,12 +10,13 @@
 //   unknown: <reason>        exit 2   the check cannot tell. Treat it as a refusal.
 // The charter is docs/agents/cadre-charter.md. It is Markdown with YAML front matter.
 // The script reads two fields: `charter_schema` (a positive integer) and `written_by: cadre <version>`.
-// Any other front matter is skipped. The parser is strict about the lines at the top level.
+// Any other front matter is skipped. The parser is charter-front-matter.mjs. It is strict about the lines at the top level.
 // The plugin version comes from .claude-plugin/plugin.json of the plugin that holds this script.
 // The plugin schema is the constant below. Raise it only when an old charter cannot work.
 // Only a test sets CADRE_SCHEMA, to a positive integer, to replace the constant.
 import { readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { parseFrontMatter } from './charter-front-matter.mjs';
 
 const PLUGIN_SCHEMA = 1;
 const CHARTER = 'docs/agents/cadre-charter.md';
@@ -38,29 +39,11 @@ function compare(a, b) {
   return 0;
 }
 
-function unquote(value) {
-  const m = /^(["'])(.*)\1$/.exec(value);
-  return m ? m[2] : value;
-}
-
 // Return { charter_schema, written_by } from the front matter, or throw an Error with the reason.
 function readFields(text) {
-  const lines = text.replace(/^﻿/, '').split(/\r?\n/);
-  if (lines[0] !== '---') throw new Error('the front matter does not start on line 1');
-  const end = lines.indexOf('---', 1);
-  if (end === -1) throw new Error('the front matter has no closing ---');
-  const found = {};
-  for (const [i, line] of lines.slice(1, end).entries()) {
-    if (line.trim() === '' || /^\s/.test(line) || line.startsWith('#') || line.startsWith('- ') || line === '-') continue;
-    const m = /^([A-Za-z_][A-Za-z0-9_-]*):(?:[ \t]+(.*))?$/.exec(line);
-    if (!m) throw new Error(`front matter line ${i + 2} is not a key and a value`);
-    if (m[1] === 'charter_schema' || m[1] === 'written_by') {
-      if (m[1] in found) throw new Error(`${m[1]} appears twice`);
-      found[m[1]] = unquote((m[2] ?? '').trim());
-    }
-  }
-  for (const key of ['charter_schema', 'written_by']) if (!(key in found)) throw new Error(`${key} is missing`);
-  return found;
+  const { values } = parseFrontMatter(text, ['charter_schema', 'written_by']);
+  for (const key of ['charter_schema', 'written_by']) if (!(key in values)) throw new Error(`${key} is missing`);
+  return values;
 }
 
 function readPluginVersion() {

@@ -1,5 +1,5 @@
 // Tests for charter-check.mjs at its command line: arguments and environment in, one line and an exit code out.
-// Each test builds a plugin folder (with the script and a plugin.json) and a repo folder in a temp folder.
+// Each test builds a plugin folder (with the script, its module, and a plugin.json) and a repo folder in a temp folder.
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -7,7 +7,7 @@ import { copyFileSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const source = join(import.meta.dirname, 'charter-check.mjs');
+const sources = ['charter-check.mjs', 'charter-front-matter.mjs'];
 const made = [];
 after(() => made.forEach((d) => rmSync(d, { recursive: true, force: true })));
 
@@ -18,7 +18,7 @@ function setup(version = '0.2.0', { manifest } = {}) {
   const plugin = join(base, 'cadre');
   mkdirSync(join(plugin, 'scripts'), { recursive: true });
   mkdirSync(join(plugin, '.claude-plugin'));
-  copyFileSync(source, join(plugin, 'scripts', 'charter-check.mjs'));
+  for (const name of sources) copyFileSync(join(import.meta.dirname, name), join(plugin, 'scripts', name));
   writeFileSync(join(plugin, '.claude-plugin', 'plugin.json'), manifest ?? JSON.stringify({ name: 'cadre', version }));
   const repo = join(base, 'repo');
   mkdirSync(repo);

@@ -49,4 +49,4 @@ Agent teams are optional and experimental in Claude Code. Setup can turn them on
 
 ## More
 
-The docs are in [`docs/`](docs/README.md): a tutorial, how-to guides, explanation, and reference. Read them on the site at <https://www.jeredleisey.com/skills/>. To test an install on Windows 11, use [the Windows checklist](docs/how-to/check-a-windows-install.md).
+The docs are in [`docs/`](docs/README.md): a tutorial, how-to guides, explanation, and reference. Read them on the site at <https://cadre.jeredleisey.com/>. To test an install on Windows 11, use [the Windows checklist](docs/how-to/check-a-windows-install.md).
