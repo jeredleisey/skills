@@ -1,5 +1,6 @@
-// The rules of a resume that do not depend on the tracker: the Holder, the Ledger audit, the checkpoint.
-// resume-read.mjs (GitHub) and resume-read-ado.mjs (Azure DevOps) both call it, so the two read the same way.
+// The rules that do not depend on the tracker: the Markdown and HTML parse of the issue body, the Holder,
+// the Ledger audit, the checkpoint, and the grant match. The three resume reads and the three grant checks
+// all call it, so each one reads the issue the same way.
 // A function throws an Error with the reason when the input is not as expected. The caller prints `unknown: <reason>`.
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -35,6 +36,8 @@ export function holderWho(holder, sessionArg) {
   return holder.host.toLowerCase() === id ? 'same-host' : 'other-host';
 }
 
+const SESSION_IN_WHEN = /session\s+(\S+)/i;
+
 export const LEDGER_HEADER = 'granted by|action|repo or host|scope|when';
 
 // Audit the ledger. `header` is the cells of the header row. `rows` is a list of cell lists, with the
@@ -46,7 +49,7 @@ export function auditLedger(header, rows, assignee, sessionArg) {
   rows.forEach((cells, i) => {
     const n = i + 1;
     if (cells.length !== 5 || !same(cells[0], assignee)) bad.push(n);
-    const s = /session\s+(\S+)/i.exec(cells[4] ?? '');
+    const s = SESSION_IN_WHEN.exec(cells[4] ?? '');
     if (s && !(sessionArg && same(s[1], sessionArg))) ended.push(n);
   });
   return { bad, ended };
@@ -79,3 +82,92 @@ export function pickCheckpoint(entries, assignee) {
 
 export const okLine = ({ who, holder, checkpoint, state, bad, ended }) =>
   `ok holder=${who} session=${holder.session} checkpoint=${checkpoint.id ?? 'none'} ignored=${list(checkpoint.ignored)} state=${state} bad-rows=${rowList(bad)} ended-rows=${rowList(ended)}`;
+
+// ---- the parse of a tracker body, shared by the resume reads and the grant checks ----
+// Each function throws an Error with the reason. The caller prints `unknown: <reason>`.
+
+// Split a Markdown body into sections by `##` heading. Return a Map of lower case title to lines.
+// A heading in a code fence, a heading twice, and a code fence that is not closed throw.
+export function markdownSections(body) {
+  const sections = new Map();
+  let current = null;
+  let fenced = false;
+  for (const line of String(body ?? '').replace(/\r\n/g, '\n').split('\n')) {
+    if (/^\s*```/.test(line)) fenced = !fenced;
+    else if (/^##\s/.test(line)) {
+      if (fenced) throw new Error('a heading is inside a code fence');
+      const title = line.replace(/^##\s+/, '').trim();
+      if (sections.has(title.toLowerCase())) throw new Error(`the body has the heading ${title} twice`);
+      sections.set(title.toLowerCase(), (current = []));
+      continue;
+    }
+    if (current) current.push(line);
+  }
+  if (fenced) throw new Error('a code fence is not closed');
+  return sections;
+}
+
+// The cells of the Ledger table in Markdown lines. Return { header, rows }: `header` is null with no table, and
+// the parse drops the separator rows and the empty rows. An escaped bar in a cell splits the cell, so the row has
+// a wrong width and it is a bad row: it fails closed.
+export function markdownLedger(lines) {
+  const splitRow = (line) => line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+  const [header, ...rows] = lines.filter((l) => l.trim().startsWith('|'));
+  return { header: header ? splitRow(header) : null, rows: rows.map(splitRow).filter((cells) => !cells.every((c) => /^[:\s-]*$/.test(c))) };
+}
+
+export const decodeHtml = (t) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
+
+// Split the HTML description of an ADO item into sections. A heading is exactly <h2>Name</h2>, and none is twice.
+// Return a Map of lower case title to the HTML after the heading.
+export function htmlSections(html) {
+  const text = html.replace(/\r\n/g, '\n');
+  const headings = [...text.matchAll(/<h2>([^<]*)<\/h2>/g)];
+  if ((text.match(/<h2\b/gi) ?? []).length !== headings.length) throw new Error('a heading is not in the form <h2>Name</h2>');
+  const sections = new Map();
+  headings.forEach((h, i) => {
+    const title = decodeHtml(h[1]).trim().toLowerCase();
+    if (sections.has(title)) throw new Error(`the description has the heading ${decodeHtml(h[1]).trim()} twice`);
+    sections.set(title, text.slice(h.index + h[0].length, i + 1 < headings.length ? headings[i + 1].index : undefined));
+  });
+  return sections;
+}
+
+// The Ledger section of an ADO description: one <table>, a header row of <th> cells, rows of <td> cells with text only.
+// Return { header, rows } as markdownLedger does.
+export function htmlLedger(section) {
+  const tableBlock = /^\s*<table>([\s\S]*)<\/table>\s*$/.exec(section);
+  if (!tableBlock || /<\/?table\b/i.test(tableBlock[1])) throw new Error('the Ledger section is not one <table>');
+  const grid = [];
+  for (const row of tableBlock[1].matchAll(/<tr>([\s\S]*?)<\/tr>/g)) {
+    const cells = [...row[1].matchAll(/<(th|td)>([^<]*)<\/\1>/g)];
+    if (row[1].replace(/<(th|td)>[^<]*<\/\1>/g, '').trim() !== '') throw new Error('a Ledger row holds markup inside or beside its cells');
+    grid.push({ kinds: cells.map((c) => c[1]), cells: cells.map((c) => decodeHtml(c[2]).trim()) });
+  }
+  if (tableBlock[1].replace(/<tr>[\s\S]*?<\/tr>/g, '').trim() !== '') throw new Error('the Ledger table holds something besides rows');
+  const [head, ...body] = grid;
+  if (!head || head.kinds.some((k) => k !== 'th') || body.some((r) => r.kinds.some((k) => k !== 'td'))) throw new Error('the Ledger table has no header row of <th> cells and rows of <td> cells');
+  return { header: head.cells, rows: body.map((r) => r.cells).filter((cells) => !cells.every((c) => c === '')) };
+}
+
+// Check a grant before a one-way step. The three grant-check scripts call it, after the same owner check and
+// the same Ledger parse as the resume read. Return the lines `granted row=<k> scope=<Scope as a JSON string>`, one
+// for each row that counts and whose Action cell equals `action` as a whole, ignoring case and outer white
+// space. A row counts when auditLedger lists it as neither bad nor ended, and its When is `<date> indefinite`
+// exactly (ignoring case) or names `session`. The list is empty when no row counts. The function never reads the Scope.
+export function grantLines(header, rows, owner, session, action) {
+  const { bad, ended } = auditLedger(header, rows, owner, session);
+  const want = String(action).trim().toLowerCase();
+  const lines = [];
+  rows.forEach((cells, i) => {
+    const k = i + 1;
+    if (bad.includes(k) || ended.includes(k)) return;
+    const named = SESSION_IN_WHEN.exec(cells[4])?.[1];
+    const live = named ? same(named, session) : /^\d{4}-\d{2}-\d{2}\s+indefinite$/i.test(cells[4].trim());
+    if (live && cells[1].trim().toLowerCase() === want) lines.push(`granted row=${k} scope=${JSON.stringify(cells[3])}`);
+  });
+  return lines;
+}
+
+// The line and the code of a grant check: the granted lines with exit 0, or `none` with exit 1.
+export const grantAnswer = (lines) => (lines.length ? [lines, 0] : ['none', 1]);

@@ -81,7 +81,7 @@ A new comment on an orchestrator issue, with the first line `cadre-checkpoint v1
 _Avoid_: handoff, snapshot
 
 **Ledger**:
-The record of the permissions that the human gave to one orchestrator.
+The record of the permissions that the human gave to one orchestrator. The grant check script reads it before a one-way step.
 _Avoid_: grants list, allowlist
 
 **One-way step**:

@@ -23,14 +23,14 @@ Environment variables marked **test-only** replace a program or a source so that
 | `CLAUDE_CONFIG_DIR` | user | `teams-setting`, `setup-derive` |
 | `CADRE_SCHEMA` | test-only | `charter-check` |
 | `CADRE_NODE_CMD` | test-only | `setup-check` |
-| `CADRE_GH_CMD` | test-only | `setup-check`, `resume-read`, `branch-policy`, `setup-derive` |
+| `CADRE_GH_CMD` | test-only | `setup-check`, `resume-read`, `grant-check`, `branch-policy`, `setup-derive` |
 | `CADRE_ADO_CMD` | test-only | `setup-check`, `setup-derive`, and each ADO script |
 | `CADRE_PLUGIN_LIST_CMD` | test-only | `preset-discover` |
 | `CADRE_RANDOM_CMD` | test-only | `host-id` |
 | `CLAUDE_AGENTS_JSON_CMD`, `CADRE_PROCESS_CMD` | test-only | `holder-check` |
 | `CADRE_ADO_ALLOW_LOCAL` | test-only | `ado-call` |
 | `CADRE_GIT_CMD` | test-only | `teams-setting`, `guard` |
-| `CADRE_LOCAL_USER` | test-only | `local-list`, `resume-read-local` |
+| `CADRE_LOCAL_USER` | test-only | `local-list`, `resume-read-local`, `grant-check-local` |
 
 ## charter-check
 
@@ -312,6 +312,67 @@ Run it in the repo or in a worktree of it. The output lines and exit codes are t
 - A `checkpoint` id is the time of the marker line, not a comment id.
 - The script checks no author of a checkpoint. The file is the owner's.
 - A missing `.cadre/` gives `unknown: not set up; run /cadre:setup`. A missing file gives `unknown: there is no file for <name>`.
+- A name with no letter or digit gives exit 64.
+
+## grant-check
+
+Read the Ledger of a GitHub orchestrator issue before a one-way step, and print each row that grants the action. See [The orchestrator item](orchestrator-item.md).
+
+```
+node grant-check.mjs <issue-number> <session-id> "<action>"
+```
+
+| Argument | Meaning |
+| --- | --- |
+| `issue-number` | Digits only. |
+| `session-id` | The session that asks. A row of another session has ended. |
+| `action` | The step. It must equal the Action cell as a whole, ignoring case and outer white space. A part of a cell does not match. |
+
+Environment: `CADRE_GH_CMD` (test-only) replaces `gh`.
+
+The issue check, the owner check, and the Ledger parse are those of [resume-read](#resume-read). A row counts when it is not a bad row and not an ended row of that read, and its When is `<YYYY-MM-DD> indefinite` or names `session-id`. The script never decides the Scope. The orchestrator reads it.
+
+| Output | Exit |
+| --- | --- |
+| `granted row=<k> scope=<Scope cell as a JSON string>`, one line for each row that counts, in row order | 0 |
+| `none`: no row counts | 1 |
+| `not-owner login=<login> assignee=<login>` | 1 |
+| `unknown: <reason>` | 2 |
+| usage message on stderr | 64 |
+
+`unknown` reasons are those of resume-read for the issue and the Ledger. A missing Holder section is not one: the grant check does not read the Holder.
+
+A cell cannot hold a bar. An escaped `\|` splits the cell, so the row has a wrong width. It is a bad row and does not count, so the check fails closed.
+
+## grant-check-ado
+
+Read an Azure DevOps work item before a one-way step.
+
+```
+node grant-check-ado.mjs <work-item-id> <session-id> "<action>"
+```
+
+Run it in the repo root. The output lines and exit codes are those of [grant-check](#grant-check). Differences:
+
+- The org and the project come from the charter of the current folder, which must have `tracker: ado`.
+- The item must have the tag `cadre:orchestrator` and be in that project. The owner check compares the account of the token with the one assignee, by unique name, ignoring case.
+- The description must be strict HTML, as [resume-read-ado](#resume-read-ado) says. A missing Ledger section gives `unknown`.
+- The script makes GET calls only. It reads no state, Holder, or comment.
+
+Environment: `AZURE_DEVOPS_EXT_PAT`, `CADRE_ADO_CMD` (test-only).
+
+## grant-check-local
+
+Read a local orchestrator file before a one-way step.
+
+```
+node grant-check-local.mjs <name> <session-id> "<action>"
+```
+
+Run it in the repo or in a worktree of it. The output lines and exit codes are those of [grant-check](#grant-check). Differences:
+
+- The file is `.cadre/orchestrators/<name>.md` in the main clone. The owner is the `owner:` line. The user is the OS user name, or `CADRE_LOCAL_USER` (test-only).
+- A missing `.cadre/` gives `unknown: not set up; run /cadre:setup`. A missing file gives `unknown: there is no file for <name>`. A missing Ledger section gives `unknown`.
 - A name with no letter or digit gives exit 64.
 
 ## ado-call
