@@ -155,10 +155,10 @@ test('put: a Holder written by the script is read back as self, and the Ledger a
   const holder = `session: ${SESSION}\nhost: ${HOST}\nsince: 2026-10-17T08:00:00Z\n`;
   assert.deepEqual([ls(repo, 'put', 'Rigel', 'Holder', temp(holder)).line.split(' ').slice(0, 2).join(' '), ls(repo, 'put', 'Rigel', 'holder', temp(holder)).code], ['ok put', 0]);
   assert.equal(fields(rs(repo, ['rigel', SESSION]).line).holder, 'self');
-  const ledger = `| Granted by | Action | Repo or host | Scope | When |\n| --- | --- | --- | --- | --- |\n| ada | merge | acme | all | 2026-10-17 indefinite |\n| grace | merge | acme | all | 2026-10-17 indefinite |\n| ada | push | acme | all | 2026-10-17 session ${OTHER} |\n`;
+  const ledger = `| Granted by | Action | Repo or host | Scope | When |\n| --- | --- | --- | --- | --- |\n| ada | merge | acme | all | 2026-10-17 indefinite |\n| grace | merge | acme | all | 2026-10-17 indefinite |\n| ada | push | acme | all | 2026-10-17 session ${OTHER} |\n| ada | deploy | acme | all | 2026-10-17 session ${OTHER} |\n| lin | tag | acme | all | 2026-10-17 indefinite |\n`;
   ls(repo, 'put', 'Rigel', 'Ledger', temp(ledger));
   const f = fields(rs(repo, ['rigel', SESSION]).line);
-  assert.deepEqual([f['bad-rows'], f['ended-rows'], f.holder], ['[2]', '[3]', 'self']);
+  assert.deepEqual([f['bad-rows'], f['ended-rows'], f.holder], ['[2,5]', '[3,4]', 'self']);
   assert.match(readFileSync(orchFile(repo, 'rigel'), 'utf8'), /## Purpose\nShip the report\.\n/); // the other sections stay
 });
 

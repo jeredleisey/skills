@@ -2,7 +2,7 @@
 // Usage: node resume-read.mjs <issue-number> [session-id]
 // Output and exit code:
 //   ok holder=<free|self|same-host|other-host> session=<id|none> checkpoint=<comment id|none>
-//      ignored=<list|none> state=<open|closed> bad-rows=<[n,n]> ended-rows=<[n,n]>   exit 0
+//      ignored=<list|none> state=<open|closed> bad-rows=[<n>,...] ended-rows=[<n>,...]   exit 0
 //   not-owner login=<login> assignee=<login>                              exit 1
 //   unknown: <reason>                                                     exit 2
 //   usage message on stderr                                               exit 64
@@ -12,8 +12,9 @@
 // Otherwise holder compares the host line of the Holder section with the host id of this machine.
 // The body is unknown when a section heading is twice, a heading is inside a code fence,
 // the Ledger header is not the expected one, or the Holder holds anything but its three fields.
-// bad-rows: ledger rows, printed as [n,n] with [] for none (1 is the first row after the header) whose Granted by is not the assignee.
+// bad-rows: ledger rows with a wrong cell count, or whose Granted by is not the assignee.
 // ended-rows: ledger rows whose When holds "session <id>" with an id other than session-id.
+// Both print as a list, such as [2,3], with [] for none. Row 1 is the first row after the header.
 // With no session-id, each such row ended.
 // checkpoint: the id of the comment with the marker line "cadre-checkpoint v1 <ISO UTC time>"
 // and the latest time, written by the assignee, with the three sections.

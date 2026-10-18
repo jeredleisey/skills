@@ -61,7 +61,7 @@ Run `gh issue list --label cadre:orchestrator --state open --limit 200 --json nu
 2. Run `node "<plugin root>/scripts/resume-read.mjs" <n> "$CLAUDE_CODE_SESSION_ID"`. Act on its line:
    - `not-owner login=<l> assignee=<a>`: refuse, as above.
    - `unknown: <reason>`: refuse. Report the reason.
-   - `ok ...`: go on. The fields are `holder`, `session`, `checkpoint`, `ignored`, `state`, `bad-rows`, `ended-rows`. The two row fields are lists, such as `[2,3]`. None is `[]`.
+   - `ok ...`: go on. The fields are `holder`, `session`, `checkpoint`, `ignored`, `state`, `bad-rows`, `ended-rows`. The two row fields are lists, such as `[2,3]`. An empty list is `[]`.
 3. Check the holder, from `holder=`. Do not try to tell a compaction from `--resume`: the session id decides.
    - `self`: the Holder has your session id. You hold the name: go to step 6.
    - `free`: take the name.

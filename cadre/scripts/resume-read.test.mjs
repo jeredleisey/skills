@@ -172,10 +172,11 @@ test('a row that the owner did not grant is a bad row', () => {
     ['ada', 'merge', 'acme/widgets', 'pull requests', `2026-10-17 session ${SESSION}`],
     ['grace', 'push', 'acme/widgets', 'main', '2026-10-17 indefinite'],
     ['ADA', 'tag', 'acme/widgets', 'releases', '2026-10-17 indefinite'],
+    ['lin', 'tag', 'acme/widgets', 'releases', '2026-10-17 indefinite'],
   ];
   const r = run(['4', SESSION], { iss: issue({ body: body({ rows }) }) });
   const f = fields(r.line);
-  assert.equal(f['bad-rows'], '[2]');
+  assert.equal(f['bad-rows'], '[2,4]');
   assert.equal(f['ended-rows'], '[]');
 });
 

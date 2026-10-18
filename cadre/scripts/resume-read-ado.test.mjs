@@ -273,6 +273,15 @@ test('a row that the owner did not grant is a bad row, and a row of the wrong wi
   assert.equal(f['ended-rows'], '[]');
 });
 
+test('one row that the owner did not grant is a list of one', () => {
+  const rows = [
+    ['ada', 'merge', 'acme/widgets', 'pull requests', '2026-10-17 indefinite'],
+    ['grace', 'push', 'acme/widgets', 'main', '2026-10-17 indefinite'],
+  ];
+  const f = fields(run(['7', SESSION], { it: withDescription(description({ rows })) }).line);
+  assert.deepEqual([f['bad-rows'], f['ended-rows']], ['[2]', '[]']);
+});
+
 test('a session row of another session ended, and with no session each session row ended', () => {
   const rows = [
     ['ada', 'merge', 'acme/widgets', 'pull requests', `2026-10-16 session ${OLD_SESSION}`],
