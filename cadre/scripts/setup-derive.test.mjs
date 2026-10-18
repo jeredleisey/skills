@@ -69,7 +69,7 @@ function runGh(routes, { args = ['github', 'acme/app'], cwd = root, config = con
 const settings = { allow_merge_commit: true, allow_squash_merge: true, allow_rebase_merge: false, default_branch: 'main' };
 const ghRoutes = (over = {}) => ({
   'api repos/acme/app': { body: settings },
-  'api repos/acme/app/rules/branches/main': { body: [] },
+  'api repos/acme/app/rules/branches/main?per_page=100': { body: [] },
   'secret list --repo acme/app --json name': { body: [{ name: 'TOKEN_B' }, { name: 'TOKEN_A' }] },
   ...over,
 });
@@ -93,13 +93,20 @@ test('github: a ruleset that narrows the merge methods narrows the fact, and the
     { type: 'pull_request', ruleset_id: 7, parameters: {} },
     { type: 'deletion', ruleset_id: 8 },
   ];
-  const r = runGh(ghRoutes({ 'api repos/acme/app/rules/branches/main': { body: rules } }));
+  const r = runGh(ghRoutes({ 'api repos/acme/app/rules/branches/main?per_page=100': { body: rules } }));
   assert.equal(r.lines[1], 'fact merge-methods ["squash"] source=repo settings, ruleset 25317952');
 });
 
 test('github: all three methods allowed gives the sorted three', () => {
   const r = runGh(ghRoutes({ 'api repos/acme/app': { body: { ...settings, allow_rebase_merge: true } } }));
   assert.equal(r.lines[1], 'fact merge-methods ["merge","rebase","squash"] source=repo settings');
+});
+
+test('github: repo settings that are not visible give unread for merge-methods, not an empty list', () => {
+  const { allow_squash_merge, ...hidden } = settings;
+  const r = runGh(ghRoutes({ 'api repos/acme/app': { body: hidden } }));
+  assert.equal(r.lines[1], 'unread merge-methods the repo settings are not visible to this account');
+  assert.equal(r.lines.length, 5);
 });
 
 test('github: a secret list that fails gives unread for secrets and the other facts still print', () => {
@@ -110,7 +117,7 @@ test('github: a secret list that fails gives unread for secrets and the other fa
 });
 
 test('github: a rules read that fails gives unread for merge-methods only', () => {
-  const r = runGh(ghRoutes({ 'api repos/acme/app/rules/branches/main': { fail: 'gh: boom' } }));
+  const r = runGh(ghRoutes({ 'api repos/acme/app/rules/branches/main?per_page=100': { fail: 'gh: boom' } }));
   assert.equal(r.lines[0], 'fact default-branch "main" source=repo settings');
   assert.match(r.lines[1], /^unread merge-methods cannot read the rulesets: gh: boom/);
   assert.equal(r.lines.length, 5);
@@ -127,7 +134,7 @@ test('github: a host goes to gh api and to --repo', () => {
   const r = runGh(
     {
       'api --hostname ghe.example.com repos/acme/app': { body: settings },
-      'api --hostname ghe.example.com repos/acme/app/rules/branches/main': { body: [] },
+      'api --hostname ghe.example.com repos/acme/app/rules/branches/main?per_page=100': { body: [] },
       'secret list --repo ghe.example.com/acme/app --json name': { body: [] },
     },
     { args: ['github', 'acme/app', 'ghe.example.com'] },
@@ -196,6 +203,30 @@ test('ado: a policy that is off, or scoped to another branch, does not narrow', 
   const off = mergePolicy({ allowSquash: true }, { isEnabled: false });
   const r = runAdo({ [POLICIES]: list([other, off]) });
   assert.equal(r.lines[1], 'fact merge-methods ["merge","rebase","rebase-merge","squash"] source=no merge strategy policy');
+});
+
+test('ado: a scope with matchKind Prefix, or a null repositoryId, narrows', () => {
+  const scoped = (scope) => mergePolicy({ allowSquash: true }, { settings: { allowSquash: true, scope: [scope] } });
+  for (const scope of [{ repositoryId: 'r1', refName: 'refs/heads/', matchKind: 'Prefix' }, { repositoryId: null, refName: 'refs/heads/main', matchKind: 'Exact' }]) {
+    assert.equal(runAdo({ [POLICIES]: list([scoped(scope)]) }).lines[1], 'fact merge-methods ["squash"] source=policy 12', JSON.stringify(scope));
+  }
+});
+
+test('ado: a deleted policy is ignored', () => {
+  const r = runAdo({ [POLICIES]: list([mergePolicy({ allowSquash: true }, { isDeleted: true })]) });
+  assert.equal(r.lines[1], 'fact merge-methods ["merge","rebase","rebase-merge","squash"] source=no merge strategy policy');
+});
+
+test('ado: a second page of policies is read through the continuation token', () => {
+  const next = `${POLICIES}&continuationToken=tok2`;
+  const r = runAdo({ [POLICIES]: { status: 200, continuation: 'tok2', body: { value: [] } }, [next]: list([mergePolicy({ allowSquash: true })]) });
+  assert.equal(r.lines[1], 'fact merge-methods ["squash"] source=policy 12');
+});
+
+test('ado: the older policy form reads useSquashMerge, and with neither form the policy id is named', () => {
+  assert.equal(runAdo({ [POLICIES]: list([mergePolicy({ useSquashMerge: true })]) }).lines[1], 'fact merge-methods ["squash"] source=policy 12');
+  assert.equal(runAdo({ [POLICIES]: list([mergePolicy({ useSquashMerge: false })]) }).lines[1], 'fact merge-methods ["merge"] source=policy 12');
+  assert.match(runAdo({ [POLICIES]: list([mergePolicy({})]) }).lines[1], /^unread merge-methods policy 12 /);
 });
 
 test('ado: a policy read that fails gives unread for merge-methods only', () => {

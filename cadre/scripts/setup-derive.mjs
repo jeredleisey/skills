@@ -12,7 +12,8 @@
 //   merge-methods    sorted list of merge, rebase, squash (ADO adds rebase-merge).
 //                    GitHub: the repo settings allow_*_merge, narrowed by allowed_merge_methods of each
 //                    pull_request rule on the default branch. A rule with no list does not narrow.
-//                    ADO: the policy "Require a merge strategy" on the default branch (the policies
+//                    GitHub: settings that the account cannot see (not booleans) give unread.
+//                    ADO: the policy "Require a merge strategy" on the default branch (the older form with useSquashMerge is read too; the policies
 //                    that are enabled, blocking, not deleted, and in scope are intersected). With none, all four.
 //   secrets          GitHub: the names from `gh secret list --json name`, never a value.
 //                    ADO: always unread, because the PAT cannot read pipeline variables.
@@ -30,6 +31,7 @@ import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { projectUrl, readJson } from './ado.mjs';
+import { livePolicies } from './branch-policy-ado.mjs';
 import { say } from './out.mjs';
 
 const unknown = (reason) => say([`unknown: ${reason}`], 2);
@@ -74,9 +76,12 @@ function github() {
   return {
     branch: { value: branch, source: 'repo settings' },
     methods() {
-      const rules = api(`repos/${repo}/rules/branches/${branch}`);
+      const rules = api(`repos/${repo}/rules/branches/${branch}?per_page=100`);
       if (rules.error) return { error: `cannot read the rulesets: ${rules.error}` };
       if (!Array.isArray(rules.body)) return { error: 'the rulesets answer is not a list' };
+      for (const k of ['allow_merge_commit', 'allow_squash_merge', 'allow_rebase_merge']) {
+        if (typeof info.body[k] !== 'boolean') return { error: 'the repo settings are not visible to this account' };
+      }
       const on = { merge: info.body.allow_merge_commit, squash: info.body.allow_squash_merge, rebase: info.body.allow_rebase_merge };
       let value = METHODS.filter((m) => on[m] === true);
       const ids = [];
@@ -138,18 +143,16 @@ function azure() {
         seen.add(answer.continuation);
         url = `${base}/_apis/policy/configurations?api-version=7.1&continuationToken=${encodeURIComponent(answer.continuation)}`;
       }
-      // The scope test of branch-policy-ado.mjs, copied: that script exports nothing.
-      const covers = (entry) => {
-        if (typeof entry?.refName !== 'string') return false;
-        const repoOk = entry.repositoryId === null || (typeof entry.repositoryId === 'string' && entry.repositoryId.toLowerCase() === info.json.id.toLowerCase());
-        const refOk = entry.matchKind === 'Prefix' ? branch.startsWith(entry.refName) : entry.refName === branch;
-        return repoOk && refOk;
-      };
-      const live = policies.filter(
-        (p) => p?.isEnabled === true && p.isBlocking === true && p.isDeleted !== true && p.type?.id?.toLowerCase() === MERGE_POLICY && Array.isArray(p.settings?.scope) && p.settings.scope.some(covers),
-      );
+      const live = livePolicies(policies, info.json.id, branch).filter((p) => p.type?.id?.toLowerCase() === MERGE_POLICY);
       let value = Object.values(ADO_METHODS);
-      for (const p of live) value = value.filter((m) => p.settings[Object.keys(ADO_METHODS).find((k) => ADO_METHODS[k] === m)] === true);
+      for (const p of live) {
+        const set = p.settings;
+        let allowed;
+        if (Object.keys(ADO_METHODS).some((k) => typeof set[k] === 'boolean')) allowed = Object.entries(ADO_METHODS).filter(([k]) => set[k] === true).map(([, m]) => m);
+        else if (typeof set.useSquashMerge === 'boolean') allowed = [set.useSquashMerge ? 'squash' : 'merge']; // the older form
+        else return { error: `policy ${p.id} has no allow* setting and no useSquashMerge` };
+        value = value.filter((m) => allowed.includes(m));
+      }
       return { value: value.sort(), source: live.length > 0 ? live.map((p) => `policy ${p.id}`).join(', ') : 'no merge strategy policy' };
     },
     secrets: () => ({ error: 'the PAT cannot read pipeline variables' }),
