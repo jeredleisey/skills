@@ -25,7 +25,7 @@ If the ticket asks for any of these, do the rest of the work, open the pull requ
 
 ### 0. Check the charter
 
-Do step 0 of [orchestrate](../orchestrate/SKILL.md#0-start), the charter check only. Use the same lines and the same stops. Then read the charter ([charter reference](../orchestrate/references/charter.md)).
+Run the charter check and act on its outcomes as [orchestrate step 0](../orchestrate/SKILL.md#0-start) says: the script call and the seven outcome lines, with the same stops. The orchestrator issue part of that step (List, Resume, New) does not apply here. Then read the charter ([charter reference](../orchestrate/references/charter.md)).
 
 Done when the check line is `ok` or `older-cadre`, and you know the tracker, the default branch, and the documentation rule.
 
@@ -35,7 +35,7 @@ The `<ticket>` is, by the tracker of the charter:
 
 - GitHub: an issue number. Run `gh issue view <n>`.
 - ADO: a work item id. Run `az boards work-item show --id <id>` with the organization and the project of the charter.
-- Local: the number or the path of a file in `.cadre/tickets/` of the main clone. Read the file.
+- Local: the number or the path of a file in `.cadre/tickets/` of the main clone. Find the file with Glob: a number `<n>` matches `.cadre/tickets/<n>-*.md`, and a path is used as given. Read it with the Read tool. Never write it.
 
 If the ticket has no acceptance criterion that a command or a named check can prove, stop and say what is missing.
 
@@ -43,7 +43,7 @@ Done when you can state each acceptance criterion and the files that the work to
 
 ### 2. Make the worktree
 
-Choose a branch name from the ticket, for example `ticket-<n>-<slug>`. If the name exists, add a number. Run `git worktree add .claude/worktrees/<branch> -b <branch> origin/<default>`. With the local tracker use `<default>` with no `origin/`. The `.gitignore` must ignore `.claude/worktrees/`: if it does not, stop and say so.
+Choose a branch name from the ticket, for example `ticket-<n>-<slug>`. If the name exists, add a number. First find the default branch. Run `git fetch origin`, then `git symbolic-ref --short refs/remotes/origin/HEAD` (run `git remote set-head origin --auto` first if it is unset) and remove the `origin/` prefix. Local: the default branch is the value of `git config init.defaultBranch` when that branch exists, else `main` if it exists, else `master` if it exists, and there is no fetch. Then run `git worktree add .claude/worktrees/<branch> -b <branch> origin/<default>`. Local: use `<default>` with no `origin/`. The `.gitignore` must ignore `.claude/worktrees/`: if it does not, stop and say so.
 
 Done when `git status` in the worktree shows the new branch and a clean tree.
 
@@ -75,7 +75,7 @@ Push only this branch: `git push -u origin <branch>`. Do not push the default br
 
 Describe the ticket, the change, and the evidence of step 4. Link the ticket.
 
-Done when the pull request is open, or on the local tracker the branch is committed.
+Done when the pull request is open. On the local tracker: the branch holds the helper commits and the fixes, and `git status` in the worktree is clean.
 
 ### 7. Report
 

@@ -41,20 +41,17 @@ chmod +x remote.git/hooks/pre-receive
 # The local tracker scripts make the .cadre folder and the ticket, as setup would. Find them in the plugin.
 # A script needs an orchestrator name for a ticket. The folder of the case is cadre/evals/<case>.
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)"
+found=""
 for root in "${CLAUDE_PLUGIN_ROOT:-}" "$here/../.." ; do
-  if [ -n "$root" ] && [ -f "$root/scripts/local-list.mjs" ]; then
-    node "$root/scripts/local-list.mjs" init
-    node "$root/scripts/local-list.mjs" new demo "Hold the demo ticket"
-    node "$root/scripts/local-list.mjs" ticket demo "End the readme with the line done" > /dev/null
-    break
-  fi
+  if [ -n "$root" ] && [ -f "$root/scripts/local-list.mjs" ]; then found="$root"; break; fi
 done
-if [ ! -d .cadre/tickets ]; then
-  # Fallback with the same form as the scripts.
-  mkdir -p .cadre/tickets
-  printf '/.cadre/\n' >> .git/info/exclude
-  printf '# End the readme with the line done\nstate: open\nwork: demo\n' > .cadre/tickets/1-end-the-readme-with-the-line-done.md
+if [ -z "$found" ]; then
+  echo "scaffold: cannot find scripts/local-list.mjs of the plugin" >&2
+  exit 1
 fi
+node "$found/scripts/local-list.mjs" init
+node "$found/scripts/local-list.mjs" new demo "Hold the demo ticket"
+node "$found/scripts/local-list.mjs" ticket demo "End the readme with the line done" > /dev/null
 cat >> .cadre/tickets/1-end-the-readme-with-the-line-done.md <<'TICKET'
 
 ## Spec

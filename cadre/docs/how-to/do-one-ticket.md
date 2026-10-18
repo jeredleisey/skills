@@ -3,11 +3,11 @@
 Use this to do one ticket with no orchestrator issue, no ledger, and no checkpoint. It is the fastest way to try cadre. The repo needs a charter, so run `/cadre:setup` first.
 
 1. Type `/cadre:ticket <ticket>`. The ticket is a GitHub issue number, an Azure DevOps work item id, or a local ticket file in `.cadre/tickets/`. The tracker of the charter decides which.
-2. The command runs the charter check of [the orchestrator](../reference/charter.md). With no charter, it stops and tells you to type `/cadre:setup`.
-3. It reads the ticket. It stops when the ticket has no acceptance criterion that a command can prove.
-4. It makes a worktree and a branch from the default branch, and starts a `coder` with a brief.
+2. The command runs [the charter check](../reference/scripts.md#charter-check). With no charter, it stops and tells you to type `/cadre:setup`.
+3. It reads the ticket. It stops when the ticket has no acceptance criterion that a command or a named check by you can prove.
+4. It makes a worktree and a branch from the default branch, and starts a `coder` with a brief. It stops if `.gitignore` does not ignore `.claude/worktrees/`.
 5. It verifies the result itself: the tests, the scope of the diff, a secret scan, and each criterion. A `reviewer` then reads the branch.
-6. The coder fixes each must-fix and should-fix. The command leaves each nit and names it in the report.
+6. The coder fixes each must-fix and should-fix. The command leaves each nit and names it in the report. It stops and reports a finding that stays open after two review rounds.
 7. The command pushes the branch and opens one pull request with no auto-merge. On the local tracker, it pushes nothing and tells you the branch name.
 8. Review the pull request and merge it yourself.
 
