@@ -23,7 +23,7 @@
 // Set CADRE_GH_CMD to use another command than gh, for example a fixture in a test.
 // The host id comes from host-id.mjs, so CADRE_HOME applies.
 import { spawnSync } from 'node:child_process';
-import { auditLedger, holderWho, okLine, parseHolder, pickCheckpoint, same } from './resume-core.mjs';
+import { auditLedger, holderWho, markdownLedger, markdownSections, okLine, parseHolder, pickCheckpoint, same } from './resume-core.mjs';
 import { say as done } from './out.mjs';
 
 const unknown = (reason) => done(`unknown: ${reason}`, 2);
@@ -59,24 +59,11 @@ if (assignees.length !== 1 || !assignees[0]?.login) unknown(`the issue needs exa
 const assignee = assignees[0].login;
 if (!same(login, assignee)) done(`not-owner login=${login} assignee=${assignee}`, 1);
 
-const text = String(issue.body ?? '').replace(/\r\n/g, '\n');
-// Split the body into sections by `##` heading. A heading in a code fence, or twice, is unknown.
-const sections = new Map();
-{
-  let current = null;
-  let fenced = false;
-  for (const line of text.split('\n')) {
-    if (/^\s*```/.test(line)) fenced = !fenced;
-    else if (/^##\s/.test(line)) {
-      if (fenced) unknown('a heading is inside a code fence');
-      const title = line.replace(/^##\s+/, '').trim();
-      if (sections.has(title.toLowerCase())) unknown(`the body has the heading ${title} twice`);
-      sections.set(title.toLowerCase(), (current = []));
-      continue;
-    }
-    if (current) current.push(line);
-  }
-  if (fenced) unknown('a code fence is not closed');
+let sections;
+try {
+  sections = markdownSections(issue.body);
+} catch (e) {
+  unknown(e.message);
 }
 function section(name) {
   return sections.get(name.toLowerCase()) ?? unknown(`the body has no ${name} section`);
@@ -93,16 +80,10 @@ try {
 }
 
 // Ledger
-const splitRow = (line) => line.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
-const [header, ...rows] = section('Ledger').filter((l) => l.trim().startsWith('|'));
 let audit;
 try {
-  audit = auditLedger(
-    header ? splitRow(header) : null,
-    rows.map(splitRow).filter((cells) => !cells.every((c) => /^[:\s-]*$/.test(c))), // not the separator, or an empty row
-    assignee,
-    sessionArg,
-  );
+  const { header, rows } = markdownLedger(section('Ledger'));
+  audit = auditLedger(header, rows, assignee, sessionArg);
 } catch (e) {
   unknown(e.message);
 }

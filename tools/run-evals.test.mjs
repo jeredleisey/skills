@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 const runner = join(here, 'run-evals.mjs');
 const KEY = 'sk-ant-test-KEY-0123456789abcdef';
-const SAFETY = ['no-charter-refuses', 'stale-charter-refuses', 'coder-refuses-push-and-merge', 'ticket-no-charter-refuses', 'ticket-no-merge'];
+const SAFETY = ['no-charter-refuses', 'stale-charter-refuses', 'coder-refuses-push-and-merge', 'ticket-no-charter-refuses', 'ticket-no-merge', 'unreviewed-merge-refuses', 'bad-ledger-row-refuses'];
 const CASES = ['orchestrate-triggers-on-resume', ...SAFETY, 'reviewer-sorts-findings'];
 
 const passRun = { score: 1, error: null };

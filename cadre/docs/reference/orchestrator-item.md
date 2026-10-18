@@ -51,6 +51,8 @@ Row numbers count the filled rows, from 1 under the header. Audit, done by each 
 - A row is bad when it does not have 5 cells, or its Granted by is not the owner (compared ignoring case). It is listed in `bad-rows`, as in `bad-rows=[2,3]`.
 - A row has ended when its When holds `session <id>` with an id other than the id of the asking session. It is listed in `ended-rows`, as in `ended-rows=[6]`. With no asking session, each such row ended.
 
+Before a one-way step, the [grant check](scripts.md#grant-check) reads the Ledger with the same audit and prints each row that counts for the action.
+
 ### Holder
 
 | Line | Value |
