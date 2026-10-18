@@ -24,7 +24,24 @@ Cadre is a Claude Code plugin that runs a team of agents on a software repo. An 
 
 ## Guards
 
-Cadre adds hooks on `git push` and on merge commands. When the orchestrator pushes or merges, the hook asks you first. A helper is refused, unless the charter allows it. The hooks only slow an agent and stop a slip. The branch policy of your repo is the guard that holds. Setup reports the policy and names each gap.
+Cadre adds hooks on the Bash tool. The hook asks you before the orchestrator does one of these:
+
+- a push to the default branch
+- a force push
+- a delete of a remote branch
+- a pull-request merge or completion (`gh pr merge`, `az repos pr update --status completed`, or auto-complete)
+
+A push of an ordinary branch passes with no prompt. A helper is always denied these steps. The charter can switch a guard off or allow it for the orchestrator only.
+
+The hooks do not cover:
+
+- the PowerShell tool on Windows (the hooks guard the Bash tool only)
+- interpreters such as `python3 -c`
+- merges through `gh api`
+- shell aliases
+- a script on disk
+
+The branch policy of your repo is the guard that holds. Setup reports the policy and names each gap.
 
 ## Agent teams
 
@@ -32,4 +49,4 @@ Agent teams are optional and experimental in Claude Code. Setup can turn them on
 
 ## More
 
-The full docs come in `cadre/docs/`. To test an install on Windows 11, use [the Windows checklist](docs/how-to/check-a-windows-install.md).
+The full docs are coming in `cadre/docs/`. Only the Windows checklist is there now. To test an install on Windows 11, use [the Windows checklist](docs/how-to/check-a-windows-install.md).
