@@ -19,6 +19,7 @@
 // CADRE_ADO_CMD replaces the ADO client (see ado.mjs).
 import { projectUrl, readJson } from './ado.mjs';
 import { say } from './out.mjs';
+import { livePolicies } from './ado-policy-scope.mjs';
 
 const unknown = (reason) => say([`unknown: ${reason}`], 2);
 
@@ -68,15 +69,7 @@ for (let pages = 0; ; pages++) {
   url = `${base}/_apis/policy/configurations?api-version=7.1&continuationToken=${encodeURIComponent(answer.continuation)}`;
 }
 
-const covers = (entry) => {
-  if (typeof entry?.refName !== 'string') return false;
-  const repoOk = entry.repositoryId === null || (typeof entry.repositoryId === 'string' && entry.repositoryId.toLowerCase() === info.id.toLowerCase());
-  const refOk = entry.matchKind === 'Prefix' ? branch.startsWith(entry.refName) : entry.refName === branch;
-  return repoOk && refOk;
-};
-const live = policies.filter(
-  (p) => p?.isEnabled === true && p.isBlocking === true && p.isDeleted !== true && Array.isArray(p.settings?.scope) && p.settings.scope.some(covers),
-);
+const live = livePolicies(policies, info.id, branch);
 const has = (typeId, test = () => true) => live.some((p) => p.type?.id?.toLowerCase() === typeId && test(p));
 
 const gaps = [];
