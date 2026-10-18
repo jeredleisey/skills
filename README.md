@@ -6,6 +6,10 @@ A marketplace of Claude Code plugins, named `jeredleisey`.
 
 - [`cadre`](cadre/README.md): run a team of agents on a software repo. An orchestrator shapes the work, gives tickets to helpers in role cards, and verifies what they return.
 
+## Docs
+
+Read the docs at <https://www.jeredleisey.com/skills/>, or in [`cadre/docs/`](cadre/docs/README.md).
+
 ## Install
 
 ```
