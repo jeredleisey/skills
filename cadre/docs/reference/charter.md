@@ -8,7 +8,7 @@ Reference for the charter file of a repo. For the reason that a charter exists, 
 | --- | --- |
 | Path | `docs/agents/cadre-charter.md` |
 | Form | Markdown with YAML front matter |
-| Written by | `/cadre:setup`, in a pull request |
+| Written by | `/cadre:setup`, in a pull request, from one screen of proposed answers that the human accepts or changes |
 | Written by an orchestrator | Never |
 
 The front matter starts on line 1 with `---` and ends at the next `---`. A byte order mark is accepted.
