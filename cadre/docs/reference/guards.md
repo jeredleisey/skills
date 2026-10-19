@@ -75,7 +75,7 @@ These cases are parses of a readable `git push`, not text matches:
 
 - An option that the guard cannot tell from another always matches.
 - A refspec with a glob or a variable matches only after the remote, or with `--repo`.
-- A `-C` target that is a variable, or a working folder that the guard cannot tell, matches when the push has no refspec, and when a refspec is `HEAD` or `@`, because the guard cannot name the current branch. So `git -C $x push origin HEAD` matches, and `git -C $x push origin feature` passes. A `--tags` push with no refspec passes.
+- A `-C` target that is a variable, or a working folder that the guard cannot tell, matches when the push has no refspec, and when the destination of a refspec is `HEAD` or `@`, because the guard cannot name the current branch. So `git -C $x push origin HEAD` and `git -C $x push origin feature:HEAD` match, `HEAD:feature` passes, and `git -C $x push origin feature` passes. A `--tags` push with no refspec passes.
 
 ## Decision
 
