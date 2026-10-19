@@ -622,3 +622,12 @@ test('evidence: a path after file:/// becomes a short token', () => {
   assert.match(r.out, /file:\/\/<path>\/page\.html/);
   assert.match(r.out, /http:\/\/example\.org\/Us\w+\/x/);
 });
+
+test('evidence: a path after a double slash becomes a short token', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-dbl001', [bash('t1', `cat /${U}/someone/a`), bash('t2', `cat x/${U}/someone/b`)]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  assert.ok(!r.out.includes('someone'), r.out);
+  assert.match(r.out, /cat \/<path>\/a/);
+  assert.match(r.out, /cat x\/<path>\/b/);
+});

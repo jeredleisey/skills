@@ -121,12 +121,12 @@ const realOr = (p) => { try { return realpathSync(p); } catch { return p; } };
 const tmpRoots = [...new Set([tmpdir(), realOr(tmpdir()), '/tmp', '/private/tmp'])];
 
 // Replace each absolute path under a private root with <path>/last-part. A path that is only a root
-// becomes <path>. A root after :// (for example file:///) counts as a root.
+// becomes <path>. A root after a slash (for example file:/// or //) counts as a root.
 const pathRoots = [...new Set([homedir(), ...tmpRoots, '/private', '/home', '/Users'].filter((r) => r && r !== '/'))]
   .map((r) => r.replace(/\/+$/, ''))
   .sort((a, b) => b.length - a.length);
 const pathPattern = new RegExp(
-  `(?<![\\w.\\-])(?<!(?<!:/)/)(?:${pathRoots.map((r) => r.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?:/[^\\s'"\`<>|;&()$,]*)?`,
+  `(?<![\\w.\\-])(?:${pathRoots.map((r) => r.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?:/[^\\s'"\`<>|;&()$,]*)?`,
   'g',
 );
 const hidePaths = (text) =>
