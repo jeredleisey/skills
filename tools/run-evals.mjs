@@ -7,9 +7,9 @@
 //      was partial
 //   2  the runner could not do its job: no key, no report, a report that cannot be read
 // After the line of each run that did not pass, the runner prints evidence from the trace of that
-// run. The evidence has the Bash commands and the Agent calls of the agent, in trace order, and its final
-// message. A step from a helper (a subagent) has the mark [helper], so the evidence shows whether
-// the trace holds the steps of helpers. The runner always
+// run. The evidence has the Bash commands and the Agent calls of the main agent, in trace order,
+// and its final message. A step from a helper (a subagent) has the mark [helper] after its number.
+// If no step has the mark, the trace holds no step of a helper, or no helper ran. The runner always
 // passes --keep-temp, so the traces stay on disk.
 // After the evidence, the runner deletes each kept folder e-XXXX, unless CADRE_EVAL_KEEP=1. It
 // deletes a folder only when the folder is directly in the temp dir. It does this also when the
@@ -43,7 +43,7 @@ const CONFIG = {
   maxCostUsd: 5,
   threshold: 0.8,
   maxSteps: 25, // the most steps (Bash commands and Agent calls) that the evidence of a run shows
-  commandChars: 200, // the most characters of one command
+  stepChars: 200, // the most characters of one command
   finalChars: 800, // the most characters of the final message
   pluginDir: join(import.meta.dirname, '..', 'cadre'),
   // Each of these must be in the report. The safety cases must pass every run.
@@ -138,7 +138,7 @@ const hidePaths = (text) =>
   });
 
 // Mask the key first, then hide the paths, then cut. A cut never keeps a part of the key.
-const clip = (text, max = CONFIG.commandChars) => {
+const clip = (text, max = CONFIG.stepChars) => {
   const t = hidePaths(mask(text)).replace(/\s+/g, ' ').trim();
   return t.length > max ? `${t.slice(0, max - 3)}...` : t;
 };
@@ -161,11 +161,13 @@ function whyFailed(run) {
   return typeof run.score === 'number' ? `score ${run.score}, no grader detail in the report` : 'no score and no grader detail in the report';
 }
 
+// The tools that make a step of the evidence. Task is the older name of Agent.
+const STEP_TOOLS = new Set(['Bash', 'Agent', 'Task']);
+
 // The text of an Agent step: [Agent <type>] and the description, else the start of the prompt.
 function agentText(input) {
-  const type = typeof input?.subagent_type === 'string' && input.subagent_type ? input.subagent_type : 'general-purpose';
-  const what = [input?.description, input?.prompt].find((x) => typeof x === 'string' && x.trim()) ?? '';
-  return `[Agent ${type}] ${what}`;
+  const first = (...xs) => xs.find((x) => typeof x === 'string' && x.trim())?.trim();
+  return `[Agent ${first(input?.subagent_type) ?? 'general-purpose'}] ${first(input?.description, input?.prompt) ?? ''}`;
 }
 
 // Read the trace of a run. Return { steps: [{ text, isError, helper }], final } or { note }.
@@ -188,14 +190,14 @@ function readTrace(tracePath) {
     if (rec.type === 'result' && typeof rec.result === 'string') closing = rec.result;
     const content = rec.message?.content ?? rec.content;
     if (!Array.isArray(content)) continue;
+    const helper = (rec.parent_tool_use_id ?? null) !== null || rec.isSidechain === true;
     for (const item of content) {
       if (!item || typeof item !== 'object') continue;
-      if (rec.type === 'assistant' && item.type === 'tool_use' && (item.name === 'Bash' || item.name === 'Agent' || item.name === 'Task')) {
-        const helper = (rec.parent_tool_use_id ?? null) !== null || rec.isSidechain === true;
+      if (rec.type === 'assistant' && item.type === 'tool_use' && STEP_TOOLS.has(item.name)) {
         const step = { text: item.name === 'Bash' ? String(item.input?.command ?? '') : agentText(item.input), isError: false, helper };
         steps.push(step);
         if (item.id) byId.set(item.id, step);
-      } else if (rec.type === 'assistant' && item.type === 'text' && typeof item.text === 'string') {
+      } else if (rec.type === 'assistant' && item.type === 'text' && typeof item.text === 'string' && !helper) {
         lastText = item.text;
       } else if (item.type === 'tool_result' && item.is_error === true && byId.has(item.tool_use_id)) {
         byId.get(item.tool_use_id).isError = true;
@@ -210,10 +212,10 @@ function evidence(run, maxSteps = CONFIG.maxSteps) {
   try {
     const t = readTrace(run?.tracePath);
     if (t.note) return [`        ${t.note}`];
-    const out = ['        commands:'];
+    const out = ['        steps:'];
     if (!t.steps.length) out.push('          (none)');
-    t.steps.slice(0, maxSteps).forEach((c, i) => out.push(`          ${i + 1}.${c.helper ? ' [helper]' : ''} ${clip(c.text, CONFIG.commandChars)}${c.isError ? ' [error]' : ''}`));
-    if (t.steps.length > maxSteps) out.push(`          ... ${t.steps.length - maxSteps} more commands not shown`);
+    t.steps.slice(0, maxSteps).forEach((st, i) => out.push(`          ${i + 1}.${st.helper ? ' [helper]' : ''} ${clip(st.text, CONFIG.stepChars)}${st.isError ? ' [error]' : ''}`));
+    if (t.steps.length > maxSteps) out.push(`          ... ${t.steps.length - maxSteps} more steps not shown`);
     out.push(`        final message: ${t.final ? clip(t.final, CONFIG.finalChars) : '(none)'}`);
     return out;
   } catch (e) {

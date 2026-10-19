@@ -479,7 +479,7 @@ test('evidence: a command is cut to 200 characters, the final message to 800, an
   assert.ok(r.out.includes('F'.repeat(700)));
   assert.match(r.out, /cmd-number-25\b/);
   assert.doesNotMatch(r.out, /cmd-number-26\b/);
-  assert.match(r.out, /5 more commands/);
+  assert.match(r.out, /5 more steps not shown/);
 });
 
 const agent = (id, input, name = 'Agent') => asst({ type: 'tool_use', id, name, input });
@@ -542,6 +542,25 @@ test('evidence: an Agent description is masked for the key and the paths', () =>
   assert.match(r.out, /\[Agent x\] Use \*\*\* in <path>\/main\.mjs/);
 });
 
+test('evidence: a subagent_type of only spaces shows general-purpose', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-agt007', [agent('a1', { subagent_type: '   ', description: 'Blank type' })]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  assert.match(r.out, /1\. \[Agent general-purpose\] Blank type/);
+});
+
+test('evidence: the text of a helper never becomes the final message', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-agt008', [
+    text('main words'),
+    { ...text('parent helper words'), parent_tool_use_id: 'a1' },
+    { ...text('sidechain helper words'), isSidechain: true },
+  ]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  assert.match(r.out, /final message: main words/);
+  assert.doesNotMatch(r.out, /helper words/);
+});
+
 test('evidence: the step limit counts Agent steps', () => {
   const s = scratch();
   const lines = [];
@@ -551,7 +570,7 @@ test('evidence: the step limit counts Agent steps', () => {
   const r = go(s, report({ runs: withTrace(tp) }));
   assert.match(r.out, /agent-step-25/);
   assert.doesNotMatch(r.out, /agent-step-26/);
-  assert.match(r.out, /1 more commands? not shown/);
+  assert.match(r.out, /1 more steps? not shown/);
 });
 
 test('evidence: the key never shows, not even a prefix, also when the cut would keep a part of it', () => {
