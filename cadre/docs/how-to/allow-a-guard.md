@@ -8,10 +8,10 @@ The guards are `push` and `merge`. The charter holds the switch. A helper is alw
 
 1. Open `docs/agents/cadre-charter.md` in a worktree, on a new branch.
 2. In the front matter, add `allow: [merge]`.
-3. Run `node "<plugin root>/scripts/charter-check.mjs" <worktree>`. The line must be `ok`.
+3. Run `node "<plugin root>/scripts/charter-check.mjs" <worktree>`. The line must be `ok` or `older-cadre`. Both mean that you can go on.
 4. Commit, push, and open a pull request. Merge it yourself.
 
-The hook reads the charter from `origin/<default branch>`. The change takes effect after the merge, and after `git fetch`.
+The hook reads the charter from `origin/<branch>` for each candidate default branch that exists on origin. The strictest charter wins. The list of candidates is in [the guard reference](../reference/guards.md#how-the-guard-reads-the-charter). The change takes effect after the merge, and after `git fetch`.
 
 ## Turn all guards off
 

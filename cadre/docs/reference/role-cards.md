@@ -39,7 +39,7 @@ Review a branch against a fixed point and a spec. Read only. It keeps the Agent 
 
 | Fact | Value |
 | --- | --- |
-| Reads from the brief | The fixed point, the hash of the commit to review, and the spec (an issue, a file, or text). |
+| Reads from the brief | The fixed point and the spec (an issue, a file, or text). The card needs only these two. The brief of an orchestrator also names the branch and the commit to review, and the reviewer reports the hash of the commit that it reviewed. |
 | Stops and reports when | The fixed point or the spec is missing. The fixed point does not resolve with `git rev-parse`, or the diff is empty. The skill map gives `unknown`, or a mapped skill does not load. |
 | Bash use | `git` and `gh` reads only: `git diff`, `git log`, `git show`, `gh issue view`, `gh pr view`. |
 | Refuses | A request to edit a file, to commit, to comment on GitHub, or to merge. |

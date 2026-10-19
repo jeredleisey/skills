@@ -10,6 +10,7 @@ Reference for the charter file of a repo. For the reason that a charter exists, 
 | Form | Markdown with YAML front matter |
 | Written by | `/cadre:setup`, in a pull request, from one screen of proposed answers that the human accepts or changes |
 | Written by an orchestrator | Never |
+| Local tracker | Setup commits the charter to a branch `cadre-charter` and writes no pull request. The human merges the branch by hand. |
 
 The front matter starts on line 1 with `---` and ends at the next `---`. A byte order mark is accepted.
 
@@ -25,9 +26,9 @@ Front matter holds only what a script or a hook reads.
 | `allow` | A list of guards that the repo allows, from `push` and `merge`. | Absent: none. | [`guard`](guards.md) |
 | `skill_pack` | `mattpocock-skills`, `superpowers`, or `none`. | Absent: `none`. | [`skill-map`](scripts.md#skill-map) |
 | `capabilities` | Overrides of the skill map, as items `<capability>=<skill or none>`. | Absent: no override. | [`skill-map`](scripts.md#skill-map) |
-| `tracker` | `ado` for Azure DevOps. `local` for the local tracker. | Absent: GitHub. | [`resume-read-ado`](scripts.md#resume-read-ado) reads `ado`. The skills read `local` and the absence. |
-| `ado_org` | The ADO organization. | Absent for GitHub. | [`resume-read-ado`](scripts.md#resume-read-ado) |
-| `ado_project` | The ADO project. | Absent for GitHub. | [`resume-read-ado`](scripts.md#resume-read-ado) |
+| `tracker` | `ado` for Azure DevOps. `local` for the local tracker. | Absent: GitHub. | [`resume-read-ado`](scripts.md#resume-read-ado) and [`grant-check-ado`](scripts.md#grant-check-ado) read `ado`. The skills read `local` and the absence. |
+| `ado_org` | The ADO organization. | Absent for GitHub. | [`resume-read-ado`](scripts.md#resume-read-ado), [`grant-check-ado`](scripts.md#grant-check-ado) |
+| `ado_project` | The ADO project. | Absent for GitHub. | [`resume-read-ado`](scripts.md#resume-read-ado), [`grant-check-ado`](scripts.md#grant-check-ado) |
 
 The reading scripts skip any other front matter field.
 
@@ -39,7 +40,7 @@ The reading scripts skip any other front matter field.
 - A value can be in single or double quotes. The quotes are removed.
 - A list can be an inline `[a, b]`, a comma list, or `- item` lines.
 - `capabilities` takes the inline list `[a=b, c=d]` or `- a=b` lines, never a mix. A capability appears once. A capability that does not exist gives `unknown`.
-- `charter-check` keeps its own copy of the parser. `charter-front-matter.mjs` serves the other scripts. The two follow the same rules.
+- One parser, `charter-front-matter.mjs`, serves every script. `charter-check`, `skill-map`, `guard`, `resume-read-ado`, and `grant-check-ado` import it.
 
 ## Body
 
@@ -62,8 +63,9 @@ The body is for agents. It says only what an agent cannot derive from the repo. 
 
 | Fact | Source |
 | --- | --- |
-| Charter on the guard side | The commit `origin/<default branch>`, never the working tree. See [Guards](guards.md#how-the-guard-reads-the-charter). |
-| Charter on the skill-map side and the resume side | The working tree of the repo root that the script gets, or the current folder. |
+| Charter on the guard side | The commit `origin/<branch>` of each candidate default branch, never the working tree. The strictest result wins. See [Guards](guards.md#how-the-guard-reads-the-charter). |
+| Charter on the skill-map side | The working tree of the repo root that the script gets, or the current folder. |
+| Charter on the ADO side | `resume-read-ado` and `grant-check-ado` read only the current folder (`process.cwd()`). They take no root. |
 
 ## Worktrees
 

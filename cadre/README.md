@@ -6,7 +6,7 @@ Cadre is a Claude Code plugin that runs agents on a software repo with the disci
 
 - **Your rules, stated once.** Each repo states its rules in a charter: who merges, who deploys, what only a person may do. Your team reviews the charter like code.
 - **A pull request you can trust.** A helper does the ticket in its own worktree. The session that runs the ticket verifies the result, and a separate reviewer reads it before you see the pull request.
-- **A record anyone can resume.** The orchestrator keeps its state in one issue. A new session, or a teammate, continues from that issue.
+- **A record anyone can resume.** The orchestrator keeps its state in one issue. A new session, or another person, continues from that issue.
 
 ## What it costs
 

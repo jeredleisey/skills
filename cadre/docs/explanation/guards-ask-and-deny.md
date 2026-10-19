@@ -6,7 +6,7 @@ Cadre adds hooks on the Bash tool. They guard the one-way push and merge steps: 
 
 A hook gives one of two answers. It asks, or it denies.
 
-- For the orchestrator, it asks. The human sees a prompt and decides. The orchestrator can do the step only with a yes.
+- For the orchestrator, it asks. The human sees a prompt and decides. The orchestrator can do the step only with a yes. One case has no prompt: the charter has `guards: off` or `allow: [<guard>]` for that guard, and the personal file does not force the guard on or deny it.
 - For a helper, it denies. No prompt, no choice.
 
 The hook tells them apart by the fields `agent_id` and `agent_type` in the hook input. A call with either field is a helper call, even when the field is empty. So a session started with `--agent` is also denied. So a helper cannot pass by looking like the orchestrator.

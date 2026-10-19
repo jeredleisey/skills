@@ -41,6 +41,6 @@ Exact facts. See [the index](reference/README.md).
 - [Scripts](reference/scripts.md)
 - [The charter](reference/charter.md)
 - [Guards](reference/guards.md)
-- [The orchestrator item](reference/orchestrator-item.md)
+- [The orchestrator issue](reference/orchestrator-item.md)
 - [Presets](reference/presets.md)
 - [Role cards](reference/role-cards.md)

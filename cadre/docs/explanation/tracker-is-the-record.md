@@ -29,4 +29,4 @@ GitHub holds the item as an issue. Azure DevOps holds it as a work item, with th
 
 Because the tracker is the record, a helper brief points to tickets, not to chat. A checkpoint is written after each merge. And agent teams, if on, mirror tickets as tasks without taking their place: a resume never reads the task list.
 
-See [the orchestrator item](../reference/orchestrator-item.md).
+See [the orchestrator issue](../reference/orchestrator-item.md).

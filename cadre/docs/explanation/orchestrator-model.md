@@ -22,7 +22,7 @@ The reason: a helper cannot see its own blind spots, and a wrong claim costs mor
 
 ## One owner, one name
 
-A human owns one orchestrator. Only the owner grants it a permission, and the grant goes in its ledger. A new orchestrator starts with an empty ledger. A permission for one repo does not cover another.
+A human owns one orchestrator. Only the owner grants it a permission, and the grant goes in its ledger. A new orchestrator starts with the standard grants that the human accepts, or with no row. A permission for one repo does not cover another.
 
 One session holds a name at a time. This stops two sessions from acting as the same orchestrator and from racing on its issue.
 
