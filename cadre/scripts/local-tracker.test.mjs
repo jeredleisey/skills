@@ -173,6 +173,24 @@ test('put and checkpoint: refused for a user who is not the owner, and for an un
   assert.equal(readFileSync(orchFile(repo, 'rigel'), 'utf8'), before);
 });
 
+test('a refusal by a user who is not the owner leaves no lock, so the owner writes at once', () => {
+  const repo = makeRepo();
+  ls(repo, 'new', 'Rigel', 'Ship the report.');
+  const other = (...a) => run(list, repo, a, { CADRE_LOCAL_USER: 'grace' });
+  const writes = {
+    put: ['put', 'Rigel', 'Purpose', temp('x\n')],
+    state: ['state', 'Rigel', 'closed'],
+    checkpoint: ['checkpoint', 'Rigel', temp('## Decisions\nd\n\n## Waiting for the human\nw\n\n## Next, in order\nn\n')],
+  };
+  for (const [name, args] of Object.entries(writes)) {
+    const refused = other(...args);
+    assert.deepEqual([refused.code, refused.line.startsWith('refuse: grace is not the owner (ada) of Rigel')], [1, true], name);
+    assert.equal(existsSync(`${orchFile(repo, 'rigel')}.lock`), false, `${name}: the lock stays`);
+    const owner = ls(repo, ...args);
+    assert.equal(owner.code, 0, `${name}: ${owner.line}`);
+  }
+});
+
 test('a corrupt file gives unknown and never ok', () => {
   const good = (r) => readFileSync(orchFile(r, 'rigel'), 'utf8');
   const cases = {
