@@ -156,7 +156,8 @@ export const LOCK_STALE_MS = 30000;
 
 // Hold `<file>.lock` while `work` runs. The lock is made with an exclusive create. A lock that exists is
 // waited for, about 2 seconds, and then the call throws `busy`. A lock older than 30 seconds is stale (its
-// writer died), and the call takes it over.
+// writer died), and the call takes it over. `work` must throw or return, never exit the process: an exit
+// skips the `finally` and leaves the lock.
 export function withLock(file, work) {
   const lock = `${file}.lock`;
   const end = Date.now() + LOCK_WAIT_MS;

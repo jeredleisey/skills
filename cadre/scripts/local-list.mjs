@@ -89,7 +89,7 @@ function sectionRange(lines, title) {
 function change(where, name, edit) {
   const file = join(where.folder, 'orchestrators', `${slug(name)}.md`);
   if (!existsSync(file)) throw new Error(`there is no file for ${name}`);
-  // A refusal exits the process, which skips the `finally` of withLock: so the lock is freed first.
+  // A refusal exits the process and skips the `finally` of withLock. So change() refuses after withLock frees the lock.
   const result = withLock(file, () => {
     const cur = load(where, name);
     if (!same(localUser(), cur.parsed.owner)) return { refusal: `${localUser()} is not the owner (${cur.parsed.owner}) of ${name}` };
