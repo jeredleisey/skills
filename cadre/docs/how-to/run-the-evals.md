@@ -6,7 +6,8 @@ Use this before a release tag. The evals call a model and cost money. Never run 
 2. Give the runner a key.
    - On macOS, store the key in the login keychain as service `ANTHROPIC_API_KEY`. The runner gives it to the one eval process. It never prints or writes it.
    - Elsewhere, set `ANTHROPIC_API_KEY`.
-3. From the repo root, run:
+3. On macOS, git does not work in the eval sandbox. The case `merge-waits-for-reviewer` needs a real merge, so it always fails there. For a release gate, use the GitHub workflow below. It runs on Ubuntu.
+4. From the repo root, run:
 
    ```
    node tools/run-evals.mjs
