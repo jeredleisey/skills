@@ -32,6 +32,6 @@ Another orchestrator in the same repo is a peer. Peers agree in writing on a spl
 
 ## One-way steps
 
-A merge, a deploy, a delete, a force push: a new commit cannot undo them. The orchestrator needs a ledger row for each, looks at the target first, and keeps a way back. The [guards](guards-ask-and-deny.md) add a second stop.
+A merge, a deploy, a delete, a force push: a new commit cannot undo them. The orchestrator needs a ledger row for each, looks at the target first, and keeps a way back. Before a merge, it also needs a reviewer report for the head commit of the branch, with no must-fix or should-fix open. If you tell it to merge, that is a grant, but it does not cancel the review. Only you can tell it to merge with no review. The orchestrator writes that in the ledger, with the Action `merge with no review`. The [guards](guards-ask-and-deny.md) add a second stop.
 
 See also [the tracker is the record](tracker-is-the-record.md).

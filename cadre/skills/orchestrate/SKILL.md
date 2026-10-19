@@ -68,12 +68,13 @@ Done when each criterion has evidence from a command that you ran, and no must-f
 Before each one-way step:
 
 1. Run `node "<plugin root>/scripts/grant-check.mjs" <n> "$CLAUDE_CODE_SESSION_ID" "<action>"` (`grant-check-ado.mjs` with the item id, `grant-check-local.mjs` with the name). `<action>` is the Action cell as the ledger writes it. `granted row=<k> scope=<JSON string>`: read the Scope and check that it covers this step, else ask the human and stop. `none`: ask the human and stop. `unknown:` or `not-owner`: stop and report. Never use a row that the script did not print.
-2. Read the open specs. A rule can change while you work, and a spec can stop merges in a path from a given point (a freeze).
-3. Look at the target first: what a delete removes, what a deploy replaces.
-4. Write the command so that it stops at the first error, for example `set -euo pipefail`. Do not chain a delete after a step that can fail.
-5. Keep a way back: a backup, a tag, or the old version.
-6. If the harness or its permission check refuses the step, do not find another route. Stop and ask the human.
-7. After a merge, update each clone that a live tool runs from. The charter names them.
+2. Before each merge, you need a reviewer report for the head commit of the branch, with no must-fix or should-fix open. If you have none, do not merge. Start a reviewer. If you cannot, say that the review is missing and ask the human. If the human tells you to merge, that is a grant. It does not cancel the review. Only the human can tell you to merge with no review. Write that in the Ledger, with the Action `merge with no review`.
+3. Read the open specs. A rule can change while you work, and a spec can stop merges in a path from a given point (a freeze).
+4. Look at the target first: what a delete removes, what a deploy replaces.
+5. Write the command so that it stops at the first error, for example `set -euo pipefail`. Do not chain a delete after a step that can fail.
+6. Keep a way back: a backup, a tag, or the old version.
+7. If the harness or its permission check refuses the step, do not find another route. Stop and ask the human.
+8. After a merge, update each clone that a live tool runs from. The charter names them.
 
 Done when the step succeeded, you checked its result, and each clone that a live tool runs from is current.
 
