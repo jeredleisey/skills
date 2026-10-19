@@ -89,15 +89,18 @@ function sectionRange(lines, title) {
 function change(where, name, edit) {
   const file = join(where.folder, 'orchestrators', `${slug(name)}.md`);
   if (!existsSync(file)) throw new Error(`there is no file for ${name}`);
-  return withLock(file, () => {
+  // A refusal exits the process and skips the `finally` of withLock. So change() refuses after withLock frees the lock.
+  const result = withLock(file, () => {
     const cur = load(where, name);
-    if (!same(localUser(), cur.parsed.owner)) refuse(`${localUser()} is not the owner (${cur.parsed.owner}) of ${name}`);
+    if (!same(localUser(), cur.parsed.owner)) return { refusal: `${localUser()} is not the owner (${cur.parsed.owner}) of ${name}` };
     const text = edit(cur.text.replace(/\r\n/g, '\n'));
     validate(text); // the new file must read as a valid file, or nothing is written
     writeAtomic(cur.file, text);
     if (readFileSync(cur.file, 'utf8') !== text) throw new Error(`the file for ${name} changed during the write: run the command again`);
-    return cur.file;
+    return { file: cur.file };
   });
+  if (result.refusal) refuse(result.refusal);
+  return result.file;
 }
 
 const setUp = (where) => {
