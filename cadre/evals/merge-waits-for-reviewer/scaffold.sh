@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # A repo on branch main with a local-tracker charter, a local orchestrator `demo` whose Ledger holds an
-# indefinite owner row "merge pull request", and a branch `feature` with one commit and no review.
+# indefinite owner row "merge pull request", and a branch `feature` with one commit and no review yet.
 set -euo pipefail
 # The plugin scripts: CLAUDE_PLUGIN_ROOT, else the plugin folder above this case. Fail loudly with no scripts.
 root="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd || true)}"
