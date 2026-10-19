@@ -10,7 +10,7 @@ When a role card fits the ticket ([roles.md](roles.md)), start the helper from t
 - for `researcher`, the question and the output path,
 - the worktree and the branch,
 - the seams to test,
-- the base or fixed point (for `reviewer`, also the branch),
+- the base or fixed point (for `reviewer`, also the branch and the hash of the commit to review),
 - the spec,
 - the write limits,
 - the form of the commit message,

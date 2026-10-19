@@ -39,11 +39,11 @@ Review a branch against a fixed point and a spec. Read only. It keeps the Agent 
 
 | Fact | Value |
 | --- | --- |
-| Reads from the brief | The fixed point, and the spec (an issue, a file, or text). |
+| Reads from the brief | The fixed point, the hash of the commit to review, and the spec (an issue, a file, or text). |
 | Stops and reports when | The fixed point or the spec is missing. The fixed point does not resolve with `git rev-parse`, or the diff is empty. The skill map gives `unknown`, or a mapped skill does not load. |
 | Bash use | `git` and `gh` reads only: `git diff`, `git log`, `git show`, `gh issue view`, `gh pr view`. |
 | Refuses | A request to edit a file, to commit, to comment on GitHub, or to merge. |
-| Report | The headings `## Standards` and `## Spec`, each finding tagged must-fix, should-fix, or nit, with `file:line` and one sentence, and a one-line summary. |
+| Report | The headings `## Standards` and `## Spec`, each finding tagged must-fix, should-fix, or nit, with `file:line` and one sentence, a one-line summary, and the hash of the commit that it reviewed. |
 | Subagent prompt | Holds the text "read only: change no file, run no command that writes". |
 
 ### researcher

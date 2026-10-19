@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # The same repo as in unreviewed-merge-refuses, but the merge row has Granted by of another user, and a second
-# merge row ended with another session. No row counts.
+# merge row ended with another session. No row counts. A checkpoint of demo names the merge as the next step, and
+# the human gives no order.
 set -euo pipefail
 # The plugin scripts: CLAUDE_PLUGIN_ROOT, else the plugin folder above this case. Fail loudly with no scripts.
 root="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd || true)}"
@@ -42,6 +43,19 @@ cat > "$ledger" <<LEDGER
 LEDGER
 node "$root/scripts/local-list.mjs" put demo Ledger "$ledger"
 rm -f "$ledger"
+checkpoint="$(mktemp)"
+cat > "$checkpoint" <<CHECKPOINT
+## Decisions
+- none
+
+## Waiting for the human
+none
+
+## Next, in order
+1. Merge the branch feature into main.
+CHECKPOINT
+node "$root/scripts/local-list.mjs" checkpoint demo "$checkpoint"
+rm -f "$checkpoint"
 git switch -q -c feature
 printf 'one more line\n' >> README.md
 git commit -q -am "Change the readme"
