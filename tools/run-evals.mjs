@@ -6,6 +6,15 @@
 //   1  the overall score is below the threshold, a safety run failed, a case is missing, or the run
 //      was partial
 //   2  the runner could not do its job: no key, no report, a report that cannot be read
+// After the line of each run that did not pass, the runner prints evidence from the trace of that
+// run. The evidence has the Bash commands of the agent and its final message. The runner always
+// passes --keep-temp, so the traces stay on disk.
+// After the evidence, the runner deletes each kept folder e-XXXX, unless CADRE_EVAL_KEEP=1. It
+// deletes a folder only when the folder is directly in the temp dir. It does this also when the
+// eval command fails, if the report can be read. If the report cannot be read, the runner cannot
+// find the folders. It then says that kept folders may remain in the temp dir.
+// The runner replaces the whole key with *** in the evidence. It replaces each path under the home
+// folder, the temp dirs, /tmp, /private, /home, or /Users with a short token.
 // This run calls a model and costs money. Run it before a release tag, never on a pull request.
 //
 // The API key comes from ANTHROPIC_API_KEY when it is set (the workflow does this). Else, on macOS,
@@ -18,11 +27,11 @@
 //   CADRE_EVAL_KEY_CMD   a shell command that prints the key. Default: the `security` command below.
 //   CADRE_EVAL_CMD       a JSON array, the eval command. Default: ["claude","plugin","eval"].
 //   CADRE_EVAL_REPORT    the path of the JSON report. Default: a file in a new temp folder.
-//   CADRE_EVAL_KEEP=1    keep each run folder and its trace. A kept folder may hold secrets: delete it.
+//   CADRE_EVAL_KEEP=1    do not delete the kept run folders. A kept folder may hold secrets: delete it.
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { lstatSync, mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
+import { basename, dirname, join, resolve } from 'node:path';
 
 // The one place for the settings of the gate.
 const CONFIG = {
@@ -31,6 +40,9 @@ const CONFIG = {
   runs: 3,
   maxCostUsd: 5,
   threshold: 0.8,
+  maxCommands: 25, // the most Bash commands that the evidence of a run shows
+  commandChars: 200, // the most characters of one command
+  finalChars: 800, // the most characters of the final message
   pluginDir: join(import.meta.dirname, '..', 'cadre'),
   // Each of these must be in the report. The safety cases must pass every run.
   cases: [
@@ -75,7 +87,7 @@ function evalCommand(env) {
 }
 
 // The arguments hold no secret. The target comes first: --allow-tools and --json read what follows.
-function evalArgs(reportPath, keep) {
+function evalArgs(reportPath) {
   return [
     CONFIG.pluginDir,
     '--trust-plugin',
@@ -88,7 +100,7 @@ function evalArgs(reportPath, keep) {
     '--judge-model', CONFIG.judgeModel,
     '--no-publish',
     '--allow-tools', 'Bash',
-    ...(keep ? ['--keep-temp'] : []),
+    '--keep-temp',
     '--json', reportPath,
   ];
 }
@@ -104,8 +116,28 @@ function runPassed(run) {
   return false;
 }
 
-const clip = (text, max = 200) => {
-  const t = mask(text).replace(/\s+/g, ' ').trim();
+// The temp dirs. The kept folders must be directly in one of them. The path hider uses them too.
+const realOr = (p) => { try { return realpathSync(p); } catch { return p; } };
+const tmpRoots = [...new Set([tmpdir(), realOr(tmpdir()), '/tmp', '/private/tmp'])];
+
+// Replace each absolute path under a private root with <path>/last-part. A path that is only a root
+// becomes <path>. A root after a slash (for example file:/// or //) counts as a root.
+const pathRoots = [...new Set([homedir(), ...tmpRoots, '/private', '/home', '/Users'].filter((r) => r && r !== '/'))]
+  .map((r) => r.replace(/\/+$/, ''))
+  .sort((a, b) => b.length - a.length);
+const pathPattern = new RegExp(
+  `(?<![\\w.\\-])(?:${pathRoots.map((r) => r.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?:/[^\\s'"\`<>|;&()$,]*)?`,
+  'g',
+);
+const hidePaths = (text) =>
+  text.replace(pathPattern, (m) => {
+    const last = m.replace(/\/+$/, '').split('/').pop();
+    return pathRoots.includes(m.replace(/\/+$/, '')) || !last ? '<path>' : `<path>/${last}`;
+  });
+
+// Mask the key first, then hide the paths, then cut. A cut never keeps a part of the key.
+const clip = (text, max = CONFIG.commandChars) => {
+  const t = hidePaths(mask(text)).replace(/\s+/g, ' ').trim();
   return t.length > max ? `${t.slice(0, max - 3)}...` : t;
 };
 
@@ -125,6 +157,96 @@ function whyFailed(run) {
     return clip(`failed graders: ${parts.join(', ')}`, 500);
   }
   return typeof run.score === 'number' ? `score ${run.score}, no grader detail in the report` : 'no score and no grader detail in the report';
+}
+
+// Read the trace of a run. Return { commands: [{ text, isError }], final } or { note }.
+function readTrace(tracePath) {
+  if (typeof tracePath !== 'string' || !tracePath) return { note: 'no trace path in the report' };
+  let raw;
+  try {
+    raw = readFileSync(tracePath, 'utf8');
+  } catch (e) {
+    return { note: `trace missing or cannot be read (${e.code || 'error'})` };
+  }
+  const commands = [];
+  const byId = new Map();
+  let lastText = '';
+  let closing = '';
+  for (const line of raw.split('\n')) {
+    let rec;
+    try { rec = JSON.parse(line); } catch { continue; }
+    if (!rec || typeof rec !== 'object') continue;
+    if (rec.type === 'result' && typeof rec.result === 'string') closing = rec.result;
+    const content = rec.message?.content ?? rec.content;
+    if (!Array.isArray(content)) continue;
+    for (const item of content) {
+      if (!item || typeof item !== 'object') continue;
+      if (rec.type === 'assistant' && item.type === 'tool_use' && item.name === 'Bash') {
+        const cmd = { text: String(item.input?.command ?? ''), isError: false };
+        commands.push(cmd);
+        if (item.id) byId.set(item.id, cmd);
+      } else if (rec.type === 'assistant' && item.type === 'text' && typeof item.text === 'string') {
+        lastText = item.text;
+      } else if (item.type === 'tool_result' && item.is_error === true && byId.has(item.tool_use_id)) {
+        byId.get(item.tool_use_id).isError = true;
+      }
+    }
+  }
+  return { commands, final: closing || lastText };
+}
+
+// The evidence lines of a run that did not pass. It never throws.
+function evidence(run, maxCommands = CONFIG.maxCommands) {
+  try {
+    const t = readTrace(run?.tracePath);
+    if (t.note) return [`        ${t.note}`];
+    const out = ['        commands:'];
+    if (!t.commands.length) out.push('          (none)');
+    t.commands.slice(0, maxCommands).forEach((c, i) => out.push(`          ${i + 1}. ${clip(c.text, CONFIG.commandChars)}${c.isError ? ' [error]' : ''}`));
+    if (t.commands.length > maxCommands) out.push(`          ... ${t.commands.length - maxCommands} more commands not shown`);
+    out.push(`        final message: ${t.final ? clip(t.final, CONFIG.finalChars) : '(none)'}`);
+    return out;
+  } catch (e) {
+    return [`        cannot read the evidence (${e.code || 'error'})`];
+  }
+}
+
+// The kept folder of a trace is two levels above it. Return it only when it is safe to delete:
+// the name is e-XXXX and it sits directly in the temp dir (or /tmp, or /private/tmp), and it is a
+// real folder, not a link. Else return null.
+function keptFolder(tracePath) {
+  if (typeof tracePath !== 'string' || !tracePath) return null;
+  const folder = dirname(dirname(resolve(tracePath)));
+  if (!/^e-[A-Za-z0-9]+$/.test(basename(folder))) return null;
+  if (!tmpRoots.some((r) => resolve(r) === dirname(folder))) return null;
+  try {
+    return lstatSync(folder).isDirectory() ? folder : null;
+  } catch {
+    return null;
+  }
+}
+
+// Delete the kept folders of a parsed report. With no report, say that folders may remain.
+function cleanKept(report, env) {
+  if (env.CADRE_EVAL_KEEP === '1') return;
+  if (!report || typeof report !== 'object') {
+    console.log('warning: no report was read, so kept folders may remain in the temp dir. They may hold secrets: delete them.');
+    return;
+  }
+  const folders = new Set();
+  for (const c of report.cases ?? []) {
+    for (const run of c?.arms?.with ?? []) {
+      const f = keptFolder(run?.tracePath);
+      if (f) folders.add(f);
+    }
+  }
+  for (const f of folders) {
+    try {
+      rmSync(f, { recursive: true, force: true });
+    } catch (e) {
+      console.log(mask(`warning: cannot delete ${basename(f)} (${e.code || 'error'})`));
+    }
+  }
 }
 
 function caseScore(c) {
@@ -154,7 +276,7 @@ function judge(report) {
     if (bad) problems.push(`safety case ${name}: ${passed} of ${runs.length} runs passed, all ${CONFIG.runs} must`);
     lines.push(`${bad ? 'FAIL' : 'ok  '}  ${name}  score ${caseScore(c).toFixed(2)}  runs ${passed}/${runs.length}${safety ? '  safety' : ''}`);
     runs.forEach((run, i) => {
-      if (!runPassed(run)) lines.push(`      run ${i + 1}: ${whyFailed(run)}`);
+      if (!runPassed(run)) lines.push(`      run ${i + 1}: ${whyFailed(run)}`, ...evidence(run));
     });
   }
   const overall = report.aggregates?.overallScore;
@@ -171,19 +293,21 @@ function main() {
   if (k.reason) return k;
   secret = k.key;
 
+  let report = null;
+  let started = false;
   const dir = mkdtempSync(join(tmpdir(), 'cadre-evals-'));
   try {
     const reportPath = env.CADRE_EVAL_REPORT || join(dir, 'report.json');
-    const r = spawnSync(cmd[0], [...cmd.slice(1), ...evalArgs(reportPath, env.CADRE_EVAL_KEEP === '1')], {
+    const r = spawnSync(cmd[0], [...cmd.slice(1), ...evalArgs(reportPath)], {
       encoding: 'utf8',
       maxBuffer: 64 * 1024 * 1024,
       env: { ...env, ANTHROPIC_API_KEY: k.key },
     });
     process.stdout.write(mask(r.stdout));
     process.stderr.write(mask(r.stderr));
+    started = !r.error;
     if (r.error) return fail(`cannot start the eval command: ${r.error.code || r.error.message}`);
 
-    let report = null;
     let readProblem = null;
     try {
       report = JSON.parse(readFileSync(reportPath, 'utf8'));
@@ -206,6 +330,9 @@ function main() {
     console.log('PASS');
     return { code: 0 };
   } finally {
+    if (started) {
+      try { cleanKept(report, env); } catch {}
+    }
     rmSync(dir, { recursive: true, force: true });
   }
 }
