@@ -43,8 +43,9 @@ Review a branch against a fixed point and a spec. Read only. It keeps the Agent 
 | Stops and reports when | The fixed point or the spec is missing. The fixed point does not resolve with `git rev-parse`, or the diff is empty. The skill map gives `unknown`, or a mapped skill does not load. |
 | Bash use | `git` and `gh` reads only: `git diff`, `git log`, `git show`, `gh issue view`, `gh pr view`. |
 | Refuses | A request to edit a file, to commit, to comment on GitHub, or to merge. |
-| Report | The headings `## Standards` and `## Spec`, each finding tagged must-fix, should-fix, or nit, with `file:line` and one sentence, a one-line summary, and the hash of the commit that it reviewed. It is written only after each subagent that it started has reported. A line that starts with `NOT DONE:` names a part that is not done, and the report is then no reviewer report. |
-| Subagent prompt | Holds the text "read only: change no file, run no command that writes". The reviewer starts each subagent with `run_in_background: false`. |
+| Report | The headings `## Standards` and `## Spec`, each finding tagged must-fix, should-fix, or nit, with `file:line` and one sentence, a one-line summary, and the hash of the commit that it reviewed. The reviewer writes it only after each subagent that it started has reported. A line that starts with `NOT DONE:` names a part that is not done, and the report is then no reviewer report. |
+| Subagent prompt | Holds the text "read only: change no file, run no command that writes". |
+| Subagent start | With `run_in_background: false`, so that the reviewer waits for each report. |
 
 ### researcher
 

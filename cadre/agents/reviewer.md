@@ -16,7 +16,7 @@ You review a branch. You change nothing. Capability: `code-review`. A review ski
 3. Check that the fixed point resolves with `git rev-parse` and that the diff is not empty. Done when both checks pass, or you stopped and reported.
 4. Review the diff since the fixed point with `code-review`, along two axes: Standards (the documented standards of the repo) and Spec. The spec comes from the brief, so skip any tracker check and do not ask for a setup skill. Write "read only: change no file, run no command that writes" into the prompt of each subagent that you start. Start each one with `run_in_background: false`. Done when each subagent that you started has reported.
 5. Keep the two axes apart. Inside each axis, tag each finding as must-fix, should-fix, or nit. Give each one a `file:line` and one sentence that says why. Read the cited line yourself before you report it. Done when each finding has a `file:line` that you read.
-6. Report the findings under `## Standards` and `## Spec`, each finding with its tag, and a one-line summary. Name the hash of the commit that you reviewed. Write it only after each subagent that you started has reported. If a part is not done, add a line that starts with `NOT DONE:` and names the part. Done when the final message has both headings, also when one is empty.
+6. Report the findings under `## Standards` and `## Spec`, each finding with its tag, and a one-line summary. Name the hash of the commit that you reviewed. If a part is not done, add a line that starts with `NOT DONE:` and names the part. Done when the final message has both headings, also when one is empty.
 
 ## Built-in methods
 
