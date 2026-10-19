@@ -2,7 +2,7 @@
 // A fake key command and a fake eval command stand in for `security` and `claude plugin eval`.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -203,7 +203,7 @@ test('runner: the child gets the pinned flags of the gate', () => {
   assert.ok(argv.includes('--trust-plugin'));
   assert.ok(argv.includes('--scaffold'));
   assert.ok(argv.includes('--no-publish'));
-  assert.ok(!argv.includes('--keep-temp'));
+  assert.ok(argv.includes('--keep-temp'));
   assert.ok(argv.indexOf('--json') > 0);
   assert.match(after('--json'), /\.json$/);
   // The target comes before the options that take a list.
@@ -273,9 +273,9 @@ test('workflow: contents read only, and the key comes from the secret in the ste
   assert.match(workflow, /node tools\/run-evals\.mjs/);
 });
 
-test('runner: --keep-temp is passed only when CADRE_EVAL_KEEP=1', () => {
+test('runner: --keep-temp is always passed, also when CADRE_EVAL_KEEP is not set', () => {
   const s = scratch();
-  go(s, report(), { CADRE_EVAL_KEEP: '1' });
+  go(s, report());
   assert.ok(JSON.parse(readFileSync(join(s.dir, 'probe.json'), 'utf8')).argv.includes('--keep-temp'));
 });
 
@@ -313,7 +313,8 @@ test('each eval case folder is in the case list of the runner', async () => {
   }
 });
 
-// The per-run failure lines. A run that did not pass gets one indented line after its case line.
+// The per-run failure lines. A run that did not pass gets one indented `run N:` line after its case line.
+// Evidence lines follow it, and caseLines skips them.
 const gradedFail = {
   score: 0.5,
   error: null,
@@ -331,7 +332,7 @@ function caseLines(out, name) {
   const got = [];
   for (const l of lines.slice(at + 1)) {
     if (!/^\s+\S/.test(l)) break;
-    got.push(l);
+    if (/^\s+run \d+:/.test(l)) got.push(l);
   }
   return got;
 }
@@ -406,4 +407,162 @@ test('runner: a failure line with many graders stays under 500 characters', () =
   const r = go(scratch(), report({ runs: { 'ticket-no-merge': [{ score: 0, graders }, passRun, passRun] } }));
   const line = caseLines(r.out, 'ticket-no-merge')[0];
   assert.ok(line.trim().length <= 520, String(line.length));
+});
+
+// Evidence of a failed run. A fake trace stands in for the kept folder of the eval command.
+const asst = (...content) => ({ type: 'assistant', message: { content } });
+const bash = (id, command) => asst({ type: 'tool_use', id, name: 'Bash', input: { command } });
+const res = (id, content, isError = false) => ({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: id, content, is_error: isError }] } });
+const text = (t) => asst({ type: 'text', text: t });
+
+// Make <parent>/<name>/out/trace.jsonl and return the trace path. lines may hold raw strings.
+function trace(parent, name, lines) {
+  const out = join(parent, name, 'out');
+  mkdirSync(out, { recursive: true });
+  const p = join(out, 'trace.jsonl');
+  writeFileSync(p, lines.map((l) => (typeof l === 'string' ? l : JSON.stringify(l))).join('\n') + '\n');
+  return p;
+}
+
+// Built in parts so that the deny check does not see a home path in this file.
+const U = '/Us' + 'ers';
+const H = '/ho' + 'me';
+
+const withTrace = (tracePath, run = failRun) => ({ 'no-charter-refuses': [{ ...run, tracePath }, passRun, passRun] });
+
+test('evidence: a failed run shows its Bash commands in order, the error mark, and the final text', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-abc123', [
+    bash('t1', 'git status'),
+    res('t1', 'clean'),
+    'this line is not JSON',
+    bash('t2', 'git merge feature'),
+    res('t2', [{ type: 'text', text: 'denied' }], true),
+    text('I merged it anyway.'),
+    { type: 'result', result: 'Final: merged without review.' },
+  ]);
+  const r = go(s, report({ runs: withTrace(tp), overall: 0.9 }));
+  assert.equal(r.code, 1);
+  const i1 = r.out.indexOf('git status');
+  const i2 = r.out.indexOf('git merge feature');
+  assert.ok(i1 > 0 && i2 > i1, r.out);
+  assert.match(r.out, /git merge feature.*\[error\]/);
+  assert.doesNotMatch(r.out, /git status.*\[error\]/);
+  assert.match(r.out, /Final: merged without review\./);
+  assert.ok(r.out.indexOf('run 1:') < i1);
+  assert.match(r.out, /run 1:.*\n(.*\n)*.*git status/);
+});
+
+test('evidence: without a closing record, the last assistant text is the final message; top-level content works', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-def456', [
+    { type: 'assistant', content: [{ type: 'tool_use', id: 'a', name: 'Bash', input: { command: 'ls' } }] },
+    text('first words'),
+    { type: 'assistant', content: [{ type: 'text', text: 'last words' }] },
+  ]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  assert.match(r.out, /\bls\b/);
+  assert.match(r.out, /last words/);
+  assert.doesNotMatch(r.out, /first words/);
+});
+
+test('evidence: a command is cut to 200 characters, the final message to 800, and 25 commands at most', () => {
+  const s = scratch();
+  const lines = [];
+  for (let n = 1; n <= 30; n++) lines.push(bash(`t${n}`, n === 1 ? 'echo ' + 'x'.repeat(500) : `cmd-number-${n}`));
+  lines.push({ type: 'result', result: 'F'.repeat(2000) });
+  const tp = trace(s.tmp, 'e-lim789', lines);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  assert.ok(!r.out.includes('x'.repeat(201)));
+  assert.ok(r.out.includes('x'.repeat(150)));
+  assert.ok(!r.out.includes('F'.repeat(801)));
+  assert.ok(r.out.includes('F'.repeat(700)));
+  assert.match(r.out, /cmd-number-25\b/);
+  assert.doesNotMatch(r.out, /cmd-number-26\b/);
+  assert.match(r.out, /5 more commands/);
+});
+
+test('evidence: the key never shows, not even a prefix, also when the cut would keep a part of it', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-key000', [
+    bash('t1', 'echo ' + 'a'.repeat(170) + ' ' + KEY + ' tail'),
+    bash('t2', `curl -H "x-api-key: ${KEY}" host`),
+    { type: 'result', result: 'b'.repeat(780) + KEY },
+  ]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  assert.match(r.out, /\*\*\*/);
+  assert.ok(!r.all.includes(KEY));
+  assert.ok(!r.all.includes(KEY.slice(0, 8)), 'a prefix of the key shows');
+});
+
+test('evidence: absolute paths under home, temp, /tmp, /private, /home, and /Users become a short token', () => {
+  const s = scratch();
+  const home = process.env.HOME || `${U}/nobody`;
+  const tp = trace(s.tmp, 'e-pth111', [
+    bash('t1', `cat ${home}/secret-dir/notes.txt`),
+    bash('t2', `cat ${s.tmp}/e-pth111/out/data.json`),
+    bash('t3', 'ls /tmp/work/area/file.log /private/var/folders/zz/thing.bin'),
+    bash('t4', `cd ${H}/runner/work/repo && cat ${U}/someone/code/main.mjs`),
+    { type: 'result', result: `wrote ${U}/someone/code/out.txt` },
+  ]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  for (const bad of ['secret-dir', home + '/', s.tmp, '/tmp/work', '/private/var', 'folders', `${H}/runner`, 'runner/work', `${U}/someone`, 'someone/code']) {
+    assert.ok(!r.all.includes(bad), `${bad} shows`);
+  }
+  assert.match(r.out, /<path>\/notes\.txt/);
+  assert.match(r.out, /<path>\/data\.json/);
+  assert.match(r.out, /<path>\/file\.log/);
+  assert.match(r.out, /<path>\/thing\.bin/);
+  assert.match(r.out, /<path>\/main\.mjs/);
+  assert.match(r.out, /<path>\/out\.txt/);
+});
+
+test('evidence: a run that passed prints no evidence', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-ok0001', [bash('t1', 'echo should-not-show'), { type: 'result', result: 'final should-not-show' }]);
+  const r = go(s, report({ runs: { 'reviewer-sorts-findings': [{ ...passRun, tracePath: tp }, passRun, passRun] } }));
+  assert.equal(r.code, 0, r.all);
+  assert.ok(!r.all.includes('should-not-show'));
+});
+
+test('evidence: a missing or unreadable trace gives one line, and the exit code stays the same', () => {
+  const s = scratch();
+  const missing = join(s.tmp, 'e-gone99', 'out', 'trace.jsonl');
+  const noPath = { ...failRun };
+  const r = go(s, report({ runs: { 'no-charter-refuses': [{ ...failRun, tracePath: missing }, noPath, passRun] }, overall: 0.9 }));
+  assert.equal(r.code, 1);
+  const notes = r.out.split('\n').filter((l) => /trace/i.test(l) && /(missing|cannot|no trace)/i.test(l));
+  assert.equal(notes.length, 2, r.out);
+});
+
+test('cleanup: each kept temp folder is deleted after the evidence, and CADRE_EVAL_KEEP=1 keeps it', () => {
+  for (const keep of [false, true]) {
+    const s = scratch();
+    const a = trace(s.tmp, 'e-del001', [bash('t1', 'ls'), text('x')]);
+    const b = trace(s.tmp, 'e-del002', [bash('t1', 'ls')]);
+    const r = go(s, report({ runs: { 'no-charter-refuses': [{ ...failRun, tracePath: a }, { ...passRun, tracePath: b }, passRun] }, overall: 0.9 }), keep ? { CADRE_EVAL_KEEP: '1' } : {});
+    assert.equal(r.code, 1);
+    assert.match(r.out, /\bls\b/);
+    assert.equal(existsSync(join(s.tmp, 'e-del001')), keep);
+    assert.equal(existsSync(join(s.tmp, 'e-del002')), keep);
+  }
+});
+
+test('cleanup: a tracePath outside the rules leaves its folder alone', () => {
+  const s = scratch();
+  const outside = trace(join(s.dir, 'elsewhere'), 'e-out001', [text('x')]); // not inside the temp dir
+  const badName = trace(s.tmp, 'keep-me', [text('x')]); // name does not match
+  const deep = trace(join(s.tmp, 'sub'), 'e-deep01', [text('x')]); // not directly inside the temp dir
+  const shallow = join(s.tmp, 'e-short1', 'trace.jsonl'); // not two levels below its folder
+  mkdirSync(join(s.tmp, 'e-short1'));
+  writeFileSync(shallow, '{}\n');
+  const dots = join(s.tmp, 'e-dots01', 'out', '..', '..', '..', 'trace.jsonl'); // climbs out
+  const r = go(s, report({ runs: { 'no-charter-refuses': [{ ...failRun, tracePath: outside }, { ...failRun, tracePath: badName }, { ...failRun, tracePath: deep }], 'ticket-no-merge': [{ ...failRun, tracePath: shallow }, { ...failRun, tracePath: dots }, passRun] }, overall: 0.9 }));
+  assert.equal(r.code, 1);
+  assert.ok(existsSync(join(s.dir, 'elsewhere', 'e-out001')));
+  assert.ok(existsSync(join(s.tmp, 'keep-me')));
+  assert.ok(existsSync(join(s.tmp, 'sub', 'e-deep01')));
+  assert.ok(existsSync(join(s.tmp, 'e-short1')));
+  assert.ok(existsSync(s.tmp));
+  assert.ok(existsSync(join(s.dir, 'fake-eval.mjs')));
 });
