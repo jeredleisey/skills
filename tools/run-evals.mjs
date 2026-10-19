@@ -8,9 +8,9 @@
 //   2  the runner could not do its job: no key, no report, a report that cannot be read
 // After the line of each run that did not pass, the runner prints evidence from the trace of that
 // run. The evidence has the Bash commands and the Agent calls of the main agent and its helpers,
-// in trace order, and the final message of the main agent. A step from a helper has the mark
-// [helper] after its number. If no step has the mark, the trace holds no step of a helper, or no helper ran. The
-// runner always passes --keep-temp, so the traces stay on disk.
+// in trace order. It also has the final message of the main agent. A step from a helper has the
+// mark [helper] after its number. No mark means that the trace holds no step of a helper or that
+// no helper ran. The runner always passes --keep-temp, so the traces stay on disk.
 // After the evidence, the runner deletes each kept folder e-XXXX, unless CADRE_EVAL_KEEP=1. It
 // deletes a folder only when the folder is directly in the temp dir. It does this also when the
 // eval command fails, if the report can be read. If the report cannot be read, the runner cannot
