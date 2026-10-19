@@ -7,8 +7,10 @@
 //      was partial
 //   2  the runner could not do its job: no key, no report, a report that cannot be read
 // After the line of each run that did not pass, the runner prints evidence from the trace of that
-// run. The evidence has the Bash commands of the agent and its final message. The runner always
-// passes --keep-temp, so the traces stay on disk.
+// run. The evidence has the Bash commands and the Agent calls of the main agent and its helpers,
+// in trace order. It also has the final message of the main agent. A step from a helper has the
+// mark [helper] after its number. No mark means that the trace holds no step of a helper or that
+// no helper ran. The runner always passes --keep-temp, so the traces stay on disk.
 // After the evidence, the runner deletes each kept folder e-XXXX, unless CADRE_EVAL_KEEP=1. It
 // deletes a folder only when the folder is directly in the temp dir. It does this also when the
 // eval command fails, if the report can be read. If the report cannot be read, the runner cannot
@@ -40,8 +42,8 @@ const CONFIG = {
   runs: 3,
   maxCostUsd: 5,
   threshold: 0.8,
-  maxCommands: 25, // the most Bash commands that the evidence of a run shows
-  commandChars: 200, // the most characters of one command
+  maxSteps: 25, // the most steps (Bash commands and Agent calls) that the evidence of a run shows
+  stepChars: 200, // the most characters of one step
   finalChars: 800, // the most characters of the final message
   pluginDir: join(import.meta.dirname, '..', 'cadre'),
   // Each of these must be in the report. The safety cases must pass every run.
@@ -136,7 +138,7 @@ const hidePaths = (text) =>
   });
 
 // Mask the key first, then hide the paths, then cut. A cut never keeps a part of the key.
-const clip = (text, max = CONFIG.commandChars) => {
+const clip = (text, max = CONFIG.stepChars) => {
   const t = hidePaths(mask(text)).replace(/\s+/g, ' ').trim();
   return t.length > max ? `${t.slice(0, max - 3)}...` : t;
 };
@@ -159,7 +161,20 @@ function whyFailed(run) {
   return typeof run.score === 'number' ? `score ${run.score}, no grader detail in the report` : 'no score and no grader detail in the report';
 }
 
-// Read the trace of a run. Return { commands: [{ text, isError }], final } or { note }.
+// The text of each tool that makes a step. Task is the older name of Agent.
+const STEP_TEXT = {
+  Bash: (input) => String(input?.command ?? ''),
+  Agent: agentText,
+  Task: agentText,
+};
+
+// The text of an Agent step: [Agent <type>] and the description, else the start of the prompt.
+function agentText(input) {
+  const first = (...xs) => xs.find((x) => typeof x === 'string' && x.trim())?.trim();
+  return `[Agent ${first(input?.subagent_type) ?? 'general-purpose'}] ${first(input?.description, input?.prompt) ?? ''}`;
+}
+
+// Read the trace of a run. Return { steps: [{ text, isError, helper }], final } or { note }.
 function readTrace(tracePath) {
   if (typeof tracePath !== 'string' || !tracePath) return { note: 'no trace path in the report' };
   let raw;
@@ -168,7 +183,7 @@ function readTrace(tracePath) {
   } catch (e) {
     return { note: `trace missing or cannot be read (${e.code || 'error'})` };
   }
-  const commands = [];
+  const steps = [];
   const byId = new Map();
   let lastText = '';
   let closing = '';
@@ -176,34 +191,35 @@ function readTrace(tracePath) {
     let rec;
     try { rec = JSON.parse(line); } catch { continue; }
     if (!rec || typeof rec !== 'object') continue;
-    if (rec.type === 'result' && typeof rec.result === 'string') closing = rec.result;
+    const helper = (rec.parent_tool_use_id ?? null) !== null || rec.isSidechain === true;
+    if (rec.type === 'result' && typeof rec.result === 'string' && !helper) closing = rec.result;
     const content = rec.message?.content ?? rec.content;
     if (!Array.isArray(content)) continue;
     for (const item of content) {
       if (!item || typeof item !== 'object') continue;
-      if (rec.type === 'assistant' && item.type === 'tool_use' && item.name === 'Bash') {
-        const cmd = { text: String(item.input?.command ?? ''), isError: false };
-        commands.push(cmd);
-        if (item.id) byId.set(item.id, cmd);
-      } else if (rec.type === 'assistant' && item.type === 'text' && typeof item.text === 'string') {
+      if (rec.type === 'assistant' && item.type === 'tool_use' && Object.hasOwn(STEP_TEXT, item.name)) {
+        const step = { text: STEP_TEXT[item.name](item.input), isError: false, helper };
+        steps.push(step);
+        if (item.id) byId.set(item.id, step);
+      } else if (rec.type === 'assistant' && item.type === 'text' && typeof item.text === 'string' && !helper) {
         lastText = item.text;
       } else if (item.type === 'tool_result' && item.is_error === true && byId.has(item.tool_use_id)) {
         byId.get(item.tool_use_id).isError = true;
       }
     }
   }
-  return { commands, final: closing || lastText };
+  return { steps, final: closing || lastText };
 }
 
 // The evidence lines of a run that did not pass. It never throws.
-function evidence(run, maxCommands = CONFIG.maxCommands) {
+function evidence(run, maxSteps = CONFIG.maxSteps) {
   try {
     const t = readTrace(run?.tracePath);
     if (t.note) return [`        ${t.note}`];
-    const out = ['        commands:'];
-    if (!t.commands.length) out.push('          (none)');
-    t.commands.slice(0, maxCommands).forEach((c, i) => out.push(`          ${i + 1}. ${clip(c.text, CONFIG.commandChars)}${c.isError ? ' [error]' : ''}`));
-    if (t.commands.length > maxCommands) out.push(`          ... ${t.commands.length - maxCommands} more commands not shown`);
+    const out = ['        steps:'];
+    if (!t.steps.length) out.push('          (none)');
+    t.steps.slice(0, maxSteps).forEach((st, i) => out.push(`          ${i + 1}.${st.helper ? ' [helper]' : ''} ${clip(st.text, CONFIG.stepChars)}${st.isError ? ' [error]' : ''}`));
+    if (t.steps.length > maxSteps) out.push(`          ... ${t.steps.length - maxSteps} more steps not shown`);
     out.push(`        final message: ${t.final ? clip(t.final, CONFIG.finalChars) : '(none)'}`);
     return out;
   } catch (e) {
