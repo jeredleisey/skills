@@ -466,7 +466,7 @@ test('evidence: without a closing record, the last assistant text is the final m
   assert.doesNotMatch(r.out, /first words/);
 });
 
-test('evidence: a command is cut to 200 characters, the final message to 800, and 25 steps at most', () => {
+test('evidence: a step is cut to 200 characters, the final message to 800, and 25 steps at most', () => {
   const s = scratch();
   const lines = [];
   for (let n = 1; n <= 30; n++) lines.push(bash(`t${n}`, n === 1 ? 'echo ' + 'x'.repeat(500) : `cmd-number-${n}`));
