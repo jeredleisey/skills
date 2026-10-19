@@ -69,7 +69,13 @@ Some unreadable commands always match:
 
 A variable as the command word is weaker. That command matches only when its text holds the word `push` or `merge`, or an `az` pull request update or create with a completion.
 
-An unreadable command of another kind matches when its words or its text hold `git push`, `gh pr merge`, or an `az` pull request update or create with a completion. Examples: a `-C` target that is a variable, an ambiguous option, a refspec with a glob or a variable, and a working folder that the guard cannot tell.
+An unreadable entry of another kind matches when its words or its text hold `git push`, `gh pr merge`, or an `az` pull request update or create with a completion.
+
+These cases are parses of a readable `git push`, not text matches:
+
+- An option that the guard cannot tell from another always matches.
+- A refspec with a glob or a variable matches only after the remote, or with `--repo`.
+- A `-C` target that is a variable, or a working folder that the guard cannot tell, matches only when the push has no refspec. So `git -C $x push origin feature` passes.
 
 ## Decision
 
@@ -80,7 +86,7 @@ The hook answers in one of four ways.
 | Pass | Nothing | 0 | The command is not guarded, or the charter allows it for the orchestrator. |
 | Ask | `permissionDecision: ask` with a reason | 0 | The orchestrator needs the word of the human. |
 | Deny | `permissionDecision: deny` with a reason | 0 | A helper made the call. |
-| Block | A reason on stderr | 2 | The hook cannot tell. See [Failure](#failure). |
+| Block | A reason on stderr | 2 | The hook faults. See [Failure](#failure). |
 
 The JSON is `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"<ask|deny>","permissionDecisionReason":"<text>"}}`.
 
