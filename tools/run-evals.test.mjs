@@ -482,6 +482,78 @@ test('evidence: a command is cut to 200 characters, the final message to 800, an
   assert.match(r.out, /5 more commands/);
 });
 
+const agent = (id, input, name = 'Agent') => asst({ type: 'tool_use', id, name, input });
+const stepLines = (out) => out.split('\n').filter((l) => /^\s+\d+\. /.test(l));
+
+test('evidence: an Agent call shows as a step in trace order with its subagent type and description', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-agt001', [
+    bash('t1', 'git status'),
+    agent('a1', { subagent_type: 'cadre:reviewer', description: 'Review the branch', prompt: 'long prompt' }),
+    bash('t2', 'git merge feature'),
+    res('a1', 'boom', true),
+  ]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  const lines = stepLines(r.out);
+  assert.equal(lines.length, 3, r.out);
+  assert.match(lines[0], /^\s+1\. git status$/);
+  assert.match(lines[1], /^\s+2\. \[Agent cadre:reviewer\] Review the branch \[error\]$/);
+  assert.match(lines[2], /^\s+3\. git merge feature$/);
+});
+
+test('evidence: an Agent call with no subagent_type shows general-purpose, and with no description shows the prompt start', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-agt002', [agent('a1', { prompt: 'Look at the diff and report' })]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  assert.match(r.out, /1\. \[Agent general-purpose\] Look at the diff and report/);
+});
+
+test('evidence: a Task call shows like an Agent call', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-agt003', [agent('a1', { subagent_type: 'cadre:coder', description: 'Do it' }, 'Task')]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  assert.match(r.out, /1\. \[Agent cadre:coder\] Do it/);
+});
+
+test('evidence: a step of a helper has the helper mark, a step of the main agent has none', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-agt004', [
+    bash('t1', 'main-cmd'),
+    { ...bash('t2', 'parent-cmd'), parent_tool_use_id: 'a1' },
+    { ...bash('t3', 'sidechain-cmd'), isSidechain: true },
+    { ...bash('t4', 'null-parent-cmd'), parent_tool_use_id: null, isSidechain: false },
+    { ...agent('a2', { description: 'nested' }), parent_tool_use_id: 'a1' },
+  ]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  const lines = stepLines(r.out);
+  assert.match(lines[0], /^\s+1\. main-cmd$/);
+  assert.match(lines[1], /^\s+2\. \[helper\] parent-cmd$/);
+  assert.match(lines[2], /^\s+3\. \[helper\] sidechain-cmd$/);
+  assert.match(lines[3], /^\s+4\. null-parent-cmd$/);
+  assert.match(lines[4], /^\s+5\. \[helper\] \[Agent general-purpose\] nested$/);
+});
+
+test('evidence: an Agent description is masked for the key and the paths', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-agt005', [agent('a1', { subagent_type: 'x', description: `Use ${KEY} in ${U}/someone/code/main.mjs` })]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  assert.ok(!r.all.includes(KEY));
+  assert.ok(!r.all.includes('someone/code'));
+  assert.match(r.out, /\[Agent x\] Use \*\*\* in <path>\/main\.mjs/);
+});
+
+test('evidence: the step limit counts Agent steps', () => {
+  const s = scratch();
+  const lines = [];
+  for (let n = 1; n <= 24; n++) lines.push(bash(`t${n}`, `cmd-number-${n}`));
+  lines.push(agent('a1', { description: 'agent-step-25' }), agent('a2', { description: 'agent-step-26' }));
+  const tp = trace(s.tmp, 'e-agt006', lines);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  assert.match(r.out, /agent-step-25/);
+  assert.doesNotMatch(r.out, /agent-step-26/);
+  assert.match(r.out, /1 more commands? not shown/);
+});
+
 test('evidence: the key never shows, not even a prefix, also when the cut would keep a part of it', () => {
   const s = scratch();
   const tp = trace(s.tmp, 'e-key000', [
