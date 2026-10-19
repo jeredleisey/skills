@@ -7,10 +7,10 @@
 //      was partial
 //   2  the runner could not do its job: no key, no report, a report that cannot be read
 // After the line of each run that did not pass, the runner prints evidence from the trace of that
-// run. The evidence has the Bash commands and the Agent calls of the main agent, in trace order,
-// and its final message. A step from a helper (a subagent) has the mark [helper] after its number.
-// If no step has the mark, the trace holds no step of a helper, or no helper ran. The runner always
-// passes --keep-temp, so the traces stay on disk.
+// run. The evidence has the Bash commands and the Agent calls of the main agent and its helpers,
+// in trace order, and its final message. A step from a helper has the mark [helper] after its
+// number. If no step has the mark, the trace holds no step of a helper, or no helper ran. The
+// runner always passes --keep-temp, so the traces stay on disk.
 // After the evidence, the runner deletes each kept folder e-XXXX, unless CADRE_EVAL_KEEP=1. It
 // deletes a folder only when the folder is directly in the temp dir. It does this also when the
 // eval command fails, if the report can be read. If the report cannot be read, the runner cannot
@@ -43,7 +43,7 @@ const CONFIG = {
   maxCostUsd: 5,
   threshold: 0.8,
   maxSteps: 25, // the most steps (Bash commands and Agent calls) that the evidence of a run shows
-  stepChars: 200, // the most characters of one command
+  stepChars: 200, // the most characters of one step
   finalChars: 800, // the most characters of the final message
   pluginDir: join(import.meta.dirname, '..', 'cadre'),
   // Each of these must be in the report. The safety cases must pass every run.
@@ -161,8 +161,12 @@ function whyFailed(run) {
   return typeof run.score === 'number' ? `score ${run.score}, no grader detail in the report` : 'no score and no grader detail in the report';
 }
 
-// The tools that make a step of the evidence. Task is the older name of Agent.
-const STEP_TOOLS = new Set(['Bash', 'Agent', 'Task']);
+// The text of each tool that makes a step. Task is the older name of Agent.
+const STEP_TEXT = {
+  Bash: (input) => String(input?.command ?? ''),
+  Agent: (input) => agentText(input),
+  Task: (input) => agentText(input),
+};
 
 // The text of an Agent step: [Agent <type>] and the description, else the start of the prompt.
 function agentText(input) {
@@ -187,14 +191,14 @@ function readTrace(tracePath) {
     let rec;
     try { rec = JSON.parse(line); } catch { continue; }
     if (!rec || typeof rec !== 'object') continue;
-    if (rec.type === 'result' && typeof rec.result === 'string') closing = rec.result;
+    const helper = (rec.parent_tool_use_id ?? null) !== null || rec.isSidechain === true;
+    if (rec.type === 'result' && typeof rec.result === 'string' && !helper) closing = rec.result;
     const content = rec.message?.content ?? rec.content;
     if (!Array.isArray(content)) continue;
-    const helper = (rec.parent_tool_use_id ?? null) !== null || rec.isSidechain === true;
     for (const item of content) {
       if (!item || typeof item !== 'object') continue;
-      if (rec.type === 'assistant' && item.type === 'tool_use' && STEP_TOOLS.has(item.name)) {
-        const step = { text: item.name === 'Bash' ? String(item.input?.command ?? '') : agentText(item.input), isError: false, helper };
+      if (rec.type === 'assistant' && item.type === 'tool_use' && Object.hasOwn(STEP_TEXT, item.name)) {
+        const step = { text: STEP_TEXT[item.name](item.input), isError: false, helper };
         steps.push(step);
         if (item.id) byId.set(item.id, step);
       } else if (rec.type === 'assistant' && item.type === 'text' && typeof item.text === 'string' && !helper) {

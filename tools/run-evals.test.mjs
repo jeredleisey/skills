@@ -466,7 +466,7 @@ test('evidence: without a closing record, the last assistant text is the final m
   assert.doesNotMatch(r.out, /first words/);
 });
 
-test('evidence: a command is cut to 200 characters, the final message to 800, and 25 commands at most', () => {
+test('evidence: a command is cut to 200 characters, the final message to 800, and 25 steps at most', () => {
   const s = scratch();
   const lines = [];
   for (let n = 1; n <= 30; n++) lines.push(bash(`t${n}`, n === 1 ? 'echo ' + 'x'.repeat(500) : `cmd-number-${n}`));
@@ -559,6 +559,18 @@ test('evidence: the text of a helper never becomes the final message', () => {
   const r = go(s, report({ runs: withTrace(tp) }));
   assert.match(r.out, /final message: main words/);
   assert.doesNotMatch(r.out, /helper words/);
+});
+
+test('evidence: a result record of a helper never becomes the final message', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-agt009', [
+    text('main words'),
+    { type: 'result', result: 'helper result', parent_tool_use_id: 'a1' },
+    { type: 'result', result: 'sidechain result', isSidechain: true },
+  ]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  assert.match(r.out, /final message: main words/);
+  assert.doesNotMatch(r.out, /helper result|sidechain result/);
 });
 
 test('evidence: the step limit counts Agent steps', () => {
