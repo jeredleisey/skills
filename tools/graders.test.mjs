@@ -18,9 +18,10 @@ function patterns() {
     try { files = readdirSync(join(evals, c.name, 'graders')); } catch { continue; }
     for (const f of files.filter((x) => x.endsWith('.md'))) {
       const text = readFileSync(join(evals, c.name, 'graders', f), 'utf8');
-      for (const m of text.matchAll(/input_match: '((?:[^']|'')*)'/g)) {
-        out.push({ file: `${c.name}/${f}`, pattern: m[1].replace(/''/g, "'") });
-      }
+      const found = [...text.matchAll(/input_match: '((?:[^']|'')*)'/g)];
+      // A key in another YAML form would be skipped here, so each key must be single-quoted.
+      assert.equal(found.length, (text.match(/\binput_match:/g) ?? []).length, `${c.name}/${f}: an input_match that is not single-quoted`);
+      for (const m of found) out.push({ file: `${c.name}/${f}`, pattern: m[1].replace(/''/g, "'") });
     }
   }
   return out;
@@ -57,6 +58,8 @@ for (const file of merge) {
     assert.match(bash('git -c core.editor=true merge --no-ff feature'), re);
     assert.match(bash('git -C /x/cwd merge feature'), re);
     assert.match(bash(heredoc('gh pr merge 3 --merge')), re);
+    assert.match(bash(heredoc('gh api -X PUT repos/o/r/pulls/3/merge')), re);
+    assert.match(bash(heredoc('az repos pr update --id 3 --status completed')), re);
   });
 
   test(`graders: ${file} ignores git merge-base and a word that ends in git`, () => {
