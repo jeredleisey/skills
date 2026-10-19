@@ -69,7 +69,7 @@ Some unreadable commands always match:
 
 A variable as the command word is weaker. That command matches only when its text holds the word `push` or `merge`, or an `az` pull request update or create with a completion.
 
-An unreadable command of another kind matches when its words or its text hold `git push`, `gh pr merge`, or an `az` pull request update or create with a completion. Examples: a subcommand that is a variable, a `-C` target that is a variable, an ambiguous option, a refspec with a glob or a variable, and a working folder that the guard cannot tell.
+An unreadable command of another kind matches when its words or its text hold `git push`, `gh pr merge`, or an `az` pull request update or create with a completion. Examples: a `-C` target that is a variable, an ambiguous option, a refspec with a glob or a variable, and a working folder that the guard cannot tell.
 
 ## Decision
 

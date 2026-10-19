@@ -7,7 +7,7 @@ Reference for the scripts in `cadre/scripts/`. Each section is one script that a
 - Run a script as `node "<plugin root>/scripts/<name>.mjs" <arguments>`. `<plugin root>` is the folder that holds `skills/` and `scripts/`.
 - Node 22 or later is required.
 - A script prints its result on stdout and exits.
-- Exit code 0 is a result. Exit code 1 is a refusal, a stop, or a plain result that is not a pass, such as `free`, `missing`, or `none` of a grant check. Exit code 2 is `unknown: <reason>`. Exit code 3 is `self` of `holder-check` only. Exit code 64 is wrong arguments, with a usage message on stderr. Each section gives the codes of its script, and a script uses only those codes.
+- Exit code 0 is a result. Exit code 1 is a refusal, a stop, or a plain result that is not a pass, such as `free`, `missing`, or `none` of a grant check. Exit code 2 is `unknown: <reason>` on stdout. Two scripts also exit 2 with another text: `ado-call` writes `ado-call: ...` on stderr, and any script that uses `out` writes a reason on stderr when the reader of stdout takes no data for 10 seconds. The hooks `guard` and `task-completed` exit 2 with a reason on stderr, which blocks the call. The section of each hook gives its codes. Exit code 3 is `self` of `holder-check` only. Exit code 64 is wrong arguments, with a usage message on stderr. Each section gives the codes of its script, and a script uses only those codes.
 - `unknown:` is never a pass. Treat it as a refusal.
 - `ado-policy-scope.mjs` is a shared module, not a command. `branch-policy-ado` and `setup-derive` import it to find the policies that cover the default branch.
 - The scripts use internal modules: `out`, `ado`, `resume-core`, `local-store`, `shell-words`, and `charter-front-matter`. `guard` alone uses `shell-words`. `charter-check`, `skill-map`, `guard`, `resume-read-ado`, and `grant-check-ado` use `charter-front-matter`. They are not user-facing and have no section here.
@@ -489,7 +489,7 @@ Run it in the repo or in a worktree. The files are in `.cadre/` of the main clon
 | `ticket n=<n> state=open title=<title>` | 0 | One line for each open ticket, in order of `n`. |
 | The checkpoint block | 0 | `latest`. From the marker line to the end. |
 | `none` | 0 | The list is empty, or `latest` found no checkpoint. |
-| `refuse: <reason>` | 1 | The name is taken or has no letter or digit, the user is not the owner, a section name is wrong, or the new text holds a heading or a marker line. |
+| `refuse: <reason>` | 1 | The name is taken or has no letter or digit, the user is not the owner, a section name is wrong, the new text holds a heading or a marker line, a checkpoint lacks the three sections or holds a marker line, or a ticket name or title has no letter or digit. |
 | `unknown: <reason>` | 2 | A read or write failed, or a file is not valid. Some bad input also gives it: a name or a purpose that is not one line, a Holder that is not valid, or text that fails the check before the write. Never `none`. |
 | usage message on stderr | 64 | Wrong arguments, or a `state` value other than `open` or `closed`. |
 
@@ -591,3 +591,10 @@ For `local`, `git check-ignore` tests the file. `CADRE_GIT_CMD` (test-only) repl
 ## guard and task-completed
 
 `guard.mjs` and `task-completed.mjs` are hooks. Do not run them by hand. See [Guards](guards.md).
+
+| Output | Exit | Meaning |
+| --- | --- | --- |
+| Nothing, or one JSON line with `permissionDecision` `ask` or `deny` (`guard` only) | 0 | The call passes, or the hook asks or denies by its JSON answer. |
+| A reason on stderr | 2 | The hook blocks the call. `guard` blocks when it cannot tell. `task-completed` blocks a completion by a helper or teammate, and on any fault. |
+
+Neither hook uses the codes 1, 3, or 64.

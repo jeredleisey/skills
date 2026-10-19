@@ -63,7 +63,7 @@ The body is for agents. It says only what an agent cannot derive from the repo. 
 
 | Fact | Source |
 | --- | --- |
-| Charter on the guard side | The commit `origin/<default branch>`, never the working tree. See [Guards](guards.md#how-the-guard-reads-the-charter). |
+| Charter on the guard side | The commit `origin/<branch>` of each candidate default branch, never the working tree. The strictest result wins. See [Guards](guards.md#how-the-guard-reads-the-charter). |
 | Charter on the skill-map side | The working tree of the repo root that the script gets, or the current folder. |
 | Charter on the ADO side | `resume-read-ado` and `grant-check-ado` read only the current folder (`process.cwd()`). They take no root. |
 

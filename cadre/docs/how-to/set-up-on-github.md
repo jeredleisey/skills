@@ -4,7 +4,7 @@ Use this when your repo has a GitHub remote and cadre is installed.
 
 1. Run `gh auth status`. The active account must see the repo. A wrong default account shows as a 404.
 2. Open the repo in Claude Code. Type `/cadre:setup`.
-3. Read each line that starts with `ok`, `stop:`, or `unknown:`. A `stop:` or `unknown:` line ends setup. Fix its cause. Type `/cadre:setup` again. A `gap:` line of the branch policy is not shown as a line. Setup puts it in the Traps row of the screen.
+3. Read each line that starts with `ok`, `stop:`, or `unknown:`. A `stop:` or `unknown:` line ends setup. Fix its cause. Type `/cadre:setup` again. Two cases do not end setup. An `unknown:` line of the branch policy check becomes a screen note that says the policy is unread. An `unread` line of `setup-derive.mjs` becomes a screen note too. A `gap:` line of the branch policy is not shown as a line. Setup puts it in the Traps row of the screen.
 4. Read the screen. Setup reads the merge methods, the secret names, the live clones, and the folders from the repo. It shows one table of rows with a proposed value and a source for each. A row with source `default` is a proposal that the repo does not hold.
 5. Answer the one closing question. Choose "Accept all", or "Accept, without the orchestrator issue". Or type the rows to change. Setup applies the change, shows the changed rows, and asks once more.
 6. Open the pull request that setup creates. Review `docs/agents/cadre-charter.md`. Merge it yourself.
