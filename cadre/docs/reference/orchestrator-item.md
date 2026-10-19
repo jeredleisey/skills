@@ -164,7 +164,7 @@ cadre-checkpoint v1 <ISO UTC time>
 
 ## Live work
 
-The live work of an orchestrator is its open tickets. A second orchestrator takes no ticket in that list.
+The live work of an orchestrator is its open tickets. A second orchestrator takes no ticket in that list. The work label goes beside the labels of the skill pack, such as `ready-for-agent` or `needs-triage`. The triage label says the state of the ticket. The work label says which orchestrator owns it. Never remove a triage label to add the work label.
 
 | Tracker | Mark on a ticket | Open means | Listed by |
 | --- | --- | --- | --- |

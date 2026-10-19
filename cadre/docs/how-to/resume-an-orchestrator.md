@@ -20,4 +20,11 @@ The orchestrator then does these checks:
 
 Then it reads the newest checkpoint and checks each next step against the tracker.
 
-If a live session still holds the name by mistake, close that session. Then try again.
+## Hand over to a new session
+
+To move a name to a new session and keep the old session open:
+
+1. Say "release" in the old session. It writes a checkpoint, sets the Holder to `none`, and says that it now only reads.
+2. Resume in the new session, as above.
+
+If you cannot say "release", close the old session. Then resume.

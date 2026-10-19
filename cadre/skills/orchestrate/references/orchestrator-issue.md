@@ -86,9 +86,20 @@ Done when you hold the name, the ledger has only grants of the owner, and you kn
 
 The name stays reserved. A resume of a closed orchestrator asks the human first.
 
+## Release
+
+Use it when the human says "release". The session stays open and the issue stays open. Retire closes the issue. Release does not.
+
+1. Write a checkpoint ([Checkpoints](#checkpoints)).
+2. Set the Holder to `session: none`, `host: none`, `since: none` ([Write the body](#write-the-body)).
+3. Read the body again. Done when the Holder shows `none` in all three fields. A later resume then sees `free`.
+4. Say in the session: "I released <name>. I write nothing as <name> until a new resume."
+
+After step 4, only read. Write no checkpoint, no ledger row, no ticket, and no label as this orchestrator. The risk: the holder check runs only at resume, so a released session that keeps writing is the one gap.
+
 ## Live work
 
-Give each ticket of this orchestrator the label `cadre:work:<name>`. Create the label at the first ticket. The live work is the open issues with that label: `gh issue list --label "cadre:work:<name>" --state open --json number,title`. A second orchestrator takes no ticket in that list.
+Give each ticket of this orchestrator the label `cadre:work:<name>`. Create the label at the first ticket. Put it beside the labels of the skill pack, such as `ready-for-agent` or `needs-triage`. A triage label says the state of the ticket. The work label says which orchestrator owns it. Never remove a triage label to add the work label. The live work is the open issues with that label: `gh issue list --label "cadre:work:<name>" --state open --json number,title`. A second orchestrator takes no ticket in that list.
 
 ## Checkpoints
 
@@ -134,7 +145,8 @@ A heading is exactly `<h2>Name</h2>`. Ledger is one `<table>`: a header row of `
 - **Write the body.** Read the item with `GET .../workitems/<id>?api-version=7.1`. Note `rev`. Change one section of `System.Description`. Send `PATCH .../workitems/<id>?api-version=7.1` with this body in a file: `[{"op":"test","path":"/rev","value":<rev>},{"op":"replace","path":"/fields/System.Description","value":"<html>"}]`. If the status is not 200, a second writer won: go to the read. Then follow the steps of Write the body from step 4.
 - **New and List.** Run `node "<plugin root>/scripts/ado-list.mjs" orchestrators "<org>" "<project>"`. It prints one `item` line for each orchestrator item in any state, with the title last. `none` means no item. `unknown: <reason>` means stop and report it, because the list may be wrong. If the reason is `too many results`, ask the human to narrow the name, as at the 200 limit above. Setup skips the item instead. Refuse a title that matches a line, ignoring case. Create the item with `POST .../workitems/%24<type>?api-version=7.1`. Its body is a list of `add` operations on `/fields/System.Title`, `System.AreaPath`, `System.Tags`, `System.AssignedTo`, and `System.Description`. A tag exists once a write names it.
 - **Resume.** Run `node "<plugin root>/scripts/resume-read-ado.mjs" <id> "$CLAUDE_CODE_SESSION_ID"` in the repo root. It reads the charter, and it reads the state by category. Its line is that of the GitHub read. The owner check compares the token's account with Assigned To, by unique name, ignoring case. To read the checkpoint, use `GET .../workItems/<id>/comments/<checkpoint>?api-version=7.1-preview.4`, and read `text`. To reopen, set `System.State` to the first state of the category `InProgress`. Setup guarantees that one exists. To retire, set a state of the category `Completed`. Read the states from `GET .../workitemtypes/<type>?api-version=7.1`.
-- **Live work.** Give each ticket the tag `cadre:work:<name>`. A write to `System.Tags` adds tags and removes none. A tag leaves only through a `replace` of the full list. Never remove a tag of this kind. The live work is the open items with that tag, selected by state category: run `node "<plugin root>/scripts/ado-list.mjs" work "<org>" "<project>" "<name>"`. It keeps the items whose state is in the category `Proposed` or `InProgress` (not `Resolved`), and never compares a state name. `unknown:` means stop, and `none` means no live work.
+- **Live work.** Give each ticket the tag `cadre:work:<name>`. A write to `System.Tags` adds tags and removes none. A tag leaves only through a `replace` of the full list. Never remove a tag of this kind. Put it beside the tags of the skill pack, and remove none of them to add it. The live work is the open items with that tag, selected by state category: run `node "<plugin root>/scripts/ado-list.mjs" work "<org>" "<project>" "<name>"`. It keeps the items whose state is in the category `Proposed` or `InProgress` (not `Resolved`), and never compares a state name. `unknown:` means stop, and `none` means no live work.
+- **Release.** In step 2, send the `PATCH` of Write the body, with the `test` on `/rev` and the Holder `<pre>` set to `none` in the three fields. In step 3, read the item and check `rev` and the Holder.
 - **Checkpoints.** `POST .../workItems/<id>/comments?api-version=7.1-preview.4` with `{"text":"<p>cadre-checkpoint v1 <ISO UTC time></p><h2>Decisions</h2><ul><li>...</li></ul><h2>Waiting for the human</h2><ol><li>...</li></ol><h2>Next, in order</h2><ol><li>...</li></ol>"}`. The marker is the first text. Only add checkpoints. The script trusts a comment by the owner with the marker and the three headings, and it skips a deleted one.
 
 ## On the local tracker
@@ -148,4 +160,5 @@ Use it when the charter has `tracker: local`: the repo has no GitHub or ADO remo
 - **Write the body.** `put`, `state`, and `checkpoint` hold `<file>.lock` from the read to the re-read, check that the new file reads as valid before they write, write a temp file in the same folder, rename it over the file, and read it again. A lock that stays about 2 seconds gives `unknown: busy`: try again. A lock older than 30 seconds is stale, and the next write takes it over. If the Holder changed and you did not change it, do the holder check again.
 - **Resume.** Run `node "<plugin root>/scripts/resume-read-local.mjs" <name> "$CLAUDE_CODE_SESSION_ID"`. Its line is that of the GitHub read. A `checkpoint` id is the marker time. Run `local-list.mjs latest <name>` to print that block. `other-host` can occur only when the folder is shared between machines: ask the human, as above.
 - **Live work.** `ticket <name> <title>` makes `.cadre/tickets/<n>-<slug>.md` with the lines `state: open` and `work: <name>`. Set `state: closed` by hand when the ticket ends. `work <name>` lists the open tickets with `work:` that names this orchestrator.
+- **Release.** In step 2, write a file with the three `none` lines and run `local-list.mjs put <name> Holder <file>`. It accepts `none`. Run `orchestrators` to read it: `holder=none`.
 - **Checkpoints.** `checkpoint <name> <file>` appends the marker line `cadre-checkpoint v1 <ISO UTC time>` and the file, which holds the three sections. The newest is last. Only add checkpoints.
