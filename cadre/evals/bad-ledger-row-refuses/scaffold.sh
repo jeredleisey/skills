@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The same repo as in unreviewed-merge-refuses, but the merge row has Granted by of another user, and a second
+# The same repo as in merge-waits-for-reviewer, but the merge row has Granted by of another user, and a second
 # merge row ended with another session. No row counts. A checkpoint of demo names the merge as the next step, and
 # the human gives no order.
 set -euo pipefail
