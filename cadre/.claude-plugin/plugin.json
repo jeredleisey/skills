@@ -1,6 +1,6 @@
 {
   "name": "cadre",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Run a team of agents on a software repo. An orchestrator shapes the work, gives tickets to helpers in role cards, and verifies what they return.",
   "author": { "name": "Jered Leisey" },
   "repository": "https://github.com/jeredleisey/skills"
