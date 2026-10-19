@@ -7,8 +7,8 @@ Reference for the scripts in `cadre/scripts/`. Each section is one script that a
 - Run a script as `node "<plugin root>/scripts/<name>.mjs" <arguments>`. `<plugin root>` is the folder that holds `skills/` and `scripts/`.
 - Node 22 or later is required.
 - A script prints its result on stdout and exits.
-- Exit code 0 is a result. Exit code 1 is a refusal, a stop, or a plain result that is not a pass. Examples are `free`, `missing`, and the `none` of a grant check. Exit code 2 is `unknown: <reason>` on stdout. Exit code 2 can also come with a reason on stderr. Two cases do this. `ado-call` writes `ado-call: ...`. A script that prints through `out` writes a reason when the reader of stdout takes no data for 10 seconds. The hooks `guard` and `task-completed` exit 2 with a reason on stderr. This blocks the call. The section of each hook gives its codes. Exit code 3 is `self` of `holder-check` only. Exit code 64 is wrong arguments, with a usage message on stderr. Only a script that takes arguments and checks them exits 64. `charter-check`, `preset-discover`, `skill-map`, `host-id`, `branch-policy`, and `teams-setting` never exit 64. `skill-map` with no card gives `unknown: no card given`, exit 2. If a write to stdout fails with an error other than a full pipe or a closed pipe, Node exits 1 with a stack trace. Each section gives the codes of its script. A script uses only those codes.
-- Each list of `unknown` reasons gives the common ones. Any other fault also prints `unknown: <reason>` with exit 2.
+- Exit code 0 is a result. Exit code 1 is a refusal, a stop, or a plain result that is not a pass. Examples are `free`, `missing`, and the `none` of a grant check. Exit code 2 is `unknown: <reason>` on stdout. Exit code 2 can also come with a reason on stderr. `ado-call` writes `ado-call: ...`. A script that prints through `out` also writes a reason when the reader of stdout takes no data for 10 seconds. The hooks `guard` and `task-completed` exit 2 with a reason on stderr. This blocks the call. The section of each hook gives its codes. Exit code 3 is `self` of `holder-check` only. Exit code 64 is wrong arguments, with a usage message on stderr. Only a script that takes arguments and checks them exits 64. `charter-check`, `preset-discover`, `skill-map`, `host-id`, `branch-policy`, and `teams-setting` never exit 64. `skill-map` with no card gives `unknown: no card given`, exit 2. If a script that prints through `out` fails to write to stdout with an error other than a full pipe or a closed pipe, Node exits 1 with a stack trace. Each section gives the codes of its script. A script uses only those codes.
+- Each list of `unknown` reasons gives the common ones. Most other faults also print `unknown: <reason>` with exit 2. A few uncaught faults exit 1 with a stack trace, as the sections say.
 - `unknown:` is never a pass. Treat it as a refusal.
 - `ado-policy-scope.mjs` is a shared module, not a command. `branch-policy-ado` and `setup-derive` import it to find the policies that cover the default branch.
 - The scripts use internal modules: `out`, `ado`, `resume-core`, `local-store`, `shell-words`, and `charter-front-matter`. `guard` alone uses `shell-words`. `charter-check`, `skill-map`, `guard`, `resume-read-ado`, and `grant-check-ado` use `charter-front-matter`. They are not user-facing and have no section here.
@@ -425,7 +425,7 @@ Environment: `AZURE_DEVOPS_EXT_PAT`, `CADRE_ADO_CMD` (test-only).
 | --- | --- | --- |
 | `item id=<id> state=<state> type=<type> owner=<unique name\|none> title=<title>` | 0 | One line for each item. `state` and `type` can hold spaces, for example `type=Product Backlog Item`, so do not split the line on spaces. The title has its white space collapsed and is the rest of the line. |
 | `none` | 0 | The read worked and the list is empty. |
-| `unknown: <reason>` | 2 | A read failed, the list may be cut short, or the org or the project name is bad. |
+| `unknown: <reason>` | 2 | A read failed, the list may be cut short, or the org or the project name is bad. A bad `work` name gives `unknown: the name holds a character that a tag cannot hold`. |
 | usage message on stderr | 64 | Wrong arguments. |
 
 WIQL stops at 20000 ids, so 20000 or more gives `unknown: too many results; narrow the query`. A status other than 200, a 302, a 203, an empty body, and a body that is not JSON give `unknown`.
@@ -490,7 +490,7 @@ Run it in the repo or in a worktree. The files are in `.cadre/` of the main clon
 | `ticket n=<n> state=open title=<title>` | 0 | One line for each open ticket, in order of `n`. |
 | The checkpoint block | 0 | `latest`. From the marker line to the end. |
 | `none` | 0 | The list is empty, or `latest` found no checkpoint. |
-| `refuse: <reason>` | 1 | The name is taken, or the name has no letter or digit. The user is not the owner. A section name is wrong. The new text holds a heading or a marker line. A checkpoint lacks the three sections, or holds a marker line. The work name or the ticket title of `ticket` has no letter or digit. |
+| `refuse: <reason>` | 1 | The name is taken, or the name has no letter or digit. The user is not the owner. A section name is wrong. The new text holds a heading or a marker line. A checkpoint lacks the three sections, or holds a marker line. The `<orchestrator name>` or the title of `ticket` has no letter or digit. |
 | `unknown: <reason>` | 2 | A read or write failed, or a file is not valid. Some bad input also gives it: a name or a purpose that is not one line, a Holder that is not valid, or text that fails the check before the write. Never `none`. |
 | usage message on stderr | 64 | Wrong arguments, or a `state` value other than `open` or `closed`. |
 

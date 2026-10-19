@@ -69,13 +69,13 @@ Some unreadable commands always match:
 
 A variable as the command word is weaker. That command matches only when its text holds the word `push` or `merge`, or an `az` pull request update or create with a completion.
 
-An unreadable entry of another kind matches when its words or its text hold `git push`, `gh pr merge`, or an `az` pull request update or create with a completion.
+An unreadable entry of the kind `?` matches on its words only. The words must hold `git push`, `gh pr merge`, or an `az` pull request update or create with a completion. The text test applies to the entries above, not to this kind.
 
 These cases are parses of a readable `git push`, not text matches:
 
 - An option that the guard cannot tell from another always matches.
 - A refspec with a glob or a variable matches only after the remote, or with `--repo`.
-- A `-C` target that is a variable, or a working folder that the guard cannot tell, matches only when the push has no refspec. So `git -C $x push origin feature` passes.
+- A `-C` target that is a variable, or a working folder that the guard cannot tell, matches when the push has no refspec, and when a refspec is `HEAD` or `@`, because the guard cannot name the current branch. So `git -C $x push origin HEAD` matches, and `git -C $x push origin feature` passes. A `--tags` push with no refspec passes.
 
 ## Decision
 
