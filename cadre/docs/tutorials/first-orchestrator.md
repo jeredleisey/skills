@@ -8,7 +8,7 @@ You need:
 - Node 22 or later. Run `node --version` to check.
 - The `gh` CLI, signed in to an account that owns a scratch repo.
 
-Make a new empty GitHub repo for this lesson. Call it `cadre-scratch`. Clone it and open the folder in a terminal. Delete it when you finish.
+Make a new GitHub repo for this lesson. Call it `cadre-scratch`. Add a README when you make it, or push a first commit. Setup needs a commit on the default branch, and an empty repo has none. Clone it and open the folder in a terminal. Delete it when you finish.
 
 ## 1. Install cadre
 
@@ -25,7 +25,7 @@ You see that the marketplace `jeredleisey` was added, and then that `cadre` is i
 
 Start Claude Code in the `cadre-scratch` clone. Type `/cadre:setup`.
 
-You see `ok node` with a version. Then you see `ok gh <owner>/cadre-scratch`. Setup then reads the branch policy of the repo. A new repo has none, so the Traps row of the screen lists the gaps. That is normal for this lesson.
+You see `ok node` with a version. Then you see `ok gh <owner>/cadre-scratch`. Setup then reads the branch policy of the repo. A new repo has no branch rules. Setup lists each gap in the Traps row of the screen. If GitHub refuses to show the rules, you see a note that the policy is unread. Both are normal for this lesson.
 
 Setup then shows one screen. It is a table with the columns Row, Proposed value, and Source. Setup read the merge methods, the secret names, and the folders from the repo, and it proposes a default for each other row. Read the rows. The Merge row offers only the methods that your repo allows.
 
@@ -33,7 +33,7 @@ Setup asks one closing question. Type this answer: "merge: rebase. orchestrator 
 
 Setup does not turn on agent teams. Its report says that they are off.
 
-You see a pull request URL. The pull request adds `docs/agents/cadre-charter.md`.
+You see a pull request URL. The pull request adds `docs/agents/cadre-charter.md`. It also adds the line `.claude/worktrees/` to `.gitignore` when that line is missing.
 
 ## 3. Merge the charter
 

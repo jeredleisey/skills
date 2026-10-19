@@ -1,6 +1,6 @@
-# The orchestrator item
+# The orchestrator issue
 
-Reference for the tracker item that holds one orchestrator. The item is the only record of the orchestrator. For the reason, see [The tracker is the record](../explanation/tracker-is-the-record.md).
+Reference for the orchestrator issue: the tracker item that holds one orchestrator. On ADO it is a work item. On the local tracker it is a file. The issue is the only record of the orchestrator. For the reason, see [The tracker is the record](../explanation/tracker-is-the-record.md).
 
 The charter field `tracker` picks the form: absent for a GitHub issue, `ado` for an ADO work item, `local` for a file. See [The charter](charter.md).
 
@@ -101,7 +101,7 @@ The checkpoint id is the comment id on GitHub and ADO, and the marker time in a 
 
 A local file ends with its checkpoints. A checkpoint starts at a line `cadre-checkpoint v1 ...` outside a code fence. `local-list checkpoint` appends the marker line and the content. The newest is last.
 
-## Azure DevOps item
+## Azure DevOps work item
 
 | Fact | Value |
 | --- | --- |
@@ -112,6 +112,7 @@ A local file ends with its checkpoints. A checkpoint starts at a line `cadre-che
 | Holder | One `<pre>` block with the three lines. |
 | Escapes | `&`, `<`, and `>` in text. |
 | Comments API | `api-version=7.1-preview.4` |
+| `connectionData` call | `api-version=7.1-preview.1` |
 | Other calls | `api-version=7.1` |
 | Write of the description | A `PATCH` with `test` on `/rev` and `replace` on `/fields/System.Description`. A status other than 200 means a second writer won. |
 | Closed | State category `Completed` or `Removed`. |

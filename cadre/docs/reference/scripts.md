@@ -7,10 +7,11 @@ Reference for the scripts in `cadre/scripts/`. Each section is one script that a
 - Run a script as `node "<plugin root>/scripts/<name>.mjs" <arguments>`. `<plugin root>` is the folder that holds `skills/` and `scripts/`.
 - Node 22 or later is required.
 - A script prints its result on stdout and exits.
-- Exit code 0 is a result. Exit code 1 is a refusal or a stop. Exit code 2 is `unknown: <reason>`. Exit code 64 is wrong arguments, with a usage message on stderr. A script uses only the codes in its section.
+- Exit code 0 is a result. Exit code 1 is a refusal, a stop, or a plain result that is not a pass, such as `free`, `missing`, or `none` of a grant check. Exit code 2 is `unknown: <reason>`. Exit code 3 is `self` of `holder-check` only. Exit code 64 is wrong arguments, with a usage message on stderr. Each section gives the codes of its script, and a script uses only those codes.
 - `unknown:` is never a pass. Treat it as a refusal.
 - `ado-policy-scope.mjs` is a shared module, not a command. `branch-policy-ado` and `setup-derive` import it to find the policies that cover the default branch.
-- The scripts of the ADO family and the local tracker use internal modules: `out`, `ado`, `resume-core`, `local-store`, `shell-words`, `charter-front-matter`, `ado-fake`, and `task-completed-throw`. They are not user-facing and have no section here.
+- The scripts use internal modules: `out`, `ado`, `resume-core`, `local-store`, `shell-words`, and `charter-front-matter`. `guard` alone uses `shell-words`. `charter-check`, `skill-map`, `guard`, `resume-read-ado`, and `grant-check-ado` use `charter-front-matter`. They are not user-facing and have no section here.
+- `ado-fake.mjs` and `task-completed-throw.cjs` are test stand-ins. No skill or hook runs them.
 
 Environment variables marked **test-only** replace a program or a source so that a test can read a fixture. Do not set them in use.
 
@@ -21,6 +22,7 @@ Environment variables marked **test-only** replace a program or a source so that
 | `CADRE_DEFAULT_BRANCH` | user | `guard` |
 | `AZURE_DEVOPS_EXT_PAT` | user | `ado-call` and each script that calls ADO |
 | `CLAUDE_CONFIG_DIR` | user | `teams-setting`, `setup-derive` |
+| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | user | `task-completed` (the hook works when it is `1`, `true`, `yes`, or `on`), `teams-setting` (sets it) |
 | `CADRE_SCHEMA` | test-only | `charter-check` |
 | `CADRE_NODE_CMD` | test-only | `setup-check` |
 | `CADRE_GH_CMD` | test-only | `setup-check`, `resume-read`, `grant-check`, `branch-policy`, `setup-derive` |
@@ -82,7 +84,7 @@ node setup-check.mjs local [url]
 | `ado` | `<org> <project>` | The token in `AZURE_DEVOPS_EXT_PAT` can read the work item types of the project. |
 | `local` | optional `[url]` | Whether the repo has no GitHub or ADO remote. |
 
-Environment (all test-only): `CADRE_NODE_CMD` replaces `node --version`. `CADRE_GH_CMD` replaces `gh`. `CADRE_ADO_CMD` replaces the ADO client. `AZURE_DEVOPS_EXT_PAT` is the token for `ado`.
+Environment: `AZURE_DEVOPS_EXT_PAT` is the token for `ado`. It is the real user token, not a test variable. These are test-only: `CADRE_NODE_CMD` replaces `node --version`. `CADRE_GH_CMD` replaces `gh`. `CADRE_ADO_CMD` replaces the ADO client.
 
 Output lines that exit 0:
 
@@ -106,7 +108,7 @@ Output lines that exit 1 start with `stop:` and say what the human must do:
 | `gh` | HTTP 404, HTTP 401, gh not signed in, or gh not installed. |
 | `ado` | The token is refused (HTTP 302, 203, 401, or an empty 200 body: the line names `AZURE_DEVOPS_EXT_PAT`), HTTP 404 (project not visible), or HTTP 403 (no access). |
 
-Exit 2 is `unknown: <reason>`: a command failed, the repo is not `<owner>/<repo>`, the host is not a host name, the ADO remote path is not readable, the ADO answer is another status, or the ADO answer is not JSON. Exit 64 is wrong arguments.
+Exit 2 is `unknown: <reason>`: a command failed, the Node version output is not a version, the repo is not `<owner>/<repo>`, the host is not a host name, there is no remote URL (`remote`), the remote URL has no host (`local`), the ADO remote path is not readable, the ADO answer is another status, or the ADO answer is not JSON. Exit 64 is wrong arguments.
 
 A missing `node` cannot run this script. A "command not found" for `node` is the same stop.
 
@@ -239,7 +241,7 @@ The source is `claude agents --json`, a JSON array of sessions with the fields `
 
 ## resume-read
 
-Read a GitHub orchestrator issue for a resume: owner check, holder, ledger audit, newest checkpoint. See [The orchestrator item](orchestrator-item.md).
+Read a GitHub orchestrator issue for a resume: owner check, holder, ledger audit, newest checkpoint. See [The orchestrator issue](orchestrator-item.md).
 
 ```
 node resume-read.mjs <issue-number> [session-id]
@@ -252,7 +254,7 @@ node resume-read.mjs <issue-number> [session-id]
 
 Environment: `CADRE_GH_CMD` (test-only) replaces `gh`. `CADRE_HOME` applies to the host id.
 
-The checks run in this order. The issue must carry the label `cadre:orchestrator` and must not be a pull request. It must have exactly one assignee, and that login must equal the login of `gh`, ignoring case.
+The script first reads the login of `gh`, then the issue. The issue must not be a pull request. It must carry the label `cadre:orchestrator`. It must have exactly one assignee, and that login must equal the login of `gh`, ignoring case.
 
 | Output | Exit |
 | --- | --- |
@@ -316,7 +318,7 @@ Run it in the repo or in a worktree of it. The output lines and exit codes are t
 
 ## grant-check
 
-Read the Ledger of a GitHub orchestrator issue before a one-way step, and print each row that grants the action. See [The orchestrator item](orchestrator-item.md).
+Read the Ledger of a GitHub orchestrator issue before a one-way step, and print each row that grants the action. See [The orchestrator issue](orchestrator-item.md).
 
 ```
 node grant-check.mjs <issue-number> <session-id> "<action>"
@@ -394,7 +396,8 @@ Environment: `AZURE_DEVOPS_EXT_PAT` is sent as basic auth with an empty user. An
 | Output | Exit | Meaning |
 | --- | --- | --- |
 | Line 1: `<status>[ <continuation token>]`, then the body | 0 | Any HTTP answer, a 302 and a 401 too. |
-| A reason on stderr | 2 | No answer in 30 seconds, or the body file cannot be read. |
+| `ado-call: no answer from <host>: <code>` on stderr | 2 | Any failure of the fetch: no answer in 30 seconds, a refused connection, a failed name lookup, or a failed TLS handshake. |
+| `ado-call: cannot read the body file: <code>` on stderr | 2 | The body file cannot be read. |
 | Usage message on stderr | 64 | Wrong arguments, a URL that is not valid, or a host that is not ADO. |
 
 The continuation token comes from the header `x-ms-continuationtoken`. Read the status before the body. Only a 200 with a JSON body is an answer.
@@ -486,13 +489,13 @@ Run it in the repo or in a worktree. The files are in `.cadre/` of the main clon
 | `ticket n=<n> state=open title=<title>` | 0 | One line for each open ticket, in order of `n`. |
 | The checkpoint block | 0 | `latest`. From the marker line to the end. |
 | `none` | 0 | The list is empty, or `latest` found no checkpoint. |
-| `refuse: <reason>` | 1 | The name is taken, the user is not the owner, or the input is not valid. |
-| `unknown: <reason>` | 2 | A read or write failed, or a file is not valid. Never `none`. |
-| usage message on stderr | 64 | Wrong arguments. |
+| `refuse: <reason>` | 1 | The name is taken or has no letter or digit, the user is not the owner, a section name is wrong, or the new text holds a heading or a marker line. |
+| `unknown: <reason>` | 2 | A read or write failed, or a file is not valid. Some bad input also gives it: a name or a purpose that is not one line, a Holder that is not valid, or text that fails the check before the write. Never `none`. |
+| usage message on stderr | 64 | Wrong arguments, or a `state` value other than `open` or `closed`. |
 
 A write holds the lock file `<file>.lock` (an exclusive create) from the read to the re-read. A lock that stays about 2 seconds gives `unknown: busy`. A lock older than 30 seconds is stale and the next write takes it over. The new text is checked as a read checks it, before the write. The write goes to a temp file in the same folder, then a rename. When the rename fails with `EPERM`, `EBUSY`, or `EACCES`, the script tries it again. It makes at most 10 tries in about 1 second. On Windows, another process such as a virus scan can hold the file open for a short time. The script reads the file again. A file in the folder that is not valid gives `unknown`, so a list is never shorter than the truth.
 
-A ticket file has the lines `# <title>`, `state: open|closed`, and `work: <orchestrator>`. A person changes the `state` line of a ticket by hand.
+A ticket file has the lines `# <title>`, `state: open|closed`, and `work: <orchestrator>`. A person or an agent changes the `state` line of a ticket by hand.
 
 ## branch-policy
 
@@ -523,7 +526,9 @@ Each of five checks is covered by a ruleset rule or by classic branch protection
 | --- | --- | --- |
 | `gap: <what is missing>` | 0 | One line for each gap. |
 | `ok` | 0 | No gap. |
-| `unknown: <reason>` | 2 | The script cannot read the policy. Never `ok`. |
+| `unknown: <reason>` | 2 | The script cannot read the policy, or the repo is not `<owner>/<repo>`, or the host is not a host name. Never `ok`. |
+
+The script never exits 64. A bad argument gives `unknown`.
 
 "Branch not protected" from the protection call is an answer, not a fault. Any other failure is `unknown`.
 

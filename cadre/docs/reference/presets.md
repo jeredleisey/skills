@@ -76,3 +76,19 @@ One line and an exit code.
 | `unknown: <reason>` or `unknown: <plugin>: <reason>` | 2 |
 
 `plugin` is the `id` of the entry. `count` is `0` when no enabled plugin ships a file.
+
+## What setup does with the result
+
+| Result | Setup does |
+| --- | --- |
+| `count` 0 | Uses no preset. |
+| `count` 1 | Uses its `answers` and `defaults` as silent defaults, with the source `preset <plugin id>`. |
+| `count` 2 or more | Uses no preset. Adds a screen note that names the plugin ids. The human can name a plugin in the closing answer to use its preset. |
+| `unknown:` | Says the reason and ends setup. |
+
+A preset is a default, never a lock. Setup ignores each of these, and says why in a note:
+
+- A `tracker` answer that differs from the tracker that setup found.
+- A `skill_pack` outside `mattpocock-skills`, `superpowers`, and `none`.
+- A `merge_deploy` method that the `merge-methods` fact does not list.
+- A key that this page does not list.

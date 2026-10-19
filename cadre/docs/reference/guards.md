@@ -59,9 +59,17 @@ Matches:
 
 ### Unreadable commands
 
-The scanner reads quotes, `$( )`, backticks, comments, heredocs, redirections, and a backslash-newline. It opens wrappers: `sudo`, `env`, `timeout`, `xargs`, `ssh`, `find -exec`, `bash -c`, and `eval`. It follows `cd`.
+The scanner reads quotes, `$( )`, backticks, comments, heredocs, redirections, and a backslash-newline. It opens these wrappers: `sudo`, `doas`, `env`, `nice`, `ionice`, `nohup`, `time`, `command`, `exec`, `timeout`, `watch`, `stdbuf`, `setsid`, `caffeinate`, `busybox`, `xargs`, `ssh`, `find -exec`, `eval`, and a shell with `-c` (`bash`, `sh`, `zsh`, `dash`, or `ksh`). It follows `cd`.
 
-A command is a match when it holds a variable or an unknown where the guard needs a word, and its words or its text hold `git push`, `gh pr merge`, or an `az` pull request update or create with a completion. Examples: a subcommand that is a variable, a `-C` target that is a variable, an ambiguous option, a refspec with a glob or a variable, and a working folder that the guard cannot tell.
+Some unreadable commands always match:
+
+- A variable as the subcommand of `git`, `gh`, or `az`. For `gh`, a variable as the word after `pr` also counts. For `az`, a variable as the group, or as the word after `repos` or `repos pr`, also counts.
+- `eval` with a variable in its words.
+- `git push` or `gh pr merge` through `xargs`, because `xargs` adds arguments that the guard cannot see.
+
+A variable as the command word is weaker. That command matches only when its text holds the word `push` or `merge`, or an `az` pull request update or create with a completion.
+
+An unreadable command of another kind matches when its words or its text hold `git push`, `gh pr merge`, or an `az` pull request update or create with a completion. Examples: a subcommand that is a variable, a `-C` target that is a variable, an ambiguous option, a refspec with a glob or a variable, and a working folder that the guard cannot tell.
 
 ## Decision
 

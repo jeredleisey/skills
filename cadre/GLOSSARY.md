@@ -57,12 +57,12 @@ The committed file in a repo that states how cadre works there: tracker, owners,
 _Avoid_: config, profile, settings file
 
 **Personal file**:
-A file in the user folder of one person that holds that person's preferences, or a charter for a repo that the person does not own.
+A file in the user folder of one person: `guards.json`. It can only add guards. It never turns a guard off.
 _Avoid_: user config, local charter
 
 **Orchestrator issue**:
-The tracker item that holds one orchestrator: its purpose, repos, ledger, and holder. Its assignee is the owner.
-_Avoid_: handoff note, roster entry
+The tracker item that holds one orchestrator: its purpose, repos, ledger, and holder. Its assignee is the owner. On ADO it is a work item. On the local tracker it is a file.
+_Avoid_: handoff note, roster entry, orchestrator item, orchestrator work item
 
 **Owner**:
 The one human to whom an orchestrator issue is assigned. Only the owner grants a ledger row.

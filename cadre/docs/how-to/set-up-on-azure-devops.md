@@ -8,15 +8,15 @@ Use this when your repo has an Azure DevOps (ADO) remote and cadre is installed.
 4. Setup reads the organization, project, and repo from the remote URL. A space in a name is fine.
 5. Answer the two ADO questions first:
    - The area path of the items of this repo. Setup proposes a match. A project root gives a warning, and setup asks for another path.
-   - The work item type that holds the orchestrator item. Use `Task` or another type. Setup refuses a type that does not work and offers another.
+   - The work item type that holds the orchestrator issue. Use `Task` or another type. Setup refuses a type that does not work and offers another.
 6. Read the screen. Setup shows one table of rows with a proposed value and a source for each. On ADO it cannot read the secret names, so that row is a default.
 7. Answer the one closing question. Choose "Accept all", or "Accept, without the orchestrator issue". Or type the rows to change.
-8. Open the pull request that setup creates with `az repos pr create`. Review the charter. Complete it yourself. Setup never adds auto-complete.
+8. Setup runs `az repos pr create` and gives you the URL. Open that pull request. Review the charter. Complete it yourself. Setup never adds auto-complete.
 
-Setup creates the orchestrator work item with the five standard grants in its Ledger, unless you turned that row off. Agent teams stay off.
+Setup creates the orchestrator issue, as a work item, with the five standard grants in its Ledger, unless you turned that row off. Agent teams stay off.
 
 Setup writes `tracker: ado`, `ado_org`, and `ado_project` in the charter front matter.
 
 Setup cannot read the permission "Bypass policies when pushing". Check who holds it. The hooks do not cover `az devops invoke` or REST calls that complete a pull request. The branch policy of the repo covers them.
 
-See [the orchestrator item](../reference/orchestrator-item.md) for how an orchestrator is stored on ADO.
+See [the orchestrator issue](../reference/orchestrator-item.md) for how an orchestrator is stored on ADO.

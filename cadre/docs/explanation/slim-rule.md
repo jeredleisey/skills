@@ -4,7 +4,7 @@ Cadre keeps the text that loads in every session small. This is the slim rule.
 
 ## What it says
 
-The orchestrate skill, the four role cards, and the charter reference each have a word budget. A check, `tools/check-budget.mjs`, fails when the total goes over. The budget is in `tools/word-budget.json`.
+The orchestrate skill, the four role cards, and the charter reference share one word budget. A check, `tools/check-budget.mjs`, adds the words of all the counted files. It fails when the sum goes over. The budget is in `tools/word-budget.json`.
 
 A rule goes into those files only if it answers a real fault. A fact of one repo goes in the charter of that repo. A detail that a step needs only sometimes goes in a reference file that loads on demand.
 
