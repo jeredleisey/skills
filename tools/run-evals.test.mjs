@@ -2,7 +2,7 @@
 // A fake key command and a fake eval command stand in for `security` and `claude plugin eval`.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, symlinkSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -565,4 +565,60 @@ test('cleanup: a tracePath outside the rules leaves its folder alone', () => {
   assert.ok(existsSync(join(s.tmp, 'e-short1')));
   assert.ok(existsSync(s.tmp));
   assert.ok(existsSync(join(s.dir, 'fake-eval.mjs')));
+});
+
+test('cleanup: the kept folders are deleted also when the eval command exits with a code other than 0 or 1', () => {
+  const s = scratch();
+  const a = trace(s.tmp, 'e-exit01', [bash('t1', 'ls')]);
+  const r = go(s, report({ runs: withTrace(a) }), { FAKE_EXIT: '3' });
+  assert.equal(r.code, 1);
+  assert.equal(existsSync(join(s.tmp, 'e-exit01')), false);
+  assert.doesNotMatch(r.all, /kept folders may remain/);
+});
+
+test('cleanup: with no readable report, one line says that kept folders may remain', () => {
+  const s = scratch();
+  const a = trace(s.tmp, 'e-nor001', [bash('t1', 'ls')]);
+  const r = go(s, '{ not json');
+  assert.equal(r.code, 2);
+  assert.equal(r.out.split('\n').filter((l) => /kept folders may remain.*secrets/.test(l)).length, 1, r.all);
+  assert.ok(existsSync(join(s.tmp, 'e-nor001')));
+  // CADRE_EVAL_KEEP=1 says nothing: the user asked to keep them.
+  assert.doesNotMatch(go(scratch(), '{ not json', { CADRE_EVAL_KEEP: '1' }).all, /kept folders may remain/);
+  assert.ok(a);
+});
+
+test('cleanup: a failed delete prints one warning and does not change the exit code', { skip: process.platform === 'win32' || process.getuid?.() === 0 }, () => {
+  const s = scratch();
+  const a = trace(s.tmp, 'e-lock01', [bash('t1', 'ls')]);
+  const out = join(s.tmp, 'e-lock01', 'out');
+  chmodSync(out, 0o555); // the trace file cannot be removed from a folder that cannot be written
+  try {
+    const r = go(s, report({ runs: withTrace(a), overall: 0.9 }));
+    assert.equal(r.code, 1);
+    assert.equal(r.out.split('\n').filter((l) => /^warning: cannot delete e-lock01/.test(l)).length, 1, r.out);
+  } finally {
+    chmodSync(out, 0o755);
+  }
+});
+
+test('cleanup: a folder e-XXXX that is a symlink is not deleted', { skip: process.platform === 'win32' }, () => {
+  const s = scratch();
+  const real = join(s.dir, 'real-target');
+  trace(real, 'inner', [bash('t1', 'ls')]);
+  symlinkSync(join(real, 'inner'), join(s.tmp, 'e-link01'));
+  const tp = join(s.tmp, 'e-link01', 'out', 'trace.jsonl');
+  const r = go(s, report({ runs: withTrace(tp), overall: 0.9 }));
+  assert.equal(r.code, 1);
+  assert.ok(existsSync(join(real, 'inner', 'out', 'trace.jsonl')));
+  assert.ok(existsSync(join(s.tmp, 'e-link01')));
+});
+
+test('evidence: a path after file:/// becomes a short token', () => {
+  const s = scratch();
+  const tp = trace(s.tmp, 'e-url001', [bash('t1', `open file://${U}/someone/docs/page.html`), bash('t2', `echo http://example.org${U}/x`)]);
+  const r = go(s, report({ runs: withTrace(tp) }));
+  assert.ok(!r.out.includes('someone'), r.out);
+  assert.match(r.out, /file:\/\/<path>\/page\.html/);
+  assert.match(r.out, /http:\/\/example\.org\/Us\w+\/x/);
 });
