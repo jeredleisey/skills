@@ -72,6 +72,10 @@ _Avoid_: holder (that is a session), user
 The one session that acts as an orchestrator at a given time, as the orchestrator issue records it.
 _Avoid_: owner (that is the human), lock
 
+**Release**:
+The step that sets the Holder of an orchestrator issue to `none` while the session and the issue stay open. A new session then resumes the name. The released session only reads.
+_Avoid_: retire (that closes the issue), unlock
+
 **Host id**:
 A random 32-character id of one machine, kept in the cadre user folder, that the orchestrator issue records as the host of the holder. It holds no fact about the machine or its user.
 _Avoid_: host name, device name, machine id

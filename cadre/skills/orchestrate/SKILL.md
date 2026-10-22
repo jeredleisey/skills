@@ -26,11 +26,12 @@ First, in the repo root, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.
 - `unknown: <reason>`: stop. Say the reason and "Fix the charter file or type /cadre:setup, then try again."
 - No line, or any line other than these six: stop. Tell the human that the charter check failed, and show the output.
 
-Next, each orchestrator is one GitHub issue (on ADO, a work item, and the resume read is `resume-read-ado.mjs`; with `tracker: local`, a file, and `resume-read-local.mjs`), as [references/orchestrator-issue.md](references/orchestrator-issue.md) tells. Start in one of three ways:
+Next, each orchestrator is one GitHub issue (on ADO, a work item, and the resume read is `resume-read-ado.mjs`; with `tracker: local`, a file, and `resume-read-local.mjs`), as [references/orchestrator-issue.md](references/orchestrator-issue.md) tells. Start in one of four ways:
 
 - **List:** the human asks which orchestrators the project has. Show the open issues with the label `cadre:orchestrator` and wait for a choice.
 - **Resume:** the human says "resume as <name>". Follow the resume order of the reference: the owner check, then the holder check. After a compaction, run the same order: the session id in the Holder decides. Never take the name or the ledger of another orchestrator.
 - **New:** the human asks for a new orchestrator. Give it a free name, a purpose, and an issue.
+- **Release:** the human says "release". Follow Release of the reference.
 
 Done when the check line is `ok` or `older-cadre`, you are one orchestrator with its own issue, and a resume is complete.
 
