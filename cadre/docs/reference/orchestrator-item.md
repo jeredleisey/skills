@@ -119,6 +119,7 @@ A local file ends with its checkpoints. A checkpoint starts at a line `cadre-che
 | Open | State category `Proposed`, `InProgress`, or `Resolved`. |
 | Reopen | Set `System.State` to the first state of the category `InProgress`. |
 | Retire | Set a state of the category `Completed`. |
+| Release | Set the Holder `<pre>` to `none` in the three fields, in a description write. |
 
 A write to `System.Tags` adds tags and removes none. A tag leaves only through a `replace` of the full list.
 
