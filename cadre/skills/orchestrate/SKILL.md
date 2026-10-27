@@ -49,7 +49,7 @@ When a peer works in the same repo, propose the split of tickets and files to th
 
 ### 4. Delegate
 
-Give each ticket to one helper, in its own worktree and branch, and label it `cadre:work:<name>`. Create the worktree yourself, before the helper starts: `git worktree add .claude/worktrees/<branch> -b <branch> <base>`. Name its path and branch in the brief. You also edit only in a worktree. A clone that other agents share stays on its main branch. Start the helper from a role card when one fits: `coder` for code, `reviewer` for a review, `researcher` for reading, `tester` for a proof, or a card in the `Extra cards` list of the charter. [references/roles.md](references/roles.md) lists the cards. Write the brief from [references/helper-brief.md](references/helper-brief.md). A helper commits and stops: it does not push, merge, or deploy. With agent teams on, mirror each delegated ticket as a task. Only the lead completes a task, after the verify step. The tracker stays the only record, and a resume rebuilds from it. Done when the harness shows each helper as running, or its start failed and you know why.
+Give each ticket to one helper, in its own worktree and branch, and label it `cadre:work:<name>`. Create the worktree yourself, before the helper starts: `git worktree add .claude/worktrees/<branch> -b <branch> <base>`. Name its path and branch in the brief. You edit only in a worktree. A clone that other agents share stays on its main branch. Start the helper from a role card when one fits: `coder` for code, `reviewer` for a review, `researcher` for reading, `tester` for a proof, or a card in the `Extra cards` list of the charter. [references/roles.md](references/roles.md) lists the cards. Write the brief from [references/helper-brief.md](references/helper-brief.md). A helper commits and stops: it does not push, merge, or deploy. With agent teams on, mirror each delegated ticket as a task. Only the lead completes a task, after the verify step. The tracker stays the only record, and a resume rebuilds from it. Done when the harness shows each helper as running, or its start failed and you know why.
 
 ### 5. Verify
 
@@ -71,8 +71,8 @@ Before each one-way step:
 1. Run `node "<plugin root>/scripts/grant-check.mjs" <n> "$CLAUDE_CODE_SESSION_ID" "<action>"` (`grant-check-ado.mjs` with the item id, `grant-check-local.mjs` with the name). `<action>` is the Action cell as the ledger writes it. `granted row=<k> scope=<JSON string>`: read the Scope and check that it covers this step, else ask the human and stop. `none`: ask the human and stop. `unknown:` or `not-owner`: stop and report. Never use a row that the script did not print.
 2. Before each merge, you need a reviewer report for the head commit of the branch, with no must-fix or should-fix open. Only a `reviewer` helper that you start with the Agent tool writes this report. A review that you do yourself is not a reviewer report. A report with a `NOT DONE:` line is no reviewer report. The command `skill-map.mjs reviewer` does not start a `reviewer`. If you have no reviewer report, do not merge. Start a `reviewer`. With no Agent tool, you cannot. If you cannot, say that the review is missing and ask the human. If the human tells you to merge, that is a grant. It does not cancel the review. Only the human can tell you to merge with no review. Write that in the Ledger, with the Action `merge with no review`.
 3. Read the open specs. A rule can change while you work, and a spec can stop merges in a path from a given point (a freeze).
-4. Look at the target first: what a delete removes, what a deploy replaces.
-5. Put `|| { echo "STOP: <step>"; exit 1; }` after each step that can fail, or run `bash -e <file>`. Never chain a delete after an unguarded step. `set -e` and a subshell fail in the Bash tool ([why](references/stop-at-first-error.md)).
+4. Look at the target: what a delete removes, what a deploy replaces.
+5. Put `|| { echo "STOP: <step>"; exit 1; }` after each step that can fail, or run `bash -e <file>`. Never chain a delete after an unguarded step. `set -e` and a subshell do not stop a command in the Bash tool ([why](references/stop-at-first-error.md)).
 6. Keep a way back: a backup, a tag, or the old version.
 7. If the harness or its permission check refuses the step, do not find another route. Stop and ask the human.
 8. After a merge, update each clone that a live tool runs from. The charter names them.
@@ -85,7 +85,7 @@ Say what changed, with links. Put each decision that you need from the human in 
 
 ### 8. Write a checkpoint
 
-After each merge, each resolved ticket, and each change of plan, add a checkpoint comment to your issue. Use the form in [references/orchestrator-issue.md](references/orchestrator-issue.md). Done when the newest comment has the marker line and the three sections.
+After each merge, each resolved ticket, and each change of plan, add a checkpoint comment to your orchestrator issue. Use the form in [references/orchestrator-issue.md](references/orchestrator-issue.md). Done when the newest comment has the marker line and the three sections.
 
 ## Rules
 
@@ -98,7 +98,7 @@ After each merge, each resolved ticket, and each change of plan, add a checkpoin
 
 ### Pause
 
-When the human says pause, stop at the end of the current tool call and answer. Do not start new work until the human says to continue.
+When the human says pause, stop after the current tool call and answer. Do not start new work until the human says to continue.
 
 ### Cost
 

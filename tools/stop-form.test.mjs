@@ -21,6 +21,9 @@ const forms = {
 for (const shell of ['bash', 'zsh']) {
   const missing = Boolean(spawnSync(shell, ['-c', 'true']).error);
   const skip = missing ? `${shell} is not installed` : false;
+  const major = missing ? 0 : Number(spawnSync(shell, ['-c', 'echo ${BASH_VERSINFO[0]:-99}'], { encoding: 'utf8' }).stdout.trim());
+  const oldBash = shell === 'bash' && major < 4;
+  const skipSetE = skip || (oldBash ? `bash ${major} stops at set -e inside eval, so the fault is not seen` : false);
   const run = (cmd) => spawnSync(shell, ['-c', `eval "${cmd.replace(/["\\$`]/g, '\\$&')}" && true`], { encoding: 'utf8' });
 
   test(`${shell}: set -e stops with no wrapper (control)`, { skip }, () => {
@@ -29,7 +32,7 @@ for (const shell of ['bash', 'zsh']) {
     assert.doesNotMatch(r.stdout, /last/);
   });
 
-  test(`${shell}: set -e fails to stop the last step, and a subshell does not help`, { skip }, () => {
+  test(`${shell}: set -e fails to stop the last step, and a subshell does not help`, { skip: skipSetE }, () => {
     assert.match(run(forms['set -e']).stdout, /last/);
     assert.match(run(forms['set -e in a subshell']).stdout, /last/);
   });
