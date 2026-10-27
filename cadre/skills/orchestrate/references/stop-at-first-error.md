@@ -13,7 +13,7 @@ The harm is real. A step that built a new issue body failed. The next line, `gh 
 1. A guard after each step that can fail, or that a later step needs: `step || { echo "STOP: <step>"; exit 1; }`. The `exit 1` ends the command at once.
 2. Write the steps to a file in the system temp folder, and run `bash -e <file>`. The file may use `set -euo pipefail`.
 
-`tools/stop-form.test.mjs` shows both forms, and shows that `set -e` does not stop.
+A test in the cadre repo shows both forms, and shows that `set -e` does not stop.
 
 ## Rules
 

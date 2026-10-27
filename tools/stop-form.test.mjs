@@ -1,6 +1,6 @@
 // Proof for the stop rule of orchestrate step 6. The Bash tool runs a command as `eval "<cmd>" && true`.
 // A shell ignores errexit there, so `set -e` fails to stop. The two forms that the skill gives do stop.
-import { test } from 'node:test';
+import { test as nodeTest, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -19,8 +19,15 @@ const forms = {
 };
 
 for (const shell of ['bash', 'zsh']) {
-  if (spawnSync(shell, ['-c', 'true']).error) continue;
+  const missing = Boolean(spawnSync(shell, ['-c', 'true']).error);
+  const test = (name, fn) => nodeTest(name, { skip: missing ? `${shell} is not installed` : false }, fn);
   const run = (cmd) => spawnSync(shell, ['-c', `eval "${cmd.replace(/["\\$`]/g, '\\$&')}" && true`], { encoding: 'utf8' });
+
+  test(`${shell}: set -e stops with no wrapper (control)`, () => {
+    const r = spawnSync(shell, ['-c', 'set -e; echo first; false; echo last'], { encoding: 'utf8' });
+    assert.equal(r.status, 1);
+    assert.doesNotMatch(r.stdout, /last/);
+  });
 
   test(`${shell}: set -e fails to stop the last step, and a subshell does not help`, () => {
     assert.match(run(forms['set -e']).stdout, /last/);
