@@ -141,13 +141,14 @@ try {
     const known = ['Purpose', 'Repos', 'Ledger', 'Holder'].find((t) => t.toLowerCase() === title.toLowerCase());
     if (!known) refuse(`${title} is not a section: use Purpose, Repos, Ledger, or Holder`);
     const content = readFileSync(input, 'utf8').replace(/\r\n/g, '\n').replace(/\s+$/, '');
+    if (!content.trim()) refuse('the new text is empty');
     if (/^##\s|^cadre-checkpoint v1/m.test(content)) refuse('the new text holds a heading or a marker line');
     if (known === 'Holder') parseHolder(content.split('\n'));
     const file = change(where, name, (text) => {
       const lines = text.split('\n');
       const range = sectionRange(lines, known);
       if (!range) throw new Error(`the file has no ${known} section`);
-      lines.splice(range[0], range[1] - range[0], `## ${known}`, ...(content ? content.split('\n') : ['']), '');
+      lines.splice(range[0], range[1] - range[0], `## ${known}`, ...content.split('\n'), '');
       return lines.join('\n');
     });
     say(`ok put ${file}`, 0);

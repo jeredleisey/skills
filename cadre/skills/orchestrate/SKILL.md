@@ -5,7 +5,7 @@ description: Run work as an orchestrator. Split a goal into tickets, give each t
 
 # Orchestrate
 
-An **orchestrator** owns the outcome of a piece of work, not each line of it. It shapes the work, gives tickets to **helpers**, verifies what they return, and talks to the **human** and to **peer** orchestrators. The facts of one repo live in its **charter**. The state of your own work lives in your **orchestrator issue**: ledger, holder, and checkpoints.
+An **orchestrator** owns the outcome of a piece of work, not each line of it. It shapes the work, gives tickets to **helpers**, verifies what they return, and talks to the **human** and to **peer** orchestrators. The facts of one repo live in its **charter**. The state of your work lives in your **orchestrator issue**: ledger, holder, and checkpoints.
 
 Two kinds of step need care:
 
@@ -16,7 +16,7 @@ Two kinds of step need care:
 
 ### 0. Start
 
-First, in the repo root, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs"`. If the path shows as an empty or literal `${CLAUDE_PLUGIN_ROOT}`, use the folder two levels above this skill's base directory. Act on its one line:
+In the repo root, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.mjs"`. If the path shows as an empty or literal `${CLAUDE_PLUGIN_ROOT}`, use the folder two levels above this skill's base directory. Act on its line:
 
 - `ok`: continue.
 - `older-cadre`: continue. Say "cadre <version> has new options. Type /cadre:setup to see them." Take the version from `.claude-plugin/plugin.json` of the plugin.
@@ -26,7 +26,7 @@ First, in the repo root, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/charter-check.
 - `unknown: <reason>`: stop. Say the reason and "Fix the charter file or type /cadre:setup, then try again."
 - No line, or any line other than these six: stop. Tell the human that the charter check failed, and show the output.
 
-Next, each orchestrator is one GitHub issue (on ADO, a work item, and the resume read is `resume-read-ado.mjs`; with `tracker: local`, a file, and `resume-read-local.mjs`), as [references/orchestrator-issue.md](references/orchestrator-issue.md) tells. Start in one of four ways:
+Each orchestrator is one GitHub issue (on ADO, a work item, and the resume read is `resume-read-ado.mjs`; with `tracker: local`, a file, and `resume-read-local.mjs`), as [references/orchestrator-issue.md](references/orchestrator-issue.md) tells. Start in one of four ways:
 
 - **List:** the human asks which orchestrators the project has. Show the open issues with the label `cadre:orchestrator` and wait for a choice.
 - **Resume:** the human says "resume as <name>". Follow the resume order of the reference: the owner check, then the holder check. After a compaction, run the same order: the session id in the Holder decides. Never take the name or the ledger of another orchestrator.
@@ -49,7 +49,7 @@ When a peer works in the same repo, propose the split of tickets and files to th
 
 ### 4. Delegate
 
-Give each ticket to one helper, in its own worktree and branch, and label the ticket `cadre:work:<name>`. Create the worktree yourself, before you start the helper: `git worktree add .claude/worktrees/<branch> -b <branch> <base>`. Name its path and branch in the brief. You also edit only in a worktree. A clone that other agents share stays on its main branch. Start the helper from a role card when one fits: `coder` for code, `reviewer` for a review, `researcher` for reading, `tester` for a proof, or a card in the `Extra cards` list of the charter. [references/roles.md](references/roles.md) lists the cards. Write the brief from [references/helper-brief.md](references/helper-brief.md). A helper commits and stops: it does not push, merge, or deploy. With agent teams on, mirror each delegated ticket as a task. Only the lead completes a task, after the verify step. The tracker stays the only record, and a resume rebuilds from it. Done when the harness shows each helper as running, or its start failed and you know why.
+Give each ticket to one helper, in its own worktree and branch, and label it `cadre:work:<name>`. Create the worktree yourself, before the helper starts: `git worktree add .claude/worktrees/<branch> -b <branch> <base>`. Name its path and branch in the brief. You edit only in a worktree. A clone that other agents share stays on its main branch. Start the helper from a role card when one fits: `coder` for code, `reviewer` for a review, `researcher` for reading, `tester` for a proof, or a card in the `Extra cards` list of the charter. [references/roles.md](references/roles.md) lists the cards. Write the brief from [references/helper-brief.md](references/helper-brief.md). A helper commits and stops: it does not push, merge, or deploy. With agent teams on, mirror each delegated ticket as a task. Only the lead completes a task, after the verify step. The tracker stays the only record, and a resume rebuilds from it. Done when the harness shows each helper as running, or its start failed and you know why.
 
 ### 5. Verify
 
@@ -71,13 +71,13 @@ Before each one-way step:
 1. Run `node "<plugin root>/scripts/grant-check.mjs" <n> "$CLAUDE_CODE_SESSION_ID" "<action>"` (`grant-check-ado.mjs` with the item id, `grant-check-local.mjs` with the name). `<action>` is the Action cell as the ledger writes it. `granted row=<k> scope=<JSON string>`: read the Scope and check that it covers this step, else ask the human and stop. `none`: ask the human and stop. `unknown:` or `not-owner`: stop and report. Never use a row that the script did not print.
 2. Before each merge, you need a reviewer report for the head commit of the branch, with no must-fix or should-fix open. Only a `reviewer` helper that you start with the Agent tool writes this report. A review that you do yourself is not a reviewer report. A report with a `NOT DONE:` line is no reviewer report. The command `skill-map.mjs reviewer` does not start a `reviewer`. If you have no reviewer report, do not merge. Start a `reviewer`. With no Agent tool, you cannot. If you cannot, say that the review is missing and ask the human. If the human tells you to merge, that is a grant. It does not cancel the review. Only the human can tell you to merge with no review. Write that in the Ledger, with the Action `merge with no review`.
 3. Read the open specs. A rule can change while you work, and a spec can stop merges in a path from a given point (a freeze).
-4. Look at the target first: what a delete removes, what a deploy replaces.
-5. Write the command so that it stops at the first error, for example `set -euo pipefail`. Do not chain a delete after a step that can fail.
+4. Look at the target: what a delete removes, what a deploy replaces.
+5. Put `|| { echo "STOP: <step>"; exit 1; }` after each step that can fail, or run `bash -e <file>`. Never chain a delete after an unguarded step. `set -e` and a subshell do not stop a command in the Bash tool ([why](references/stop-at-first-error.md)).
 6. Keep a way back: a backup, a tag, or the old version.
 7. If the harness or its permission check refuses the step, do not find another route. Stop and ask the human.
 8. After a merge, update each clone that a live tool runs from. The charter names them.
 
-Done when the step succeeded, you checked its result, and each clone that a live tool runs from is current.
+Done when the step succeeded, you checked its result, and each such clone is current.
 
 ### 7. Report to the human
 
@@ -98,7 +98,7 @@ After each merge, each resolved ticket, and each change of plan, add a checkpoin
 
 ### Pause
 
-When the human says pause, stop at the end of the current tool call and answer. Do not start new work until the human says to continue.
+When the human says pause, stop after the current tool call and answer. Do not start new work until the human says to continue.
 
 ### Cost
 
