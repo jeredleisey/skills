@@ -508,3 +508,17 @@ test('writeAtomic: EPERM two times, then success, writes the new text', () => {
   assert.equal(readFileSync(file, 'utf8'), 'new text');
   assert.deepEqual(readdirSync(folder), ['x.md']);
 });
+
+test('put: an empty section file is refused and changes nothing', () => {
+  const repo = makeRepo();
+  ls(repo, 'new', 'Rigel', 'Ship the report.');
+  const before = readFileSync(orchFile(repo, 'rigel'), 'utf8');
+  for (const section of ['Purpose', 'Repos', 'Ledger', 'Holder']) {
+    for (const text of ['', '\n  \n']) {
+      const r = ls(repo, 'put', 'Rigel', section, temp(text));
+      assert.equal(r.code, 1, `${section}: ${r.line}`);
+      assert.match(r.line, /^refuse: .*empty/);
+      assert.equal(readFileSync(orchFile(repo, 'rigel'), 'utf8'), before, section);
+    }
+  }
+});

@@ -72,7 +72,7 @@ Before each one-way step:
 2. Before each merge, you need a reviewer report for the head commit of the branch, with no must-fix or should-fix open. Only a `reviewer` helper that you start with the Agent tool writes this report. A review that you do yourself is not a reviewer report. A report with a `NOT DONE:` line is no reviewer report. The command `skill-map.mjs reviewer` does not start a `reviewer`. If you have no reviewer report, do not merge. Start a `reviewer`. With no Agent tool, you cannot. If you cannot, say that the review is missing and ask the human. If the human tells you to merge, that is a grant. It does not cancel the review. Only the human can tell you to merge with no review. Write that in the Ledger, with the Action `merge with no review`.
 3. Read the open specs. A rule can change while you work, and a spec can stop merges in a path from a given point (a freeze).
 4. Look at the target first: what a delete removes, what a deploy replaces.
-5. Write the command so that it stops at the first error, for example `set -euo pipefail`. Do not chain a delete after a step that can fail.
+5. Put `|| { echo "STOP: <step>"; exit 1; }` after each step that can fail, or run `bash -e <file>`. `set -e` and a subshell fail [here](references/stop-at-first-error.md).
 6. Keep a way back: a backup, a tag, or the old version.
 7. If the harness or its permission check refuses the step, do not find another route. Stop and ask the human.
 8. After a merge, update each clone that a live tool runs from. The charter names them.
