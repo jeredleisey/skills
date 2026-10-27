@@ -148,7 +148,7 @@ try {
       const lines = text.split('\n');
       const range = sectionRange(lines, known);
       if (!range) throw new Error(`the file has no ${known} section`);
-      lines.splice(range[0], range[1] - range[0], `## ${known}`, ...(content ? content.split('\n') : ['']), '');
+      lines.splice(range[0], range[1] - range[0], `## ${known}`, ...content.split('\n'), '');
       return lines.join('\n');
     });
     say(`ok put ${file}`, 0);

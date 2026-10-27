@@ -476,7 +476,7 @@ Run it in the repo or in a worktree. The files are in `.cadre/` of the main clon
 | `init` | Make `.cadre/` and add `/.cadre/` to `.git/info/exclude`. Safe to run again. |
 | `orchestrators` | List each orchestrator file. |
 | `new` | Make a file. It refuses a taken name. With a `session-id`, the Holder is that session, this host, and now. Without it, the Holder is `none`. |
-| `put` | Replace the text of one section, from a file. The text must not be empty, and must hold no `##` heading and no marker line. The Holder text must be valid. Owner only. |
+| `put` | Replace the text of one section, from a file. The text must not be empty or blank, and must hold no `##` heading and no marker line. The Holder text must be valid. Owner only. |
 | `checkpoint` | Append the marker line and the file. The file needs the three checkpoint sections and no marker line. Owner only. |
 | `latest` | Print the newest trusted checkpoint block. |
 | `state` | Set the `state:` line. Owner only. |
@@ -490,7 +490,7 @@ Run it in the repo or in a worktree. The files are in `.cadre/` of the main clon
 | `ticket n=<n> state=open title=<title>` | 0 | One line for each open ticket, in order of `n`. |
 | The checkpoint block | 0 | `latest`. From the marker line to the end. |
 | `none` | 0 | The list is empty, or `latest` found no checkpoint. |
-| `refuse: <reason>` | 1 | The name is taken, or the name has no letter or digit. The user is not the owner. A section name is wrong. The new text is empty, or holds a heading or a marker line. A checkpoint lacks the three sections, or holds a marker line. The `<orchestrator name>` or the title of `ticket` has no letter or digit. |
+| `refuse: <reason>` | 1 | The name is taken, or the name has no letter or digit. The user is not the owner. A section name is wrong. The new text is empty or blank, or holds a heading or a marker line. A checkpoint lacks the three sections, or holds a marker line. The `<orchestrator name>` or the title of `ticket` has no letter or digit. |
 | `unknown: <reason>` | 2 | A read or write failed, or a file is not valid. Some bad input also gives it: a name or a purpose that is not one line, a Holder that is not valid, or text that fails the check before the write. Never `none`. |
 | usage message on stderr | 64 | Wrong arguments, or a `state` value other than `open` or `closed`. |
 

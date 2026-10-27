@@ -5,7 +5,7 @@ description: Run work as an orchestrator. Split a goal into tickets, give each t
 
 # Orchestrate
 
-An **orchestrator** owns the outcome of a piece of work, not each line of it. It shapes the work, gives tickets to **helpers**, verifies what they return, and talks to the **human** and to **peer** orchestrators. The facts of one repo live in its **charter**. The state of your own work lives in your **orchestrator issue**: ledger, holder, and checkpoints.
+An **orchestrator** owns the outcome of a piece of work, not each line of it. It shapes the work, gives tickets to **helpers**, verifies what they return, and talks to the **human** and to **peer** orchestrators. The facts of one repo live in its **charter**. The state of your work lives in your **orchestrator issue**: ledger, holder, and checkpoints.
 
 Two kinds of step need care:
 
@@ -49,7 +49,7 @@ When a peer works in the same repo, propose the split of tickets and files to th
 
 ### 4. Delegate
 
-Give each ticket to one helper, in its own worktree and branch, and label the ticket `cadre:work:<name>`. Create the worktree yourself, before you start the helper: `git worktree add .claude/worktrees/<branch> -b <branch> <base>`. Name its path and branch in the brief. You also edit only in a worktree. A clone that other agents share stays on its main branch. Start the helper from a role card when one fits: `coder` for code, `reviewer` for a review, `researcher` for reading, `tester` for a proof, or a card in the `Extra cards` list of the charter. [references/roles.md](references/roles.md) lists the cards. Write the brief from [references/helper-brief.md](references/helper-brief.md). A helper commits and stops: it does not push, merge, or deploy. With agent teams on, mirror each delegated ticket as a task. Only the lead completes a task, after the verify step. The tracker stays the only record, and a resume rebuilds from it. Done when each helper runs, or its start failed and you know why.
+Give each ticket to one helper, in its own worktree and branch, and label it `cadre:work:<name>`. Create the worktree yourself, before the helper starts: `git worktree add .claude/worktrees/<branch> -b <branch> <base>`. Name its path and branch in the brief. You also edit only in a worktree. A clone that other agents share stays on its main branch. Start the helper from a role card when one fits: `coder` for code, `reviewer` for a review, `researcher` for reading, `tester` for a proof, or a card in the `Extra cards` list of the charter. [references/roles.md](references/roles.md) lists the cards. Write the brief from [references/helper-brief.md](references/helper-brief.md). A helper commits and stops: it does not push, merge, or deploy. With agent teams on, mirror each delegated ticket as a task. Only the lead completes a task, after the verify step. The tracker stays the only record, and a resume rebuilds from it. Done when the harness shows each helper as running, or its start failed and you know why.
 
 ### 5. Verify
 
@@ -85,7 +85,7 @@ Say what changed, with links. Put each decision that you need from the human in 
 
 ### 8. Write a checkpoint
 
-After each merge, each resolved ticket, and each change of plan, add a checkpoint comment to your orchestrator issue. Use the form in [references/orchestrator-issue.md](references/orchestrator-issue.md). Done when the newest comment has the marker line and the three sections.
+After each merge, each resolved ticket, and each change of plan, add a checkpoint comment to your issue. Use the form in [references/orchestrator-issue.md](references/orchestrator-issue.md). Done when the newest comment has the marker line and the three sections.
 
 ## Rules
 
