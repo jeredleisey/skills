@@ -14,7 +14,7 @@
 //   orchestrator name=<slug> owner=<user, percent-encoded> state=<open|closed> holder=<session|none> purpose=<text>
 //   ticket n=<n> state=open title=<title>
 //                               one line for each item, exit 0. The last field is the rest of the line.
-//   <block>                     exit 0   latest: the newest trusted checkpoint, from its marker line to its end
+//   <block>                     exit 0   latest: the last trusted checkpoint in the file, from its marker line to its end
 //   none                        exit 0   the list is empty, or latest found no checkpoint
 //   refuse: <reason>            exit 1   the name is taken, the user is not the owner, or the input is not valid
 //   unknown: <reason>           exit 2   a read or a write failed, or a file is corrupt. This is never none.
@@ -165,7 +165,7 @@ try {
   } else if (command === 'latest' && takes(1)) {
     const { parsed } = load(where, args[0]);
     const picked = pickCheckpoint(parsed.checkpoints.map((c) => ({ ...c, author: parsed.owner })), parsed.owner);
-    const block = parsed.checkpoints.filter((c) => c.id === picked.id).at(-1);
+    const block = parsed.checkpoints[picked.index]; // ids repeat when two checkpoints share a marker time, so use the index
     say(block ? block.lines.join('\n').replace(/\s+$/, '') : 'none', 0);
   } else if (command === 'state' && takes(2)) {
     if (args[1] !== 'open' && args[1] !== 'closed') usage();

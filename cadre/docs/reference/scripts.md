@@ -270,8 +270,8 @@ The fields of the `ok` line are the same for each resume script:
 | --- | --- |
 | `holder` | `free`: the Holder session is `none`. `self`: the Holder session equals `session-id`. `same-host`: another session, and the Holder host equals the host id of this machine. `other-host`: another session on another host. |
 | `session` | The session of the Holder, or `none`. |
-| `checkpoint` | The id of the newest trusted checkpoint, or `none`. |
-| `ignored` | Comma list of the ids of checkpoints with a marker time more than 5 minutes ahead of now, or `none`. |
+| `checkpoint` | The id of the newest trusted checkpoint, or `none`. On GitHub and ADO a comment with no valid creation time is skipped. |
+| `ignored` | Comma list of the ids of checkpoints with a marker time more than 5 minutes after the creation time that the tracker gave the comment, or `none`. A local file has no creation time, so there it lists a marker time more than 5 minutes ahead of now. |
 | `state` | `open` or `closed`. |
 | `bad-rows` | List of ledger rows with a wrong cell count, or a Granted by that is not the assignee. The parse drops the separator row and the empty rows. Row 1 is the first data row. It looks like `[2,3]`. An empty list is `[]`. |
 | `ended-rows` | List of ledger rows whose When holds `session <id>` with an id other than `session-id`. It looks like `[6]`. An empty list is `[]`. |
@@ -478,7 +478,7 @@ Run it in the repo or in a worktree. The files are in `.cadre/` of the main clon
 | `new` | Make a file. It refuses a taken name. With a `session-id`, the Holder is that session, this host, and now. Without it, the Holder is `none`. |
 | `put` | Replace the text of one section, from a file. The text must not be empty or blank, and must hold no `##` heading and no marker line. The Holder text must be valid. Owner only. |
 | `checkpoint` | Append the marker line and the file. The file needs the three checkpoint sections and no marker line. Owner only. |
-| `latest` | Print the newest trusted checkpoint block. |
+| `latest` | Print the last trusted checkpoint block in the file. The marker time does not rank. |
 | `state` | Set the `state:` line. Owner only. |
 | `ticket` | Make `.cadre/tickets/<n>-<slug>.md`. `n` is one more than the highest number. |
 | `work` | List the open tickets of one orchestrator. |

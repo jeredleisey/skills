@@ -73,7 +73,7 @@ Run `gh issue list --label cadre:orchestrator --state open --limit 200 --json nu
 4. If `state=closed`, the orchestrator is retired. Ask the human before you resume it, and reopen the issue with `gh issue reopen <n>`.
 5. Take the name: write `session`, `host`, and `since` in the Holder ([Write the body](#write-the-body)).
 6. Clean the ledger. **A row whose Granted by is not the owner is no grant.** Delete each row in the `bad-rows` list and report it. Delete each row in the `ended-rows` list, because it ended with its session. Delete all of them in one write, so that the numbers stay true.
-7. Read the newest checkpoint: `gh api repos/{owner}/{repo}/issues/comments/<checkpoint> --jq .body`. If the field is `none`, there is no checkpoint yet. Report each comment id in `ignored`: its time is ahead of now.
+7. Read the newest checkpoint: `gh api repos/{owner}/{repo}/issues/comments/<checkpoint> --jq .body`. If the field is `none`, there is no checkpoint yet. Report each comment id in `ignored`: its marker time is more than 5 minutes after the time that the tracker gave the comment. A local file has no such time, so there `ignored` names a marker time more than 5 minutes ahead of now.
 8. Check each item of "Next, in order" against the tracker: the issue state, the branch, the pull request. Do not announce that you are back.
 
 Done when you hold the name, the ledger has only grants of the owner, and you know the newest checkpoint.
@@ -103,7 +103,7 @@ Give each ticket of this orchestrator the label `cadre:work:<name>`. Create the 
 
 ## Checkpoints
 
-Write a checkpoint after each merge, each resolved ticket, and each change of plan. It is a new comment: `gh issue comment <n> --body-file <file>`. Only add checkpoints, never edit one. The script cannot see an edit. It trusts a comment only when the owner wrote it, with the marker line and the three sections, and with a time at most 5 minutes ahead of now.
+Write a checkpoint after each merge, each resolved ticket, and each change of plan. It is a new comment: `gh issue comment <n> --body-file <file>`. Only add checkpoints, never edit one. The script cannot see an edit. It trusts a comment only when the owner wrote it, with the marker line and the three sections, and with a marker time at most 5 minutes after the time that the tracker gave the comment. The newest comment by that tracker time wins, not the newest marker time. In a local file the last checkpoint wins, and the marker time may be at most 5 minutes ahead of now.
 
 ```markdown
 cadre-checkpoint v1 <ISO UTC time>
@@ -118,7 +118,7 @@ cadre-checkpoint v1 <ISO UTC time>
 1. <step>
 ```
 
-Get the time with `node -e "console.log(new Date().toISOString().slice(0,19)+'Z')"`. A resume reads the newest trusted comment by marker time. Done when the comment has the marker line and the three sections.
+Get the time with `node -e "console.log(new Date().toISOString().slice(0,19)+'Z')"`. A resume reads the trusted comment that the tracker created last. Done when the comment has the marker line and the three sections.
 
 ## On Azure DevOps
 

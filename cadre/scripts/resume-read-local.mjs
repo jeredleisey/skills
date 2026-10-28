@@ -6,6 +6,8 @@
 //   - The owner is the `owner:` line of the file. The user is the OS user name, or CADRE_LOCAL_USER.
 //   - The state is the `state:` line. A checkpoint id is the time of its marker line, not a comment id.
 //     There is no author to check: the file is the owner's, and the owner check covers it.
+//   - The file has no creation time. The last trusted checkpoint in the file wins, and the marker time does not rank.
+//     A marker time more than 5 minutes ahead of now is ignored and listed in `ignored`.
 // The file is unknown when it is missing, a section is missing or twice, or a heading is in a code fence.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';

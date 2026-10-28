@@ -17,8 +17,10 @@
 // Both print as a list, such as [2,3], with [] for none. Row 1 is the first row after the header.
 // With no session-id, each such row ended.
 // checkpoint: the id of the comment with the marker line "cadre-checkpoint v1 <ISO UTC time>"
-// and the latest time, written by the assignee, with the three sections.
-// ignored: ids of such comments with a marker time more than 5 minutes ahead of now.
+// written by the assignee, with the three sections. The comment with the latest creation time (created_at) wins.
+// The marker time is text, so it does not rank. A comment with no valid created_at is skipped.
+// ignored: ids of such comments with a marker time more than 5 minutes after their created_at. This holds whatever
+// the clock reads now.
 // The script never prints ok after a failure.
 // Set CADRE_GH_CMD to use another command than gh, for example a fixture in a test.
 // The host id comes from host-id.mjs, so CADRE_HOME applies.
@@ -97,11 +99,13 @@ const checkpoint = pickCheckpoint(
     return {
       id: c?.id,
       author: String(c?.user?.login ?? ''),
+      created: c?.created_at,
       firstLine: body.split('\n')[0].trim(),
       headings: body.split('\n').filter((l) => /^##\s/.test(l)).map((l) => l.replace(/^##\s+/, '').trim().toLowerCase()),
     };
   }),
   assignee,
+  { hasCreated: true },
 );
 
 done(okLine({ who, holder, checkpoint, state: String(issue.state).toLowerCase(), bad: audit.bad, ended: audit.ended }), 0);

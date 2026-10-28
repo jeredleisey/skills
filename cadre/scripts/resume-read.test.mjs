@@ -57,8 +57,9 @@ const issue = (over = {}) => ({
   body: body(),
   ...over,
 });
-const comment = (id, time, extra = '', login = 'ada') => ({
+const comment = (id, time, extra = '', login = 'ada', created = time) => ({
   id,
+  created_at: created,
   user: { login },
   body: `cadre-checkpoint v1 ${time}\n\n## Decisions\n- none\n\n## Waiting for the human\n1. none\n\n## Next, in order\n1. none\n${extra}`,
 });
@@ -213,12 +214,12 @@ test('a body with no Ledger section gives unknown', () => {
   assert.match(r.line, /^unknown: .*Ledger/);
 });
 
-test('the newest checkpoint is the one with the latest marker time', () => {
+test('the newest checkpoint is the one with the latest creation time', () => {
   const comments = [
     comment(101, '2026-10-17T09:00:00Z'),
     comment(102, '2026-10-17T11:30:00Z'),
     comment(103, '2026-10-17T10:00:00Z'),
-    { id: 104, user: { login: 'ada' }, body: 'looks good, thanks' },
+    { id: 104, created_at: '2026-10-17T12:00:00Z', user: { login: 'ada' }, body: 'looks good, thanks' },
   ];
   assert.equal(fields(run(['4'], { comments }).line).checkpoint, '102');
 });
@@ -226,8 +227,8 @@ test('the newest checkpoint is the one with the latest marker time', () => {
 test('a comment with a bad marker is not a checkpoint', () => {
   const comments = [
     comment(101, '2026-10-17T09:00:00Z'),
-    { id: 102, user: { login: 'ada' }, body: 'cadre-checkpoint v2 2026-10-17T12:00:00Z\n' },
-    { id: 103, user: { login: 'ada' }, body: 'cadre-checkpoint v1 yesterday\n' },
+    { id: 102, created_at: '2026-10-17T12:00:00Z', user: { login: 'ada' }, body: 'cadre-checkpoint v2 2026-10-17T12:00:00Z\n' },
+    { id: 103, created_at: '2026-10-17T12:00:00Z', user: { login: 'ada' }, body: 'cadre-checkpoint v1 yesterday\n' },
     { id: 104, user: { login: 'ada' }, body: 'Note: cadre-checkpoint v1 2026-10-17T13:00:00Z\n' },
   ];
   assert.equal(fields(run(['4'], { comments }).line).checkpoint, '101');
@@ -248,7 +249,7 @@ test('a checkpoint that the owner did not write is ignored', () => {
   const comments = [
     comment(101, '2026-10-17T09:00:00Z'),
     comment(102, '2026-10-17T12:00:00Z', '', 'grace'),
-    { id: 103, body: 'cadre-checkpoint v1 2026-10-17T13:00:00Z\n' },
+    { id: 103, created_at: '2026-10-17T13:00:00Z', body: 'cadre-checkpoint v1 2026-10-17T13:00:00Z\n' },
   ];
   assert.equal(fields(run(['4'], { comments }).line).checkpoint, '101');
 });
@@ -324,20 +325,41 @@ test('a pull request gives unknown', () => {
   assert.match(r.line, /^unknown: .*pull request/);
 });
 
-test('a marker time more than 5 minutes ahead is ignored and reported', () => {
-  const comments = [comment(101, '2026-10-17T09:00:00Z'), comment(102, '2099-01-01T00:00:00Z')];
+test('a marker time more than 5 minutes after the creation time is ignored, also when the clock has passed it', () => {
+  const comments = [comment(101, '2026-10-17T09:00:00Z'), comment(102, '2026-10-17T12:00:00Z', '', 'ada', '2026-10-17T09:30:00Z')];
   const f = fields(run(['4'], { comments }).line);
   assert.equal(f.checkpoint, '101');
   assert.equal(f.ignored, '102');
 });
 
-test('a marker time of now is accepted', () => {
-  const now = new Date().toISOString().slice(0, 19) + 'Z';
-  assert.equal(fields(run(['4'], { comments: [comment(101, now)] }).line).checkpoint, '101');
+test('a marker time within 5 minutes after the creation time is accepted', () => {
+  const comments = [comment(101, '2026-10-17T09:04:00Z', '', 'ada', '2026-10-17T09:00:00Z')];
+  assert.equal(fields(run(['4'], { comments }).line).checkpoint, '101');
+});
+
+test('the comment created later wins over one with a later marker time', () => {
+  const comments = [
+    comment(101, '2026-10-17T10:00:00Z', '', 'ada', '2026-10-17T10:01:00Z'),
+    comment(102, '2026-10-17T09:00:00Z', '', 'ada', '2026-10-17T11:00:00Z'),
+  ];
+  assert.equal(fields(run(['4'], { comments }).line).checkpoint, '102');
+});
+
+test('on equal creation times the later comment in the list wins', () => {
+  const comments = [comment(101, '2026-10-17T10:00:00Z'), comment(102, '2026-10-17T09:00:00Z', '', 'ada', '2026-10-17T10:00:00Z')];
+  assert.equal(fields(run(['4'], { comments }).line).checkpoint, '102');
+});
+
+test('a checkpoint with no valid creation time is skipped, and it is not in ignored', () => {
+  const nocreated = { ...comment(102, '2026-10-17T10:00:00Z'), created_at: undefined };
+  const bad = { ...comment(103, '2026-10-17T10:00:00Z'), created_at: 'soon' };
+  const f = fields(run(['4'], { comments: [comment(101, '2026-10-17T09:00:00Z'), nocreated, bad] }).line);
+  assert.equal(f.checkpoint, '101');
+  assert.equal(f.ignored, 'none');
 });
 
 test('a checkpoint that lacks one of the three sections is ignored', () => {
   const full = comment(101, '2026-10-17T09:00:00Z');
-  const partial = { id: 102, user: { login: 'ada' }, body: 'cadre-checkpoint v1 2026-10-17T12:00:00Z\n\n## Decisions\n- x\n\n## Next, in order\n1. y\n' };
+  const partial = { id: 102, created_at: '2026-10-17T12:00:00Z', user: { login: 'ada' }, body: 'cadre-checkpoint v1 2026-10-17T12:00:00Z\n\n## Decisions\n- x\n\n## Next, in order\n1. y\n' };
   assert.equal(fields(run(['4'], { comments: [full, partial] }).line).checkpoint, '101');
 });
