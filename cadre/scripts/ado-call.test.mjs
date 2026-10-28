@@ -120,3 +120,27 @@ test('a network failure prints no status line and exits 2', async () => {
   assert.equal(r.out, '');
   assert.match(r.err, /^ado-call: /);
 });
+
+test('a PATCH or POST to a pull request is refused before any call, in any case or encoding', async () => {
+  seen.length = 0;
+  const paths = ['pullrequests/7', 'pullRequests/7', 'PullRequests/7', '%70ullrequests/7'];
+  for (const method of ['PATCH', 'POST']) {
+    for (const p of paths) {
+      const r = await run([method, `${base}/org/proj/_apis/git/repositories/r/${p}?api-version=7.1`]);
+      assert.equal(r.code, 64, `${method} ${p}`);
+      assert.equal(r.out, '');
+      assert.match(r.err, /az repos pr update/);
+    }
+  }
+  assert.equal(seen.length, 0);
+});
+
+test('a GET of a pull request and a PATCH of a work item still go', async () => {
+  reply = { status: 200, headers: {}, body: '{}' };
+  seen.length = 0;
+  const get = await run(['GET', `${base}/org/proj/_apis/git/repositories/r/pullrequests/7?api-version=7.1`]);
+  const patch = join(dir, 'wi.json');
+  writeFileSync(patch, '[{"op":"test","path":"/rev","value":1}]');
+  const wi = await run(['PATCH', `${base}/org/proj/_apis/wit/workitems/9?api-version=7.1`, patch]);
+  assert.deepEqual([get.code, wi.code, seen.map((s) => s.method)], [0, 0, ['GET', 'PATCH']]);
+});

@@ -17,6 +17,6 @@ Setup creates the orchestrator issue, as a work item, with the five standard gra
 
 Setup writes `tracker: ado`, `ado_org`, and `ado_project` in the charter front matter.
 
-Setup cannot read the permission "Bypass policies when pushing". Check who holds it. The hooks do not cover `az devops invoke` or REST calls that complete a pull request. The branch policy of the repo covers them.
+Setup cannot read the permission "Bypass policies when pushing". Check who holds it. The hooks do not cover `az devops invoke` or REST calls that complete a pull request. The branch policy of the repo covers them. The script `ado-call.mjs` refuses a `POST` or `PATCH` to a pull request, and says to use `az repos pr update`, which the guard reads.
 
 See [the orchestrator issue](../reference/orchestrator-item.md) for how an orchestrator is stored on ADO.
