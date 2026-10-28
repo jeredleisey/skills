@@ -127,11 +127,11 @@ Say yes to the merge. Give the permission in your own words, for example: "Yes, 
 
 The orchestrator adds a sixth row to the Ledger of its orchestrator issue, for the merge. It then pushes the branch and opens a pull request. A push of an ordinary branch passes with no prompt.
 
-To complete the pull request, the orchestrator runs a command. If the command is `az repos pr update` with `--status completed`, the cadre hook stops it. You see a prompt that asks you to allow the merge. The prompt names the plugin as `[plugin:cadre]`. This is the guard. Allow it. The guard asks also in auto mode. Do not run this lesson with all permission prompts off, because then you may not see the guard.
+To complete the pull request, the orchestrator runs `az repos pr update` with `--status completed` and `--squash true`, because the charter names squash. The cadre hook stops the command. You see a prompt that asks you to allow the merge. The prompt names the plugin as `[plugin:cadre]`. This is the guard. Allow it. The guard asks also in auto mode. Do not run this lesson with all permission prompts off, because then you may not see the guard.
 
 You see the pull request completed, and `hello.txt` on the default branch. The orchestrator then adds a checkpoint comment to its work item. The comment starts with `cadre-checkpoint v1` and has three sections.
 
-The guard reads only commands that it knows. It does not see `az devops invoke` or a REST call that completes a pull request. If the orchestrator completes the pull request in such a way, you see no guard prompt. The ledger row and the branch policy of the repo still apply.
+The orchestrator completes a pull request only with that command. Its own ADO client refuses to write to a pull request. If the charter names a rebase method, `az` cannot do it. The orchestrator then stops and asks you to complete the pull request in ADO. The guard does not see `az devops invoke` or a REST call from another tool. The branch policy of the repo covers those.
 
 ## 8. Resume in a new session
 
