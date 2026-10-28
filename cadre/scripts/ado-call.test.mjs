@@ -123,7 +123,7 @@ test('a network failure prints no status line and exits 2', async () => {
 
 test('a PATCH or POST to a pull request is refused before any call, in any case or encoding', async () => {
   seen.length = 0;
-  const paths = ['pullrequests/7', 'pullRequests/7', 'PullRequests/7', '%70ullrequests/7'];
+  const paths = ['pullrequests/7', 'pullRequests/7', 'PullRequests/7', '%70ullrequests/7', '%70ullrequests/7%FF', 'pullrequests;x/7'];
   for (const method of ['PATCH', 'POST']) {
     for (const p of paths) {
       const r = await run([method, `${base}/org/proj/_apis/git/repositories/r/${p}?api-version=7.1`]);

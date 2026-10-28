@@ -389,7 +389,7 @@ node ado-call.mjs <GET|POST|PATCH> <url> [body file]
 | Argument | Meaning |
 | --- | --- |
 | method | `GET`, `POST`, or `PATCH`. |
-| `url` | An `https` URL on `dev.azure.com` or `<name>.visualstudio.com`. Any other host gives exit 64, so the token never leaves for another host. A `POST` or `PATCH` to a URL with a `pullrequests` segment also gives exit 64. The segment is read ignoring case, after URL decoding. A `GET` of a pull request is allowed. |
+| `url` | An `https` URL on `dev.azure.com` or `<name>.visualstudio.com`. Any other host gives exit 64, so the token never leaves for another host. A `POST` or `PATCH` to a URL with a `pullrequests` segment also gives exit 64. The script decodes each segment and compares it without case. A write with a segment that does not decode also gives exit 64. The script sends a `GET` of a pull request. |
 | `body file` | Optional. A file that holds a JSON list goes as `application/json-patch+json`. Any other file goes as `application/json`. |
 
 Environment: `AZURE_DEVOPS_EXT_PAT` is sent as basic auth with an empty user. An empty variable sends no header, and ADO then answers 302. A redirect is never followed. `CADRE_ADO_ALLOW_LOCAL=1` (test-only) lets the script call `http://127.0.0.1`.

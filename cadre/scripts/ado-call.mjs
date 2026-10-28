@@ -28,15 +28,17 @@ const adoHost = target.protocol === 'https:' && (host === 'dev.azure.com' || /^[
 const localHost = process.env.CADRE_ADO_ALLOW_LOCAL === '1' && target.protocol === 'http:' && host === '127.0.0.1';
 if (!adoHost && !localHost) stop(`usage: ${host} is not an ADO host, so the token stays here`, 64);
 
-// A pull request is completed or changed with `az repos pr update`, which the guard reads. A REST write would pass it.
-let path = target.pathname;
-try {
-  path = decodeURIComponent(path);
-} catch {
-  // an undecodable path stays as it is
-}
-if (method !== 'GET' && path.toLowerCase().split('/').includes('pullrequests')) {
-  stop('usage: ado-call does not write to a pull request. Complete or change one with az repos pr update, so that the guard sees it', 64);
+// The guard reads `az repos pr update`, but it cannot read a REST write. So a write to a pull request goes through az.
+// Each segment is decoded alone. A write with a segment that does not decode is refused, so the check fails closed.
+const writesPullRequest = target.pathname.split('/').some((segment) => {
+  try {
+    return decodeURIComponent(segment).toLowerCase().split(';')[0] === 'pullrequests';
+  } catch {
+    return true;
+  }
+});
+if (method !== 'GET' && writesPullRequest) {
+  stop('usage: ado-call does not write to a pull request, or to a path that does not decode. Complete or change a pull request with az repos pr update, so that the guard sees it', 64);
 }
 
 const headers = { Accept: 'application/json' };
