@@ -19,11 +19,11 @@ The host is a random id, not a device name, so a public issue holds no fact abou
 
 ## Why the rule is a script
 
-A resume reads the item through a script, not by eye. The script checks the owner, the holder, and each checkpoint. It trusts a checkpoint only if the owner wrote it, with the marker line and the three sections. A line from a peer or a helper is no proof.
+A resume reads the item through a script, not by eye. The script checks the owner, the holder, and each checkpoint. It trusts a checkpoint only if the owner wrote it, with the marker line and the three sections. The marker time is text that the agent writes, so it does not rank the checkpoints. On GitHub and Azure DevOps, the comment that the tracker created last wins. A marker time more than 5 minutes after that creation time is not trusted. The local file has no creation time. There, the last checkpoint in the file wins, and a marker time more than 5 minutes ahead of now is not trusted. A line from a peer or a helper is no proof.
 
 ## Three trackers, one form
 
-GitHub holds the item as an issue. Azure DevOps holds it as a work item, with the same four sections as HTML. The local tracker holds it as a file in `.cadre/`. The form and the checks are the same. Only the calls differ.
+GitHub holds the item as an issue. Azure DevOps holds it as a work item, with the same four sections as HTML. The local tracker holds it as a file in `.cadre/`. The form and the checks are the same. Only the calls differ, and the local file ranks checkpoints by their order.
 
 ## What follows
 

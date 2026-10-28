@@ -34,6 +34,10 @@ The body has four sections, found by their headings. A heading twice, a heading 
 | Ledger | A table of the permissions that the human gave. |
 | Holder | Three lines: `session`, `host`, `since`. |
 
+A write replaces the whole body. The orchestrator reads the body, changes one section, and keeps the others as it read them. It checks the new body and writes it in one command, so that a failed check stops the write. The file must not be empty and must hold the four headings. It then reads the body again. On GitHub the command is `[ -s <file> ] && [ "$(grep -cE '^## (Purpose|Repos|Ledger|Holder)$' <file>)" -eq 4 ] && gh issue edit <n> --body-file <file> || { echo "STOP: body check or write failed"; exit 1; }`. On ADO the check counts the four `<h2>` headings in the `PATCH` file. On the local tracker, `local-list.mjs put` checks the text before the write.
+
+Release sets the Holder to `none` in the three fields, through such a write. On the local tracker it is `local-list.mjs put <name> Holder <file>`. Release refuses when the Holder is not the session id of the caller.
+
 ### Ledger
 
 The ledger is a record of permissions, for discipline and audit. It is not a security boundary: anyone who can edit the item can write a row. The branch policy of the repo is the boundary.
@@ -161,7 +165,7 @@ cadre-checkpoint v1 <ISO UTC time>
 | Head lines | `owner:` and `state:`, each once, before the first heading. `state` is `open` or `closed`. |
 | Required sections | Purpose, Repos, Ledger, Holder |
 | Ticket files | `.cadre/tickets/<n>-<slug>.md` |
-| Lock | `<file>.lock` during a write. About 2 seconds of wait, then `unknown: busy`. Stale after 30 seconds. |
+| Lock | `<file>.lock` during a write. About 2 seconds of wait, then `unknown: busy`. Stale after 30 seconds. A refusal frees the lock. |
 
 ## Live work
 
