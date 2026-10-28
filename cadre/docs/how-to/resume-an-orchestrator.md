@@ -24,7 +24,7 @@ Then it reads the newest checkpoint and checks each next step against the tracke
 
 To move a name to a new session and keep the old session open:
 
-1. Say "release" in the old session. It writes a checkpoint, sets the Holder to `none`, and says that it now only reads. It refuses if another session holds the name.
+1. Say "release" in the old session. It writes a checkpoint, sets the Holder to `none`, and says that it now only reads. It refuses if the Holder is not the id of that session.
 2. Resume in the new session, as above.
 
 If you cannot say "release", close the old session. Then resume.
