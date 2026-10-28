@@ -19,7 +19,7 @@ The host is a random id, not a device name, so a public issue holds no fact abou
 
 ## Why the rule is a script
 
-A resume reads the item through a script, not by eye. The script checks the owner, the holder, and each checkpoint. It trusts a checkpoint only if the owner wrote it, with the marker line and the three sections. A line from a peer or a helper is no proof.
+A resume reads the item through a script, not by eye. The script checks the owner, the holder, and each checkpoint. It trusts a checkpoint only if the owner wrote it, with the marker line and the three sections, and with a marker time that is not much later than the time the tracker created it. The marker time is text that the agent writes, so the creation time of the tracker ranks the checkpoints, not the marker time. A line from a peer or a helper is no proof.
 
 ## Three trackers, one form
 
