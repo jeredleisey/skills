@@ -478,7 +478,7 @@ Run it in the repo or in a worktree. The files are in `.cadre/` of the main clon
 | `new` | Make a file. It refuses a taken name. With a `session-id`, the Holder is that session, this host, and now. Without it, the Holder is `none`. |
 | `put` | Replace the text of one section, from a file. The text must not be empty or blank, and must hold no `##` heading and no marker line. The Holder text must be valid. Owner only. |
 | `checkpoint` | Append the marker line and the file. The file needs the three checkpoint sections and no marker line. Owner only. |
-| `latest` | Print the newest trusted checkpoint block. |
+| `latest` | Print the last trusted checkpoint block in the file. The marker time does not rank. |
 | `state` | Set the `state:` line. Owner only. |
 | `ticket` | Make `.cadre/tickets/<n>-<slug>.md`. `n` is one more than the highest number. |
 | `work` | List the open tickets of one orchestrator. |

@@ -85,9 +85,15 @@ export function pickCheckpoint(entries, assignee, { hasCreated = false } = {}) {
     if (hasCreated) {
       const created = typeof c.created === 'string' ? Date.parse(c.created) : NaN;
       if (!Number.isFinite(created)) return;
-      if (time > created + slack) return void ignored.push(c.id);
+      if (time > created + slack) {
+        ignored.push(c.id);
+        return;
+      }
       rank = created;
-    } else if (time > limit) return void ignored.push(c.id);
+    } else if (time > limit) {
+      ignored.push(c.id);
+      return;
+    }
     if (!newest || rank >= newest.rank) newest = { rank, id: c.id, index };
   });
   return { id: newest ? newest.id : null, index: newest ? newest.index : -1, ignored };
