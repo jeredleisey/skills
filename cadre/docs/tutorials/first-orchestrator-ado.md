@@ -30,7 +30,7 @@ Make the token in ADO, in the user settings, under **Personal access tokens**. T
 - **Work Items**: Read and write. Cadre reads work items and area paths, and it makes and edits the orchestrator item, the tickets, and their comments.
 - **Code**: Read and write. Setup and the helpers read the repo, and the pull request step needs write access.
 
-Cadre also reads the branch policy of the repo and the account of the token. If a read is refused, setup tells you, and you add the scope that it names.
+Cadre also reads the branch policy of the repo and the account of the token. If ADO refuses the token, setup says so with this order of checks: an empty variable first, then an expired token, then the scope of the token. A refused read of the branch policy does not stop setup. It becomes a note on the screen that says the policy is unread.
 
 Set the variable in the environment that Claude Code starts from. A shell profile is one way. A variable that you set in one open terminal does not reach the desktop app or VS Code. Cadre never prints the token. Do not run `az login` as a fix. The token is the way in.
 
