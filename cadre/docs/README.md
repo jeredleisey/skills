@@ -9,6 +9,7 @@ Try `/cadre:ticket <ticket>` first. It does one ticket with no orchestrator issu
 Guided lessons that end with a working result. See [the index](tutorials/README.md).
 
 - [Your first orchestrator](tutorials/first-orchestrator.md)
+- [Your first orchestrator on Azure DevOps](tutorials/first-orchestrator-ado.md)
 
 ## How-to guides
 

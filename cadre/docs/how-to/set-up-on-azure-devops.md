@@ -20,3 +20,5 @@ Setup writes `tracker: ado`, `ado_org`, and `ado_project` in the charter front m
 Setup cannot read the permission "Bypass policies when pushing". Check who holds it. The hooks do not cover `az devops invoke` or REST calls that complete a pull request. The branch policy of the repo covers them.
 
 See [the orchestrator issue](../reference/orchestrator-item.md) for how an orchestrator is stored on ADO.
+
+For a guided first run, see [Your first orchestrator on Azure DevOps](../tutorials/first-orchestrator-ado.md).
