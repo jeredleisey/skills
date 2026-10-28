@@ -113,7 +113,7 @@ const CP = (time) => `\ncadre-checkpoint v1 ${time}\n\n## Decisions\n- none\n\n#
 const append = (repo, text) => writeFileSync(orchFile(repo, 'rigel'), readFileSync(orchFile(repo, 'rigel'), 'utf8') + text);
 const stamp = (ms) => new Date(Date.now() + ms).toISOString().slice(0, 19) + 'Z';
 
-test('checkpoint: one appended by the script is found, and the newest marker time wins', () => {
+test('checkpoint: one appended by the script is found, and the last one in the file wins', () => {
   const repo = makeRepo();
   ls(repo, 'new', 'Rigel', 'Ship the report.');
   const r = ls(repo, 'checkpoint', 'Rigel', temp('## Decisions\n- a\n\n## Waiting for the human\n1. none\n\n## Next, in order\n1. b\n'));
@@ -121,11 +121,8 @@ test('checkpoint: one appended by the script is found, and the newest marker tim
   const id = /^ok checkpoint (\S+)$/.exec(r.line)?.[1];
   assert.match(id, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/);
   assert.equal(fields(rs(repo, ['rigel', SESSION]).line).checkpoint, id);
-  append(repo, CP('2020-01-01T00:00:00Z')); // older, and later in the file
-  assert.equal(fields(rs(repo, ['rigel', SESSION]).line).checkpoint, id);
-  const later = new Date(Date.parse(id) + 1000).toISOString().slice(0, 19) + 'Z';
-  append(repo, CP(later));
-  assert.equal(fields(rs(repo, ['rigel', SESSION]).line).checkpoint, later);
+  append(repo, CP('2020-01-01T00:00:00Z')); // an older marker time, and later in the file: the file has no creation time, so order ranks
+  assert.equal(fields(rs(repo, ['rigel', SESSION]).line).checkpoint, '2020-01-01T00:00:00Z');
 });
 
 test('checkpoint: a time more than 5 minutes ahead is ignored and named, and a marker with no sections is skipped', () => {
@@ -427,6 +424,17 @@ test('latest: prints the newest trusted checkpoint block, and none when there is
   assert.match(r.line, /^cadre-checkpoint v1 \d{4}-/);
   assert.ok(r.line.includes('- old') && !r.line.includes('future'));
   assert.ok(r.line.endsWith('1. none'));
+});
+
+test('latest: prints the last checkpoint in the file, also when an earlier one has a later marker time or the same one', () => {
+  const repo = makeRepo();
+  ls(repo, 'new', 'Rigel', 'Ship the report.');
+  append(repo, CP('2026-10-02T00:00:00Z').replace('- none', '- first'));
+  append(repo, CP('2026-10-01T00:00:00Z').replace('- none', '- second'));
+  append(repo, CP('2026-10-01T00:00:00Z').replace('- none', '- third'));
+  const r = ls(repo, 'latest', 'Rigel');
+  assert.ok(r.line.includes('- third') && !r.line.includes('- first') && !r.line.includes('- second'));
+  assert.equal(r.line.split('cadre-checkpoint').length, 2);
 });
 
 // The rename retry. A test injects `rename` and `wait`, so no test sleeps.

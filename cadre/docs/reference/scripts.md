@@ -270,8 +270,8 @@ The fields of the `ok` line are the same for each resume script:
 | --- | --- |
 | `holder` | `free`: the Holder session is `none`. `self`: the Holder session equals `session-id`. `same-host`: another session, and the Holder host equals the host id of this machine. `other-host`: another session on another host. |
 | `session` | The session of the Holder, or `none`. |
-| `checkpoint` | The id of the newest trusted checkpoint, or `none`. |
-| `ignored` | Comma list of the ids of checkpoints with a marker time more than 5 minutes ahead of now, or `none`. |
+| `checkpoint` | The id of the newest trusted checkpoint, or `none`. On GitHub and ADO a comment with no valid creation time is skipped. |
+| `ignored` | Comma list of the ids of checkpoints with a marker time more than 5 minutes after the creation time that the tracker gave the comment, or `none`. A local file has no creation time, so there it lists a marker time more than 5 minutes ahead of now. |
 | `state` | `open` or `closed`. |
 | `bad-rows` | List of ledger rows with a wrong cell count, or a Granted by that is not the assignee. The parse drops the separator row and the empty rows. Row 1 is the first data row. It looks like `[2,3]`. An empty list is `[]`. |
 | `ended-rows` | List of ledger rows whose When holds `session <id>` with an id other than `session-id`. It looks like `[6]`. An empty list is `[]`. |

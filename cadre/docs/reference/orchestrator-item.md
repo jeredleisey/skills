@@ -91,9 +91,9 @@ cadre-checkpoint v1 <ISO UTC time>
 | Marker line | `cadre-checkpoint v1 <time>`. The time is `YYYY-MM-DDTHH:MM:SSZ`, with optional fractions of a second. On GitHub it is the first line of the comment. On ADO it is the first text of the comment, in a `<p>` or `<div>` or bare. |
 | Sections | `Decisions`, `Waiting for the human`, and `Next, in order`, each as a heading. Compared ignoring case. In an ADO comment, an `<h2>` or a `##` line. |
 | Author | The owner. A GitHub comment is by the login of the owner. An ADO comment is by the unique name of the owner. A local file has no author check. |
-| Time | At most 5 minutes ahead of now. A later one is ignored, and its id is listed in `ignored`. |
+| Time | At most 5 minutes after the creation time that the tracker gave the comment (`created_at` on GitHub, `createdDate` on ADO). A later one is ignored, and its id is listed in `ignored`. This holds whatever the clock reads now. A comment with no valid creation time is skipped. A local file has no creation time, so there the limit is 5 minutes ahead of now. |
 
-Selection: the trusted comment with the latest marker time wins. On a tie, the later one wins. A deleted ADO comment does not count.
+Selection: the trusted comment with the latest creation time wins, and the marker time does not rank. On a tie, the later one wins. In a local file the last checkpoint in the file wins. A deleted ADO comment does not count.
 
 The checkpoint id is the comment id on GitHub and ADO, and the marker time in a local file.
 

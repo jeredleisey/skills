@@ -13,6 +13,8 @@
 //   - Holder is one <pre> block with the three lines of the GitHub form
 // A checkpoint is a comment by the owner. Its first text is the marker "cadre-checkpoint v1 <ISO UTC time>", and it
 // has the three headings, as <h2> in HTML or as `##` lines in Markdown. A deleted comment does not count.
+// The comment with the latest createdDate wins, and the marker time does not rank. A comment with no valid createdDate
+// is skipped. A marker time more than 5 minutes after createdDate is ignored and listed in `ignored`.
 // Any other status than 200, a 302, an empty body, and a body that is not JSON give `unknown: <reason>`.
 // The script never prints ok after a failure. It makes GET calls only.
 // CADRE_ADO_CMD replaces the ADO client (see ado.mjs). The host id comes from host-id.mjs, so CADRE_HOME applies.
@@ -135,6 +137,7 @@ for (let pages = 0; ; pages++) {
     const first = /^\s*(?:<(?:p|div)>)?\s*([^<\n]*)/.exec(c.text);
     entries.push({
       id: c.id,
+      created: c?.createdDate,
       author: String(c?.createdBy?.uniqueName ?? ''),
       firstLine: first ? decodeHtml(first[1]).trim() : '',
       headings: [...[...c.text.matchAll(/<h2>([^<]*)<\/h2>/gi)].map((m) => m[1]), ...[...c.text.matchAll(/^##[ \t]+(.*)$/gm)].map((m) => m[1])].map((h) => decodeHtml(h).trim().toLowerCase()),
@@ -146,6 +149,6 @@ for (let pages = 0; ; pages++) {
   seen.add(next);
   url = `${base}/_apis/wit/workItems/${itemId}/comments?api-version=7.1-preview.4&%24top=200&continuationToken=${encodeURIComponent(next)}`;
 }
-const checkpoint = pickCheckpoint(entries, assignee);
+const checkpoint = pickCheckpoint(entries, assignee, { hasCreated: true });
 
 done(okLine({ who, holder, checkpoint, state, bad: audit.bad, ended: audit.ended }), 0);

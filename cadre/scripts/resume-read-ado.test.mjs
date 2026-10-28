@@ -54,8 +54,9 @@ const item = (over = {}, fields = {}) => ({
   ...over,
 });
 const typeAnswer = { name: 'Issue', states: [{ name: 'New', category: 'Proposed' }, { name: 'Doing', category: 'InProgress' }, { name: 'Done', category: 'Completed' }, { name: 'Gone', category: 'Removed' }] };
-const comment = (id, time, { by = 'ada', extra = '', html = true, deleted = false } = {}) => ({
+const comment = (id, time, { by = 'ada', extra = '', html = true, deleted = false, created = time } = {}) => ({
   id,
+  createdDate: created,
   isDeleted: deleted,
   createdBy: { uniqueName: by },
   text: html
@@ -332,10 +333,26 @@ test('the author is compared by unique name, ignoring case', () => {
   assert.equal(fields(run(['7'], { comments: [comment(101, '2026-10-17T09:00:00Z', { by: 'Ada' })] }).line).checkpoint, '101');
 });
 
-test('a marker time more than 5 minutes ahead is ignored and reported, and a time of now is accepted', () => {
-  const now = new Date().toISOString().slice(0, 19) + 'Z';
-  const f = fields(run(['7'], { comments: [comment(101, '2026-10-17T09:00:00Z'), comment(102, '2099-01-01T00:00:00Z'), comment(103, now)] }).line);
+test('a marker time more than 5 minutes after the creation date is ignored, also when the clock has passed it', () => {
+  const comments = [comment(101, '2026-10-17T09:00:00Z'), comment(102, '2026-10-17T12:00:00Z', { created: '2026-10-17T09:30:00Z' }), comment(103, '2026-10-17T09:34:00Z', { created: '2026-10-17T09:30:00Z' })];
+  const f = fields(run(['7'], { comments }).line);
   assert.deepEqual([f.checkpoint, f.ignored], ['103', '102']);
+});
+
+test('the comment created later wins over one with a later marker time, and on a tie the later in the list wins', () => {
+  const comments = [
+    comment(101, '2026-10-17T10:00:00Z', { created: '2026-10-17T10:01:00Z' }),
+    comment(102, '2026-10-17T09:00:00Z', { created: '2026-10-17T11:00:00Z' }),
+    comment(103, '2026-10-17T08:00:00Z', { created: '2026-10-17T11:00:00Z' }),
+  ];
+  assert.equal(fields(run(['7'], { comments }).line).checkpoint, '103');
+  assert.equal(fields(run(['7'], { comments: comments.slice(0, 2) }).line).checkpoint, '102');
+});
+
+test('a checkpoint with no valid creation date is skipped, and it is not in ignored', () => {
+  const comments = [comment(101, '2026-10-17T09:00:00Z'), { ...comment(102, '2026-10-17T10:00:00Z'), createdDate: undefined }, comment(103, '2026-10-17T10:00:00Z', { created: 'soon' })];
+  const f = fields(run(['7'], { comments }).line);
+  assert.deepEqual([f.checkpoint, f.ignored], ['101', 'none']);
 });
 
 test('comments in pages are all read, through the continuation token of each page', () => {

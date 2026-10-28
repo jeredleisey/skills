@@ -58,26 +58,39 @@ export function auditLedger(header, rows, assignee, sessionArg) {
 export const MARKER = /^cadre-checkpoint v1 (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)$/;
 const SECTIONS = ['decisions', 'waiting for the human', 'next, in order'];
 
-// Choose the newest checkpoint. `entries` is [{ id, author, firstLine, headings }], `headings` in lower case.
-// Only the owner writes one. It needs the marker line and the three sections. A marker time more than
-// 5 minutes ahead of now is ignored, and its id goes in `ignored`.
-export function pickCheckpoint(entries, assignee) {
+// Choose the newest checkpoint. `entries` is [{ id, author, firstLine, headings, created }], `headings` in lower case.
+// Only the owner writes one. It needs the marker line and the three sections.
+// `created` is the time that the tracker gave the comment, in ms or as an ISO string. The marker time is text that the
+// author wrote, so it is not proof of when. With `{ hasCreated: true }` (GitHub and ADO) the rules are:
+//   - an entry with no valid `created` is skipped, and it is not in `ignored`
+//   - an entry whose marker time is more than 5 minutes after its `created` is ignored, and its id goes in `ignored`.
+//     This holds whatever the clock reads now.
+//   - the trusted entry with the latest `created` wins. On a tie, the later entry in the list wins.
+// With no `hasCreated` (the local file, which has no creation time) the order in the list ranks the entries, and the last
+// one wins. The local file has no other clock, so a marker time more than 5 minutes ahead of now is ignored there,
+// and its id goes in `ignored`.
+// Return { id, index, ignored }. `index` is the place of the winner in `entries`, or -1. Ids may repeat in a local file.
+export function pickCheckpoint(entries, assignee, { hasCreated = false } = {}) {
   const limit = Date.now() + 5 * 60 * 1000;
+  const slack = 5 * 60 * 1000;
   const ignored = [];
   let newest = null;
-  for (const c of entries) {
-    if (!same(c.author, assignee)) continue;
+  entries.forEach((c, index) => {
+    if (!same(c.author, assignee)) return;
     const m = MARKER.exec(c.firstLine);
     const time = m ? Date.parse(m[1]) : NaN;
-    if (Number.isNaN(time)) continue;
-    if (!SECTIONS.every((h) => c.headings.includes(h))) continue;
-    if (time > limit) {
-      ignored.push(c.id);
-      continue;
-    }
-    if (!newest || time >= newest.time) newest = { time, id: c.id };
-  }
-  return { id: newest ? newest.id : null, ignored };
+    if (Number.isNaN(time)) return;
+    if (!SECTIONS.every((h) => c.headings.includes(h))) return;
+    let rank = index;
+    if (hasCreated) {
+      const created = typeof c.created === 'number' ? c.created : typeof c.created === 'string' ? Date.parse(c.created) : NaN;
+      if (!Number.isFinite(created)) return;
+      if (time > created + slack) return void ignored.push(c.id);
+      rank = created;
+    } else if (time > limit) return void ignored.push(c.id);
+    if (!newest || rank >= newest.rank) newest = { rank, id: c.id, index };
+  });
+  return { id: newest ? newest.id : null, index: newest ? newest.index : -1, ignored };
 }
 
 export const okLine = ({ who, holder, checkpoint, state, bad, ended }) =>
