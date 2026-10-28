@@ -1,12 +1,12 @@
 # Your first orchestrator on Azure DevOps
 
-In this lesson you install cadre, set up a scratch repo on Azure DevOps (ADO), and run one small ticket from start to a completed pull request. Then you resume the orchestrator in a new session. It takes about 30 minutes.
+In this lesson you install cadre and set up a scratch repo on Azure DevOps (ADO). You run one small ticket from start to a completed pull request. Then you resume the orchestrator in a new session. It takes about 30 minutes. On ADO, to complete a pull request is to merge it.
 
 This lesson has the same steps as [Your first orchestrator](first-orchestrator.md), which uses GitHub. The steps differ where ADO differs. For the short form, see [Set up on Azure DevOps](../how-to/set-up-on-azure-devops.md).
 
 ## Before you start
 
-You use Claude Code in one of three places: the terminal (the `claude` command), the Claude desktop app (the Code tab), or the VS Code extension. The lesson is the same in each. Step 1 and step 2 say where they differ.
+You use Claude Code in one of three places. These are the terminal (the `claude` command), the Claude desktop app (the Code tab), and the VS Code extension. The lesson is the same in each. Step 1 and step 2 say where they differ.
 
 Check each item in a terminal. Install what is missing.
 
@@ -21,16 +21,18 @@ Check each item in a terminal. Install what is missing.
 
 Cadre runs Node scripts and the `az` command through the Bash tool of Claude Code, in each of the three places. So each item must work in a terminal on the same computer.
 
-Setup does not check for the `az` CLI yet. A missing `az` fails at the last step of setup, when it opens the pull request. Check `az` first.
+Setup does not check for the `az` CLI yet. A missing `az` fails at the last step of setup, after setup pushes the charter branch. You then open the pull request by hand. Check `az` first.
 
 ### The token
 
 Make the token in ADO, in the user settings, under **Personal access tokens**. The token must belong to the account that will own the scratch work. Give it these scopes:
 
-- **Work Items**: Read and write. Cadre reads work items and area paths, and it makes and edits the orchestrator item, the tickets, and their comments.
-- **Code**: Read and write. Setup and the helpers read the repo, and the pull request step needs write access.
+- **Work Items**: Read and write. Cadre reads work items and area paths. It makes and edits the orchestrator issue, the tickets, and their comments. On ADO the orchestrator issue is a work item.
+- **Code**: Read and write. Setup reads the repo, and the pull request step needs write access.
 
-Cadre also reads the branch policy of the repo and the account of the token. If ADO refuses the token, setup says so with this order of checks: an empty variable first, then an expired token, then the scope of the token. A refused read of the branch policy does not stop setup. It becomes a note on the screen that says the policy is unread.
+Cadre also reads the branch policy of the repo and the account of the token.
+
+If ADO refuses the token, setup says so with this order of checks: an empty variable first, then an expired token, then the scope of the token. A refused read of the branch policy does not stop setup. It becomes a note on the screen that says the policy is unread.
 
 Set the variable in the environment that Claude Code starts from. A shell profile is one way. A variable that you set in one open terminal does not reach the desktop app or VS Code. Cadre never prints the token. Do not run `az login` as a fix. The token is the way in.
 
@@ -74,24 +76,24 @@ Open the `cadre-scratch` clone in Claude Code:
 
 Type `/cadre:setup`. If the command is not in the list, type `/` and pick `setup` from the cadre entries.
 
-You see `ok node` with a version. Setup reads the organization, project, and repo from the remote URL. A space in a name is fine. You then see `ok ado <org>/<project>`. If you see a `stop:` line, it names `AZURE_DEVOPS_EXT_PAT`. Check that the variable is not empty, that the token has not expired, and that its scopes are right. Then type `/cadre:setup` again.
+You see `ok node` with a version. Setup reads the organization, project, and repo from the remote URL. A space in a name is fine. You then see `ok ado <org>/<project>`. If you see a `stop:` line, it names the cause. It can be a token that ADO refuses, a project that ADO cannot see, or a token with no access to the project. Check that the variable is not empty, that the token has not expired, and that it has the two scopes above. Then type `/cadre:setup` again.
+
+Setup then reads the branch policy of the repo. A new repo has no branch rules. Setup lists each gap in the Traps row of the screen. Setup cannot read the permission "Bypass policies when pushing". It tells you to check who holds it. That is normal for this lesson.
 
 Setup then asks the two ADO questions before the screen:
 
-- The area path of the items of this repo. Setup proposes an area that has the name of the repo. If none matches, it proposes the project root and warns you that items then land at the root, which names no program. Choose an area path where you can make items. Setup asks again until you give one.
-- The work item type that holds the orchestrator item. Answer `Task`. If the type does not work in your project, setup says why and offers another. Take the one that it offers.
-
-Setup then reads the branch policy of the repo. A new repo has no branch rules. Setup lists each gap in the Traps row of the screen. Setup cannot read the permission "Bypass policies when pushing". It tells you to check who holds it. That is normal for this lesson.
+- The area path of the items of this repo. If an area has the name of the repo, setup proposes it. If none matches, setup warns that items then go to the project root, and it asks for another path. Setup does not check a path that you type. So before you start, find an area path where you can make items, or make one with the name of the repo.
+- The work item type that holds the orchestrator issue. Answer `Task`. If the type does not work in your project, setup says why and offers another. Take the one that it offers.
 
 Setup then shows one screen. It is a table with the columns Row, Proposed value, and Source. Setup read the merge methods and the folders from the repo, and it proposes a default for each other row. On ADO it cannot read the secret names, so that row is a default. Read the rows. The Merge row offers only the methods that your repo allows. A new repo has no merge policy, so it allows all of them.
 
 Setup asks one closing question. Type this answer: "merge: squash. orchestrator issue: name Scratch, purpose Practice run in a scratch repo." Setup shows the two changed rows and asks once more. Choose "Accept all (Recommended)".
 
-Setup does not turn on agent teams. Its report says that they are off.
+Setup does not start agent teams. Its report says that they are off.
 
 You see a pull request URL. The pull request adds `docs/agents/cadre-charter.md`. It also adds the line `.claude/worktrees/` to `.gitignore` when that line is missing. The charter has `tracker: ado`, `ado_org`, and `ado_project` in its front matter.
 
-## 3. Merge the charter
+## 3. Complete the charter pull request
 
 Open the pull request in the ADO web UI. Read the charter. Complete it yourself. Then, in the clone, run `git pull`.
 
@@ -99,11 +101,11 @@ Setup never adds auto-complete, and cadre never completes this pull request for 
 
 ## 4. Find the orchestrator
 
-Setup also made an orchestrator item, because the row was on. Type `/cadre:orchestrate`. Say: "resume as scratch".
+Setup also made an orchestrator issue, because the row was on. Type `/cadre:orchestrate`. Say: "resume as scratch".
 
 To make another orchestrator later, say "new orchestrator <name>". It asks for a purpose if you did not give one, and it offers the same five standard grants.
 
-You see a work item of the type that you chose, in the area path that you chose, titled `Orchestrator: Scratch`. It has the tag `cadre:orchestrator` and it is assigned to you. Its description has four sections: Purpose, Repos, Ledger, and Holder. The Ledger holds the five standard grants, each with you as Granted by.
+You see a work item of the type that you chose, in the area path that you chose, titled `Orchestrator: Scratch`. It has the tag `cadre:orchestrator`, and Assigned To shows your account. Its description has four sections: Purpose, Repos, Ledger, and Holder. The Ledger holds the five standard grants, each with you as Granted by.
 
 ## 5. Give it one ticket
 
@@ -123,13 +125,13 @@ The orchestrator then reports to you. The end of its message has a numbered list
 
 Say yes to the merge. Give the permission in your own words, for example: "Yes, complete the pull request for hello.txt."
 
-The orchestrator adds a sixth row to the Ledger of its item, for the merge. It then pushes the branch and opens a pull request. A push of an ordinary branch passes with no prompt.
+The orchestrator adds a sixth row to the Ledger of its orchestrator issue, for the merge. It then pushes the branch and opens a pull request. A push of an ordinary branch passes with no prompt.
 
-When it runs `az repos pr update` with `--status completed`, the cadre hook stops the command. You see a prompt that asks you to allow the merge. The prompt names the plugin as `[plugin:cadre]`. This is the guard. Allow it. The guard asks also in auto mode. Do not run this lesson with permission prompts turned off, because then you may not see the guard.
+To complete the pull request, the orchestrator runs a command. If the command is `az repos pr update` with `--status completed`, the cadre hook stops it. You see a prompt that asks you to allow the merge. The prompt names the plugin as `[plugin:cadre]`. This is the guard. Allow it. The guard asks also in auto mode. Do not run this lesson with all permission prompts off, because then you may not see the guard.
 
 You see the pull request completed, and `hello.txt` on the default branch. The orchestrator then adds a checkpoint comment to its work item. The comment starts with `cadre-checkpoint v1` and has three sections.
 
-The guard sees only commands. It does not see `az devops invoke` or a REST call that completes a pull request. The branch policy of the repo covers those.
+The guard reads only commands that it knows. It does not see `az devops invoke` or a REST call that completes a pull request. If the orchestrator completes the pull request in such a way, you see no guard prompt. The ledger row and the branch policy of the repo still apply.
 
 ## 8. Resume in a new session
 
@@ -137,7 +139,7 @@ Close the session. Start a new session in the same clone, as in step 2. Type `/c
 
 You see the orchestrator read its work item. It keeps the name `Scratch`. It keeps the five standard grants. It deletes the merge grant, because that grant ended with its session. It reads the newest checkpoint and checks each next step against the tracker.
 
-Open a second session in the same folder while the first is still open. Say "resume as scratch" there. The resume is refused, and you see the pid and folder of the first session. Only one session holds a name.
+Open a second session in the same folder while the first is still open. Say "resume as scratch" there. The orchestrator refuses the resume, and you see the pid and folder of the first session. Only one session holds a name.
 
 ## What you did
 
