@@ -60,7 +60,7 @@ const SECTIONS = ['decisions', 'waiting for the human', 'next, in order'];
 
 // Choose the newest checkpoint. `entries` is [{ id, author, firstLine, headings, created }], `headings` in lower case.
 // Only the owner writes one. It needs the marker line and the three sections.
-// `created` is the time that the tracker gave the comment, in ms or as an ISO string. The marker time is text that the
+// `created` is the time that the tracker gave the comment, as an ISO string. The marker time is text that the
 // author wrote, so it is not proof of when. With `{ hasCreated: true }` (GitHub and ADO) the rules are:
 //   - an entry with no valid `created` is skipped, and it is not in `ignored`
 //   - an entry whose marker time is more than 5 minutes after its `created` is ignored, and its id goes in `ignored`.
@@ -71,8 +71,8 @@ const SECTIONS = ['decisions', 'waiting for the human', 'next, in order'];
 // and its id goes in `ignored`.
 // Return { id, index, ignored }. `index` is the place of the winner in `entries`, or -1. Ids may repeat in a local file.
 export function pickCheckpoint(entries, assignee, { hasCreated = false } = {}) {
-  const limit = Date.now() + 5 * 60 * 1000;
   const slack = 5 * 60 * 1000;
+  const limit = Date.now() + slack;
   const ignored = [];
   let newest = null;
   entries.forEach((c, index) => {
@@ -83,7 +83,7 @@ export function pickCheckpoint(entries, assignee, { hasCreated = false } = {}) {
     if (!SECTIONS.every((h) => c.headings.includes(h))) return;
     let rank = index;
     if (hasCreated) {
-      const created = typeof c.created === 'number' ? c.created : typeof c.created === 'string' ? Date.parse(c.created) : NaN;
+      const created = typeof c.created === 'string' ? Date.parse(c.created) : NaN;
       if (!Number.isFinite(created)) return;
       if (time > created + slack) return void ignored.push(c.id);
       rank = created;

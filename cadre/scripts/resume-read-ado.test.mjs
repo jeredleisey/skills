@@ -23,7 +23,7 @@ const P = `${BASE}/Example%20Project`;
 const ME = `GET ${BASE}/_apis/connectionData?api-version=7.1-preview.1`;
 const ITEM = `GET ${P}/_apis/wit/workitems/7?api-version=7.1`;
 const TYPE = `GET ${P}/_apis/wit/workitemtypes/Issue?api-version=7.1`;
-const COMMENTS = `GET ${P}/_apis/wit/workItems/7/comments?api-version=7.1-preview.4&%24top=200`;
+const COMMENTS = `GET ${P}/_apis/wit/workItems/7/comments?api-version=7.1-preview.4&%24top=200&order=asc`;
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const HEADER = ['Granted by', 'Action', 'Repo or host', 'Scope', 'When'];
@@ -305,7 +305,7 @@ test('escaped text in a cell is read as text, and an empty row is skipped', () =
 
 // ---- checkpoints ----
 
-test('the newest checkpoint is the one with the latest marker time, in HTML or in Markdown', () => {
+test('the newest checkpoint is the one with the latest creation time, in HTML or in Markdown', () => {
   const comments = [
     comment(101, '2026-10-17T09:00:00Z'),
     comment(102, '2026-10-17T11:30:00Z', { html: false }),

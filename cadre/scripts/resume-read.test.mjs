@@ -214,7 +214,7 @@ test('a body with no Ledger section gives unknown', () => {
   assert.match(r.line, /^unknown: .*Ledger/);
 });
 
-test('the newest checkpoint is the one with the latest marker time', () => {
+test('the newest checkpoint is the one with the latest creation time', () => {
   const comments = [
     comment(101, '2026-10-17T09:00:00Z'),
     comment(102, '2026-10-17T11:30:00Z'),

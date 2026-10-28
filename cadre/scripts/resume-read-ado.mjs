@@ -126,7 +126,7 @@ try {
 // ---- the checkpoint ----
 
 const entries = [];
-let url = `${base}/_apis/wit/workItems/${itemId}/comments?api-version=7.1-preview.4&%24top=200`;
+let url = `${base}/_apis/wit/workItems/${itemId}/comments?api-version=7.1-preview.4&%24top=200&order=asc`;
 const seen = new Set();
 for (let pages = 0; ; pages++) {
   if (pages >= 50) unknown('the comments have more than 50 pages');
@@ -147,7 +147,7 @@ for (let pages = 0; ; pages++) {
   if (typeof next !== 'string' || next === '') break;
   if (seen.has(next)) unknown('the comments repeat a page token');
   seen.add(next);
-  url = `${base}/_apis/wit/workItems/${itemId}/comments?api-version=7.1-preview.4&%24top=200&continuationToken=${encodeURIComponent(next)}`;
+  url = `${base}/_apis/wit/workItems/${itemId}/comments?api-version=7.1-preview.4&%24top=200&order=asc&continuationToken=${encodeURIComponent(next)}`;
 }
 const checkpoint = pickCheckpoint(entries, assignee, { hasCreated: true });
 

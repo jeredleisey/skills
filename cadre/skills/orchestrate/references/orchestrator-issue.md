@@ -118,7 +118,7 @@ cadre-checkpoint v1 <ISO UTC time>
 1. <step>
 ```
 
-Get the time with `node -e "console.log(new Date().toISOString().slice(0,19)+'Z')"`. A resume reads the newest trusted comment by marker time. Done when the comment has the marker line and the three sections.
+Get the time with `node -e "console.log(new Date().toISOString().slice(0,19)+'Z')"`. A resume reads the trusted comment that the tracker created last. Done when the comment has the marker line and the three sections.
 
 ## On Azure DevOps
 
