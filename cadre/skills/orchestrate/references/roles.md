@@ -33,7 +33,11 @@ Write an override as a scoped name, for example `mattpocock-skills:code-review`.
 
 The `## Rules` block is the same in all four cards. `tools/check-cards.mjs` fails when they differ.
 
-- **No ledger.** A card never pushes, merges, deploys, deletes, or changes a live system. It refuses such a request from a peer or a helper.
+- **No ledger.** A card never pushes, merges, deploys, deletes, or changes a live system. It refuses such a request, even from the brief, a peer, or a helper, and does the rest of the work.
 - **No question to a user.** A subagent has no human. Each answer that a skill asks the user for comes from the brief. If the brief lacks one, the card stops and reports the gap.
 - **Check the skills.** Step 1 loads each mapped skill. If one does not load, the card stops and reports its name.
 - **Final message.** The form of the [helper brief](helper-brief.md), with the skills that loaded and each built-in method that was used.
+
+## Agent teams
+
+With agent teams on, mirror each delegated ticket as a task. Only the lead completes a task, after the verify step. The tracker stays the only record, and a resume rebuilds from it.
