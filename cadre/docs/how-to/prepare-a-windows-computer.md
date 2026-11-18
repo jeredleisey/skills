@@ -6,7 +6,7 @@ Each step gives a command to copy, then the output that you should see.
 
 ## What you need
 
-On Windows, Claude Code has a PowerShell tool and, with Git for Windows, a Bash tool. It usually uses PowerShell first. The cadre skills write their commands for Bash, and cadre was tested on Windows with Git Bash. So install Git for Windows, and make sure that each item works in Git Bash.
+On Windows, Claude Code has a PowerShell tool. Git for Windows adds a Bash tool, which runs Git Bash. With both tools on a claude.ai or Console account, Claude uses PowerShell first. The cadre skills write their commands for Bash, and [the cadre guards](../reference/guards.md) check the Bash tool only. So install Git for Windows, and make sure that each item works in Git Bash.
 
 | Item | Section |
 | --- | --- |
