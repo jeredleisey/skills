@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cadre: agents with the discipline of a team</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reset.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css">
+<style>
+  :root {
+    --base: #faf6ee;
+    --ink: #2a2622;
+    --mid: #7a7064;
+    --line: #cfc6b6;
+    --accent: #ff4f00;
+    --green: #4f7a52;
+    --display: "Playfair Display", Georgia, "Times New Roman", serif;
+    --body: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --mono: "Cascadia Mono", "SF Mono", Consolas, Menlo, monospace;
+  }
+  .reveal-viewport { background: var(--base); }
+  .reveal { font-family: var(--body); font-size: 34px; color: var(--ink); line-height: 1.5; }
+  .reveal .slides section { text-align: left; }
+  .reveal h1, .reveal h2 {
+    font-family: var(--display); font-weight: 700; color: var(--ink);
+    text-transform: none; letter-spacing: -0.01em; margin: 0 0 0.6em;
+  }
+  .reveal h1 { font-size: 3.6em; line-height: 1.05; }
+  .reveal h2 { font-size: 1.7em; line-height: 1.15; }
+  .reveal h2::after {
+    content: ""; display: block; width: 56px; height: 4px;
+    background: var(--accent); margin-top: 0.35em;
+  }
+  .reveal p, .reveal li { margin: 0; }
+  .reveal ul { list-style: none; margin: 0; padding: 0; display: block; }
+  .reveal li { padding: 0.28em 0 0.28em 1.1em; position: relative; }
+  .reveal li::before {
+    content: ""; position: absolute; left: 0; top: 0.95em;
+    width: 0.5em; height: 2px; background: var(--mid);
+  }
+  .reveal a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent); }
+  .reveal code, .reveal .cmd {
+    font-family: var(--mono); font-size: 0.82em; background: #efe8da;
+    padding: 0.08em 0.35em; border-radius: 3px;
+  }
+  .reveal .sub { font-family: var(--display); font-style: italic; font-size: 1.1em; color: var(--mid); }
+  .reveal .meta { margin-top: 2.4em; font-size: 0.7em; color: var(--mid); letter-spacing: 0.04em; }
+  .reveal strong { color: var(--accent); font-weight: 600; }
+  .reveal table { margin: 0.4em 0 0; border-collapse: collapse; font-size: 0.9em; width: 100%; }
+  .reveal th, .reveal td { padding: 0.5em 0.6em; border-bottom: 1px solid var(--line); text-align: left; }
+  .reveal th { color: var(--mid); font-weight: 500; font-size: 0.7em; letter-spacing: 0.08em; text-transform: uppercase; }
+  .reveal td.num { font-family: var(--mono); white-space: nowrap; }
+  .reveal svg { width: 100%; height: auto; display: block; }
+  .reveal svg text { font-family: var(--body); fill: var(--ink); }
+  .reveal .section-title h1 { font-size: 4.4em; margin: 0; }
+  .reveal .small { font-size: 0.7em; color: var(--mid); }
+  .reveal .steps { counter-reset: s; }
+  .reveal .steps li { padding-left: 1.7em; }
+  .reveal .steps li::before {
+    counter-increment: s; content: counter(s); background: none; height: auto; width: auto;
+    top: 0.28em; font-family: var(--mono); color: var(--accent); font-size: 0.85em;
+  }
+  .reveal .progress { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- 1 -->
+<section>
+  <h1>cadre</h1>
+  <p class="sub">Agents with the discipline of a team</p>
+  <p class="meta">Jered Leisey &nbsp;·&nbsp; 2026-11-19</p>
+  <aside class="notes">
+    Welcome. Today I show a Claude Code plugin that I built, named cadre. It helps agents work like a team and not like a loose crowd. About 20 minutes of slides, then a live demo, then your questions.
+  </aside>
+</section>
+
+<!-- 2 -->
+<section>
+  <h2>The problem</h2>
+  <ul>
+    <li>One long agent session <strong>loses its context</strong></li>
+    <li>Many agents <strong>change the same files</strong></li>
+    <li>An agent's "done" is a claim, not proof</li>
+    <li>It is not clear what an agent may do alone</li>
+  </ul>
+  <aside class="notes">
+    Most of you have seen these faults. A long session forgets the start of the task. Two agents edit one file and break each other. An agent says "done", but nobody checked. And it is hard to know which steps an agent may take without you.
+  </aside>
+</section>
+
+<!-- 3 -->
+<section>
+  <h2>The idea</h2>
+  <svg viewBox="0 0 1100 400" role="img" aria-label="You, then the orchestrator, then four helpers in their own worktrees. The tracker sits beside the orchestrator.">
+    <g fill="none" stroke="#2a2622" stroke-width="2">
+      <rect x="10" y="150" width="150" height="80" rx="4" fill="#faf6ee"/>
+      <rect x="260" y="150" width="210" height="80" rx="4" stroke="#ff4f00" stroke-width="3" fill="#faf6ee"/>
+      <rect x="260" y="310" width="210" height="70" rx="4" stroke-dasharray="6 5" fill="#efe8da"/>
+      <rect x="640" y="10" width="190" height="64" rx="4" fill="#faf6ee"/>
+      <rect x="640" y="110" width="190" height="64" rx="4" fill="#faf6ee"/>
+      <rect x="640" y="210" width="190" height="64" rx="4" fill="#faf6ee"/>
+      <rect x="640" y="310" width="190" height="64" rx="4" fill="#faf6ee"/>
+      <rect x="850" y="2" width="240" height="380" rx="4" stroke="#7a7064" stroke-dasharray="3 6"/>
+      <path d="M160 190 H260 M470 190 H540 M540 42 V342 M540 42 H640 M540 142 H640 M540 242 H640 M540 342 H640 M365 230 V310"/>
+    </g>
+    <g font-size="26" text-anchor="middle">
+      <text x="85" y="200">you</text>
+      <text x="365" y="200" font-weight="700">orchestrator</text>
+      <text x="365" y="352" font-size="22">tracker: the record</text>
+      <text x="735" y="50">coder</text>
+      <text x="735" y="150">reviewer</text>
+      <text x="735" y="250">researcher</text>
+      <text x="735" y="350">tester</text>
+    </g>
+    <text x="970" y="196" font-size="22" text-anchor="middle" fill="#7a7064" style="fill:#7a7064">each helper</text>
+    <text x="970" y="224" font-size="22" text-anchor="middle" style="fill:#7a7064">in its own worktree</text>
+    <text x="365" y="136" font-size="19" text-anchor="middle" style="fill:#7a7064">owns the outcome</text>
+  </svg>
+  <p class="small">The tracker is a GitHub issue or an Azure DevOps work item.</p>
+  <aside class="notes">
+    You talk to one agent, the orchestrator. It owns the outcome and splits the work into tickets. Each helper does one ticket in its own worktree, so helpers never share files. The tracker, a GitHub issue or an ADO work item, is the record.
+  </aside>
+</section>
+
+<!-- 4 -->
+<section>
+  <h2>The charter</h2>
+  <ul>
+    <li>The rules of a repo, <strong>stated once</strong></li>
+    <li>Reviewed like code, in a pull request</li>
+    <li>Who merges, who deploys, what only a person may do</li>
+    <li><span class="cmd">/cadre:setup</span> writes it for you</li>
+  </ul>
+  <aside class="notes">
+    Every repo has rules, but they often live in people's heads. The charter writes them in one file. The setup command opens a pull request for it, so your team reviews the rules like any other change.
+  </aside>
+</section>
+
+<!-- 5 -->
+<section>
+  <h2>A report is a claim</h2>
+  <ol class="steps" style="list-style:none;margin:0;padding:0">
+    <li>The helper commits, then stops</li>
+    <li>The orchestrator <strong>runs the tests itself</strong></li>
+    <li>It reads the diff for scope</li>
+    <li>A separate reviewer reads the head commit</li>
+    <li>Must-fix and should-fix are fixed before a merge</li>
+  </ol>
+  <aside class="notes">
+    This is the verify loop. The helper says what it did, and that is only a claim. The orchestrator runs the tests again and reads the diff. A different agent reviews the head commit. A wrong claim costs more after a merge than before it.
+  </aside>
+</section>
+
+<!-- 6 -->
+<section>
+  <h2>Permissions: the ledger</h2>
+  <ul>
+    <li>Only <strong>you</strong> grant a permission, in your own session</li>
+    <li>One-way steps need a grant: merge, deploy, delete, force push</li>
+    <li>Guards (hooks) ask before a merge or a push to the default branch. They always deny a helper</li>
+    <li class="small">Not a security boundary. The branch policy of your repo is.</li>
+  </ul>
+  <aside class="notes">
+    A one-way step is a step that a new commit cannot undo. For these, the orchestrator needs a grant that only you can write. Hooks ask you for the orchestrator and deny a helper with no prompt. Be clear: hooks slow an agent and stop a slip. Your branch policy is the real guard.
+  </aside>
+</section>
+
+<!-- 7 -->
+<section>
+  <h2>The tracker is the record</h2>
+  <ul>
+    <li>One issue holds the state: <strong>purpose, ledger, holder, checkpoints</strong></li>
+    <li>A new session, a new machine, or another person resumes from it</li>
+    <li>One session holds a name at a time</li>
+  </ul>
+  <aside class="notes">
+    The orchestrator keeps no private memory. If your session ends or your context is compacted, a new session reads the issue and continues. Only one session holds the orchestrator name at a time, so two sessions do not race.
+  </aside>
+</section>
+
+<!-- 8 -->
+<section>
+  <h2>A real example: these slides</h2>
+  <ul>
+    <li>I left for an appointment. My orchestrator kept working</li>
+    <li>It wrote tickets and ran a coder for the Windows prerequisites page and for this deck</li>
+    <li>It ran reviewers on two open pull requests and fixed their findings</li>
+    <li>It merged after green CI, with a grant from me</li>
+  </ul>
+  <aside class="notes">
+    This deck is a cadre ticket. While I was away, The orchestrator wrote the tickets and started coders. Reviewers read two pull requests and the findings got fixed. It merged only after CI was green, and only because I had given it a grant.
+  </aside>
+</section>
+
+<!-- 9 -->
+<section>
+  <h2>What it costs</h2>
+  <table>
+    <thead><tr><th>Ticket</th><th>Helper tokens</th></tr></thead>
+    <tbody>
+      <tr><td>Small: one output format, one review round</td><td class="num">about 170,000</td></tr>
+      <tr><td>Medium: a new script, two review rounds</td><td class="num">about 220,000</td></tr>
+      <tr><td>Large: a skill rewrite, two review rounds</td><td class="num">about 350,000</td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:0.8em">Each ticket runs at least one coder and one reviewer. Your own session adds context on top.</p>
+  <aside class="notes">
+    These numbers come from three real tickets in one session of the cadre repo. Each ticket that changes code runs a coder and a reviewer, so you pay for a second pair of eyes. Your own session adds its context on top of this.
+  </aside>
+</section>
+
+<!-- 10 -->
+<section>
+  <h2>Start small</h2>
+  <ul>
+    <li><span class="cmd">/cadre:ticket &lt;ticket&gt;</span> does one ticket</li>
+    <li>No orchestrator. A coder, a reviewer, one pull request that <strong>you</strong> merge</li>
+    <li>Then <span class="cmd">/cadre:setup</span> and <span class="cmd">/cadre:orchestrate</span></li>
+  </ul>
+  <aside class="notes">
+    Do not start with the full system. Run the ticket command on one real ticket. You get a pull request and you merge it yourself. The command never merges or deploys. It needs a charter first, so run setup once in the repo.
+  </aside>
+</section>
+
+<!-- 11 -->
+<section>
+  <h2>Get ready</h2>
+  <ul>
+    <li>Windows: Git for Windows, Node 22</li>
+    <li>The Azure CLI and its <code>azure-devops</code> extension</li>
+    <li>A personal access token in <code>AZURE_DEVOPS_EXT_PAT</code></li>
+    <li class="small"><a href="https://cadre.jeredleisey.com/how-to/prepare-a-windows-computer/">cadre.jeredleisey.com/how-to/prepare-a-windows-computer/</a></li>
+  </ul>
+  <p style="margin-top:0.8em"><span class="cmd">/plugin marketplace add jeredleisey/skills</span></p>
+  <p style="margin-top:0.3em"><span class="cmd">/plugin install cadre@jeredleisey</span></p>
+  <aside class="notes">
+    On Windows you need four things. The page on the screen lists each step. After that, two commands install the plugin inside Claude Code. Try the install after the session if you do not have time now.
+  </aside>
+</section>
+
+<!-- 12 -->
+<section class="section-title">
+  <h1>Live demo</h1>
+  <aside class="notes">
+    Owner: fill in the demo steps here.
+  </aside>
+</section>
+
+<!-- 13 -->
+<section>
+  <h2>Questions</h2>
+  <p><a href="https://cadre.jeredleisey.com/">cadre.jeredleisey.com</a></p>
+  <aside class="notes">
+    The docs site has a tutorial, how-to pages, and the reasons behind each rule. Thank you. What would you like to ask?
+  </aside>
+</section>
+
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/plugin/notes/notes.min.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    width: 1280,
+    height: 720,
+    margin: 0.08,
+    transition: "fade",
+    controls: true,
+    progress: true,
+    plugins: [RevealNotes]
+  });
+</script>
+</body>
+</html>
