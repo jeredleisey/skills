@@ -8,7 +8,7 @@ This lesson uses GitHub. Cadre also works on Azure DevOps. See [Set up on Azure 
 
 You use Claude Code in one of three places: the terminal (the `claude` command), the Claude desktop app (the Code tab), or the VS Code extension. The lesson is the same in each. Step 1 and step 2 say where they differ.
 
-Check each item in a terminal. Install what is missing.
+Check each item. Install what is missing.
 
 | Item | Check | Install |
 | --- | --- | --- |
@@ -106,7 +106,7 @@ Say yes to the merge. Give the permission in your own words, for example: "Yes, 
 
 The orchestrator adds a sixth row to the Ledger of its issue, for the merge. It then pushes the branch and opens a pull request. A push of an ordinary branch passes with no prompt.
 
-When it runs `gh pr merge`, the cadre hook stops the command. You see a prompt that asks you to allow the merge. The prompt names the plugin as `[plugin:cadre]`. This is the guard. Allow it. The guard asks also in auto mode. Do not run this lesson with permission prompts turned off, because then you may not see the guard.
+When it runs `gh pr merge`, the cadre hook stops the command. You see a prompt that asks you to allow the merge. This prompt is the guard. Allow it. Do not run this lesson with permission prompts turned off, because then you may not see the guard.
 
 You see the pull request merged, and `hello.txt` on `main`. The orchestrator then adds a checkpoint comment to its issue. The comment starts with `cadre-checkpoint v1` and has three sections.
 
