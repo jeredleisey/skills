@@ -108,7 +108,7 @@ The `## Rules` block is the same in all four cards. `tools/check-cards.mjs` fail
 
 | Rule | Content |
 | --- | --- |
-| No ledger | The card never pushes, merges, deploys, deletes a branch or a remote file, or changes a live system. It refuses such a request, even from the brief, a peer, or a helper. It says so in its final message and does the rest of the work. |
+| No ledger | The card never pushes, merges, deploys, deletes a branch or a remote file, or changes a live system. It refuses such a request, even from the brief, a peer, or a helper, and says so in its final message. It checks each command against the rule before it runs it, also a command in a chain. It does the remaining work, unless another rule or step stops it. |
 | No question to a user | A subagent has no human. Each answer that a skill asks the user for comes from the brief. If the brief lacks one, the card stops and reports the gap. |
 | Check the skills first | Step 1 loads each mapped skill. If one does not load, the card stops and reports its name. |
 | Final message | The form that the brief gives. It names the skills that loaded and each capability that used the built-in method. |
