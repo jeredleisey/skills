@@ -2,7 +2,7 @@
 
 In this lesson you install cadre, set up a scratch repo, and run one small ticket from start to merge. Then you resume the orchestrator in a new session. It takes about 30 minutes.
 
-This lesson uses GitHub. Cadre also works on Azure DevOps. See [Set up on Azure DevOps](../how-to/set-up-on-azure-devops.md).
+This lesson uses GitHub. For Azure DevOps, follow [Your first orchestrator on Azure DevOps](first-orchestrator-ado.md).
 
 ## Before you start
 

@@ -103,7 +103,7 @@ function checkAdo(org, project) {
   }
   if (isAuthFailure(r.status, r.body)) say(`stop: ADO did not accept the token (HTTP ${r.status}). ${PAT_HINT} Then type /cadre:setup again.`, 1);
   if (r.status === 404) say(`stop: ADO cannot see the project ${project} in ${org} (HTTP 404). Check the names of the organization and the project, and that the token covers this organization.`, 1);
-  if (r.status === 403) say(`stop: the token has no access to the project ${project} (HTTP 403). Make a token with the scope Work Items (Read) and Code (Read), then type /cadre:setup again.`, 1);
+  if (r.status === 403) say(`stop: the token has no access to the project ${project} (HTTP 403). Make a token with the scopes Work Items (Read and write) and Code (Read and write), then type /cadre:setup again.`, 1);
   if (r.status !== 200) say(`unknown: ADO answered HTTP ${r.status}`, 2);
   try {
     if (typeof JSON.parse(r.body) !== 'object' || JSON.parse(r.body) === null) throw new Error('x');
