@@ -19,6 +19,31 @@ On Windows, Claude Code has a PowerShell tool. Git for Windows adds a Bash tool,
 
 If your company manages the laptop, you may need its software portal or IT to install a program. Ask them for the same program. Use the same version rules as below.
 
+## Check what you have
+
+Run one of these blocks to see what is missing. Each line prints `OK` or `MISS`. Neither block prints the token. Go to the section of each `MISS` line.
+
+If Git Bash is not installed yet, use PowerShell:
+
+```powershell
+foreach ($t in 'git','node','claude','az') { if (Get-Command $t -ErrorAction SilentlyContinue) { "OK    $t" } else { "MISS  $t  (see the page section for $t)" } }
+if (Get-Command node -ErrorAction SilentlyContinue) { $v = node --version; if ([int]($v -replace '^v(\d+).*','$1') -ge 22) { "OK    node version $v" } else { "MISS  node 22 or later (found $v)" } }
+if (Get-Command az -ErrorAction SilentlyContinue) { $e = az extension show --name azure-devops --query version -o tsv 2>$null; if ($e) { "OK    az azure-devops extension $e" } else { "MISS  az azure-devops extension" } }
+$u = [Environment]::GetEnvironmentVariable('AZURE_DEVOPS_EXT_PAT','User'); if ($u) { "OK    token saved, length $($u.Length)" } else { "MISS  token not saved as a User variable" }
+if ($env:AZURE_DEVOPS_EXT_PAT) { "OK    token visible in this window" } elseif ($u) { "MISS  token saved, but this window started before it: open a new window" } else { "MISS  token not in this window" }
+```
+
+In Git Bash:
+
+```bash
+for t in git node claude az; do if command -v "$t" >/dev/null 2>&1; then echo "OK    $t"; else echo "MISS  $t  (see the page section for $t)"; fi; done
+if command -v node >/dev/null 2>&1; then v=$(node --version); n=${v#v}; n=${n%%.*}; if [ "$n" -ge 22 ]; then echo "OK    node version $v"; else echo "MISS  node 22 or later (found $v)"; fi; fi
+if command -v az >/dev/null 2>&1; then e=$(az extension show --name azure-devops --query version -o tsv 2>/dev/null); if [ -n "$e" ]; then echo "OK    az azure-devops extension $e"; else echo "MISS  az azure-devops extension"; fi; fi
+if [ -n "$AZURE_DEVOPS_EXT_PAT" ]; then echo "OK    token visible in this window, length ${#AZURE_DEVOPS_EXT_PAT}"; else echo "MISS  token not in this window: set it, then open a new window"; fi
+```
+
+When each line is `OK`, go to [Ready check](#ready-check). It tests that ADO accepts the token.
+
 ## Git for Windows
 
 Open PowerShell. Run:
