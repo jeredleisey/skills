@@ -30,7 +30,7 @@ nav:
       - Allow a guard: how-to/allow-a-guard.md
       - Turn on agent teams: how-to/turn-on-agent-teams.md
       - Run the evals: how-to/run-the-evals.md
-      - Check a Windows install: how-to/check-a-windows-install.md
+      - Test a release on Windows 11 (for maintainers): how-to/check-a-windows-install.md
   - Explanation:
       - explanation/README.md
       - The orchestrator model: explanation/orchestrator-model.md

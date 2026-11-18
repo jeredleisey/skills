@@ -1,6 +1,6 @@
 # How-to guides
 
-A how-to guide is a set of steps for one task. It assumes you know the basics. Start with [the tutorial](../tutorials/first-orchestrator.md) if you do not.
+A how-to guide is a set of steps for one task. It assumes you know the basics. Start with a tutorial if you do: [GitHub](../tutorials/first-orchestrator.md) or [Azure DevOps](../tutorials/first-orchestrator-ado.md). On Windows, [prepare the computer](prepare-a-windows-computer.md) first.
 
 - [Do one ticket](do-one-ticket.md)
 - [Set up cadre on a GitHub repo](set-up-on-github.md)
@@ -12,4 +12,4 @@ A how-to guide is a set of steps for one task. It assumes you know the basics. S
 - [Turn on agent teams](turn-on-agent-teams.md)
 - [Run the evals](run-the-evals.md)
 - [Prepare a Windows computer for cadre](prepare-a-windows-computer.md)
-- [Check a cadre install on Windows 11](check-a-windows-install.md)
+- [Test a release on Windows 11 (for maintainers)](check-a-windows-install.md)

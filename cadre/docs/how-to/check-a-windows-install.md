@@ -1,4 +1,6 @@
-# Check a cadre install on Windows 11
+# Test a release on Windows 11 (for maintainers)
+
+To check your own computer, use the [Ready check](prepare-a-windows-computer.md#ready-check). This page is a release test for a maintainer.
 
 Use a clean Windows 11 machine with Git for Windows and Node 22 or later. Use a scratch GitHub repo that you own and `gh` signed in. Run each step in order. Report each step that does not show the result.
 

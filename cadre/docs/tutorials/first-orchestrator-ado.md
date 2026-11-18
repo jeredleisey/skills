@@ -6,9 +6,11 @@ This lesson has the same steps as [Your first orchestrator](first-orchestrator.m
 
 ## Before you start
 
+On Windows, follow [Prepare a Windows computer for cadre](../how-to/prepare-a-windows-computer.md). When its Ready check passes, go to [Make a scratch repo](#make-a-scratch-repo).
+
 You use Claude Code in one of three places. These are the terminal (the `claude` command), the Claude desktop app (the Code tab), and the VS Code extension. The lesson is the same in each. Step 1 and step 2 say where they differ.
 
-Check each item in a terminal. Install what is missing. On Windows, follow [Prepare a Windows computer for cadre](../how-to/prepare-a-windows-computer.md) first.
+Check each item in a terminal. Install what is missing.
 
 | Item | Check | Install |
 | --- | --- | --- |
@@ -17,7 +19,7 @@ Check each item in a terminal. Install what is missing. On Windows, follow [Prep
 | git | `git --version` | <https://git-scm.com/downloads> |
 | The Azure CLI | `az --version` | <https://learn.microsoft.com/cli/azure/install-azure-cli> |
 | The `azure-devops` extension | `az extension show --name azure-devops` | `az extension add --name azure-devops` |
-| A personal access token in `AZURE_DEVOPS_EXT_PAT` | `[ -n "$AZURE_DEVOPS_EXT_PAT" ] && echo ok` prints `ok` | Make a token in ADO. See below. |
+| A personal access token in `AZURE_DEVOPS_EXT_PAT` | `[ -n "$AZURE_DEVOPS_EXT_PAT" ] && echo ok` prints `ok` (in Git Bash on Windows) | Make a token in ADO. See below. |
 
 Cadre runs Node scripts and the `az` command through the Bash tool of Claude Code, in each of the three places. So each item must work in a terminal on the same computer.
 
@@ -38,7 +40,7 @@ Set the variable in the environment that Claude Code starts from. A shell profil
 
 ## Make a scratch repo
 
-In an ADO project where you can make work items and pull requests, make a new repo. Call it `cadre-scratch`. Choose **Add a README** when you make it. Setup needs a commit on the default branch, and an empty repo has none. Clone it and open the folder in a terminal. Delete it when you finish.
+In an ADO project where you can make work items and pull requests, make a new repo. Call it `cadre-scratch`. Choose **Add a README** when you make it. Setup needs a commit on the default branch, and an empty repo has none. In the same project, make an area path named `cadre-scratch`, or note one where you can make items. Clone the repo and open the folder in a terminal. Delete it when you finish.
 
 ## 1. Install cadre
 
@@ -82,7 +84,7 @@ Setup then reads the branch policy of the repo. A new repo has no branch rules. 
 
 Setup then asks the two ADO questions before the screen:
 
-- The area path of the items of this repo. If an area has the name of the repo, setup proposes it. If none matches, setup warns that items then go to the project root, and it asks for another path. Setup does not check a path that you type. So before you start, find an area path where you can make items, or make one with the name of the repo.
+- The area path of the items of this repo. If an area has the name of the repo, setup proposes it. If none matches, setup warns that items then go to the project root, and it asks for another path. Setup does not check a path that you type. Setup proposes `cadre-scratch`. Accept it.
 - The work item type that holds the orchestrator issue. Answer `Task`. If the type does not work in your project, setup says why and offers another. Take the one that it offers.
 
 Setup then shows one screen. It is a table with the columns Row, Proposed value, and Source. Setup read the merge methods and the folders from the repo, and it proposes a default for each other row. On ADO it cannot read the secret names, so that row is a default. Read the rows. The Merge row offers only the methods that your repo allows. A new repo has no merge policy, so it allows all of them.
@@ -102,8 +104,6 @@ Setup never adds auto-complete, and cadre never completes this pull request for 
 ## 4. Find the orchestrator
 
 Setup also made an orchestrator issue, because the row was on. Type `/cadre:orchestrate`. Say: "resume as scratch".
-
-To make another orchestrator later, say "new orchestrator <name>". It asks for a purpose if you did not give one, and it offers the same five standard grants.
 
 You see a work item of the type that you chose, in the area path that you chose, titled `Orchestrator: Scratch`. It has the tag `cadre:orchestrator`, and Assigned To shows your account. Its description has four sections: Purpose, Repos, Ledger, and Holder. The Ledger holds the five standard grants, each with you as Granted by.
 
@@ -131,8 +131,6 @@ To complete the pull request, the orchestrator runs `az repos pr update` with `-
 
 You see the pull request completed, and `hello.txt` on the default branch. The orchestrator then adds a checkpoint comment to its work item. The comment starts with `cadre-checkpoint v1` and has three sections.
 
-The orchestrator completes a pull request only with that command. Its own ADO client refuses to write to a pull request. If the charter names a rebase method, `az` cannot do it. The orchestrator then stops and asks you to complete the pull request in ADO. The guard does not see `az devops invoke` or a REST call from another tool. The branch policy of the repo covers those.
-
 ## 8. Resume in a new session
 
 Close the session. Start a new session in the same clone, as in step 2. Type `/cadre:orchestrate`. Say: "resume as scratch".
@@ -156,5 +154,10 @@ When you finish, delete:
 
 Next steps:
 
+- [Set up on Azure DevOps](../how-to/set-up-on-azure-devops.md), for your own repo
+- [Do one ticket](../how-to/do-one-ticket.md), on real work
+- [The orchestrator item](../reference/orchestrator-item.md), which you saw in step 4
+- To make another orchestrator, type `/cadre:orchestrate` and say "new orchestrator <name>". It asks for a purpose if you did not give one, and it offers the same five standard grants.
+- What the guard does not cover, such as the ADO client and the rebase method: [Guards, not covered](../reference/guards.md#not-covered)
 - [How cadre thinks about orchestrators](../explanation/orchestrator-model.md)
 - [Allow a guard](../how-to/allow-a-guard.md)
