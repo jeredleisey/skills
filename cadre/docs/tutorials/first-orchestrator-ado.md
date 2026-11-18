@@ -84,7 +84,7 @@ Setup then reads the branch policy of the repo. A new repo has no branch rules. 
 
 Setup then asks the two ADO questions before the screen:
 
-- The area path of the items of this repo. If an area has the name of the repo, setup proposes it. If none matches, setup warns that items then go to the project root, and it asks for another path. Setup does not check a path that you type. Setup proposes `cadre-scratch`. Accept it.
+- The area path of the items of this repo. If an area has the name of the repo, setup proposes it. If none matches, setup warns that items then go to the project root, and it asks for another path. Setup does not check a path that you type. If you made the area `cadre-scratch`, setup proposes it, so accept it. Otherwise, type the area path that you noted.
 - The work item type that holds the orchestrator issue. Answer `Task`. If the type does not work in your project, setup says why and offers another. Take the one that it offers.
 
 Setup then shows one screen. It is a table with the columns Row, Proposed value, and Source. Setup read the merge methods and the folders from the repo, and it proposes a default for each other row. On ADO it cannot read the secret names, so that row is a default. Read the rows. The Merge row offers only the methods that your repo allows. A new repo has no merge policy, so it allows all of them.
