@@ -52,7 +52,7 @@ To run merges, deploys, or many tickets, use the orchestrator:
 
 1. In your repo, type `/cadre:setup`. Setup checks Node and your account, reads what the repo already holds, and shows one screen of proposed answers with the source of each. You answer one closing question. Setup then opens a pull request with the charter and creates the orchestrator issue.
 2. Review the charter pull request and merge it yourself.
-3. Type `/cadre:orchestrate`. Say "new orchestrator <name>" to start one. Say "resume as <name>" to continue one.
+3. Type `/cadre:orchestrate`. Say "new orchestrator <name>" to start one. Say "resume as <name>" to continue one. Say "release" to free the name and keep the session open.
 
 ## Guards
 
