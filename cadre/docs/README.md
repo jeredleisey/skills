@@ -6,7 +6,7 @@ Cadre is a Claude Code plugin that runs a team of agents on a software repo. The
 
 New to cadre? Follow this path in order.
 
-1. **On a Windows laptop:** [Prepare a Windows computer for cadre](how-to/prepare-a-windows-computer.md). On macOS or Linux, skip this step.
+1. **On a Windows computer:** [Prepare a Windows computer for cadre](how-to/prepare-a-windows-computer.md). On GitHub, do only the Git, Node, and Claude Code sections. On macOS or Linux, skip this step.
 2. **Do the first-orchestrator tutorial for your tracker:** [Azure DevOps](tutorials/first-orchestrator-ado.md) or [GitHub](tutorials/first-orchestrator.md).
 3. **Do one ticket on real work:** [Do one ticket](how-to/do-one-ticket.md). Type `/cadre:ticket <ticket>`.
 

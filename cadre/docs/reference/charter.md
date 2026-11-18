@@ -51,7 +51,7 @@ The body is for agents. It says only what an agent cannot derive from the repo. 
 | `# Charter` | The title. |
 | `## Tracker` | GitHub: host, owner, repo. ADO: org, project, area path, item type. Local: the area path and item type do not apply. |
 | `## Owners` | A table with the columns Path, Owner, Note. Then the rule for when code moves to another repo. |
-| `## Merge and deploy` | Who merges and by what method and when. Who deploys, with which command, and what it backs up first. |
+| `## Merge and deploy` | Who merges and by what method and when. Who deploys, with which command, and what it backs up first. On ADO, `az repos pr update` cannot complete a pull request with a rebase method. If the charter names one, the orchestrator stops and asks you to complete the pull request in ADO. |
 | `## Extra cards` | A table with the columns Name, Job, When to use. It is prose, not front matter, because the orchestrator reads it. |
 | `## Documentation` | The rule for the documentation that follows a change. |
 | `## Only the human` | The actions that only the human does. |

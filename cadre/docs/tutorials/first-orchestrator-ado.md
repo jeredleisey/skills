@@ -156,8 +156,9 @@ Next steps:
 
 - [Set up on Azure DevOps](../how-to/set-up-on-azure-devops.md), for your own repo
 - [Do one ticket](../how-to/do-one-ticket.md), on real work
-- [The orchestrator item](../reference/orchestrator-item.md), which you saw in step 4
+- [The orchestrator issue](../reference/orchestrator-item.md), which you saw in step 4
 - To make another orchestrator, type `/cadre:orchestrate` and say "new orchestrator <name>". It asks for a purpose if you did not give one, and it offers the same five standard grants.
-- What the guard does not cover, such as the ADO client and the rebase method: [Guards, not covered](../reference/guards.md#not-covered)
+- What the guard does not cover, such as a REST call that completes a pull request: [Guards, not covered](../reference/guards.md#not-covered)
+- Why a rebase method stops the orchestrator on ADO: [The charter](../reference/charter.md)
 - [How cadre thinks about orchestrators](../explanation/orchestrator-model.md)
 - [Allow a guard](../how-to/allow-a-guard.md)

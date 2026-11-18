@@ -1,6 +1,6 @@
 # How-to guides
 
-A how-to guide is a set of steps for one task. It assumes you know the basics. Start with a tutorial if you do: [GitHub](../tutorials/first-orchestrator.md) or [Azure DevOps](../tutorials/first-orchestrator-ado.md). On Windows, [prepare the computer](prepare-a-windows-computer.md) first.
+A how-to guide is a set of steps for one task. It assumes you know the basics. If you do not, start with a tutorial: [GitHub](../tutorials/first-orchestrator.md) or [Azure DevOps](../tutorials/first-orchestrator-ado.md). On Windows, [prepare the computer](prepare-a-windows-computer.md) first.
 
 - [Do one ticket](do-one-ticket.md)
 - [Set up cadre on a GitHub repo](set-up-on-github.md)
