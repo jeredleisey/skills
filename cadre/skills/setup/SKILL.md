@@ -18,6 +18,7 @@ A check script prints one line. A line that starts with `stop:` or `unknown:` en
 
 - The closing question (step 6), at most twice.
 - ADO only: the area path and the item type (step 5).
+- Two or more skill packs installed: which pack (step 5).
 - Another host only: is it GitHub Enterprise (step 2).
 
 Nothing else asks.
@@ -77,22 +78,24 @@ This step asks nothing.
    - `count` is 2 or more: use none. Add a screen note that names the plugin ids, and say that the human can name a plugin in the closing answer to use its preset.
    - `unknown: <reason>`: say the reason and end setup.
 
-   A preset is a default, never a lock. It never overrides an answer of the charter. The tracker comes from step 2: ignore a preset `tracker` answer that differs, and say so in a note. A preset `skill_pack` must be one of `mattpocock-skills`, `superpowers`, or `none`: if not, ignore it, and say why in a note. A preset `merge_deploy` method that `merge-methods` does not list is ignored, with a note. A preset never lowers a branch policy or a guard, and never sets a secret. Ignore a key that the reference does not list, with a note.
+   A preset is a default, never a lock. It never overrides an answer of the charter. The tracker comes from step 2: ignore a preset `tracker` answer that differs, and say so in a note. A preset `skill_pack` must be one of `mattpocock-skills`, `superpowers`, `agent-skills`, or `none`: if not, ignore it, and say why in a note. A preset `merge_deploy` method that `merge-methods` does not list is ignored, with a note. A preset never lowers a branch policy or a guard, and never sets a secret. Ignore a key that the reference does not list, with a note.
 4. Files. Read `AGENTS.md`, `CLAUDE.md`, and the README in the repo root. Take a fact from them only when the file states it: an owner, a deploy command, a documentation rule, a trap, a secret store. Source is `file <name>`. Do not guess an answer from the file of another tool.
-5. Skill pack. Run `claude plugin list`. If exactly one of `mattpocock-skills` and `superpowers` is installed, it is the default. Else the default is `none`. If the command fails, the default is `none`, and a note says so.
+5. Skill pack. Run `claude plugin list`. The known packs are `mattpocock-skills`, `superpowers`, and `agent-skills`. Match each by plugin name. Exactly one installed: it is the default. Two or more installed: there is no default, and step 5 asks. None installed: the default is `none`. If the command fails, the default is `none`, and a note says so.
 
 Done when you hold each fact, each note, and each source.
 
-### 5. Ask the ADO questions
+### 5. Ask the questions before the screen
 
-ADO only. Local and GitHub skip this step. Ask both before the screen.
+The ADO questions apply to ADO only. Local and GitHub skip them. Ask both before the screen.
 
 - Which area path do the items of this repo use? Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/ado-setup.mjs" area "<org>" "<project>" "<repo>"`. A `match:` line gives the proposal. A `root:` line gives the project root: say its warning, and ask for another path. Always ask. `unknown:` ends setup.
 - Which work item type holds the orchestrator item? Offer `Task` or the type that a preset gives. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/ado-setup.mjs" type "<org>" "<project>" "<type>"`. A `refuse:` line means that the type does not work: say its reason, and offer its `propose:` type. Never accept a refused type. `unknown:` ends setup.
 
 The area path and the type go in the `## Tracker` section of the charter.
 
-Done when the area path and the type pass their checks, or the tracker is not ADO.
+All trackers: if step 4 item 5 found two or more installed skill packs, ask one more question before the screen. Which of the installed packs, or `none`, do the helpers use? Offer only those values. Take the answer as the Skill pack row. Do not guess.
+
+Done when the area path and the type pass their checks, or the tracker is not ADO, and the skill pack question has an answer, if step 4 found two or more packs.
 
 ### 6. Show the screen and ask the closing question
 
@@ -109,7 +112,7 @@ The rows, in this order:
 | Row | Proposed value | Default when nothing else gives it |
 | --- | --- | --- |
 | Tracker | GitHub (host, owner, repo), ADO (org, project, area path, item type), or local. Source: `remote`. | None. It always comes from step 2. |
-| Skill pack | `mattpocock-skills`, `superpowers`, or `none`. | The pack of step 4 item 5. If it is `mattpocock-skills`, add a screen note: the human types `/mattpocock-skills:setup-matt-pocock-skills` by hand, because that skill is human-only. Cadre never reads or writes its files. |
+| Skill pack | `mattpocock-skills`, `superpowers`, `agent-skills`, or `none`. | The pack of step 4 item 5, or the answer of step 5 when two or more packs are installed. If it is `mattpocock-skills`, add a screen note: the human types `/mattpocock-skills:setup-matt-pocock-skills` by hand, because that skill is human-only. Cadre never reads or writes its files. |
 | Owners | The paths that each orchestrator owns. | One row: `/` (all of the repo) owned by the one orchestrator. The `folders` fact becomes a screen note. When code moves to another repo, its ownership moves with it to the orchestrator of that repo. |
 | Merge | Who merges, and which method. Offer only the methods in `merge-methods`. | The owner merges. The method is `merge` if it is allowed, else the first allowed method. If the fact is unread, say that the list is unread, and offer each method of the tracker. The orchestrator can merge only with a grant in the ledger. |
 | Deploy | Who deploys, and how. | None. |
@@ -143,7 +146,7 @@ Add one note: the hooks guard the Bash tool only, so the branch policy of the re
 Then ask the closing question with the AskUserQuestion tool. Offer two options: "Accept all (Recommended)" and "Accept, without the orchestrator issue". Never add an "Other" option, because the tool adds one.
 
 - The second option turns the Orchestrator issue row off, and with it the five grants.
-- A typed answer names the rows to change, such as "merge: squash" or "traps: add the shared clone". Apply it. Refuse a change that offers a merge method that `merge-methods` does not list, or a skill pack outside the three, or a secret value. Say why, and keep the proposed value. Show only the changed rows, with the source `human`. Ask the same question once more.
+- A typed answer names the rows to change, such as "merge: squash" or "traps: add the shared clone". Apply it. Refuse a change that offers a merge method that `merge-methods` does not list, or a skill pack other than `mattpocock-skills`, `superpowers`, `agent-skills`, or `none`, or a secret value. Say why, and keep the proposed value. Show only the changed rows, with the source `human`. Ask the same question once more.
 - After the second question, a typed answer is applied and shown, and setup goes on. The pull request of step 7 is the last review.
 
 Done when the human chose an option.

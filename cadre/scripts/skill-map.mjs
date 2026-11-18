@@ -29,6 +29,14 @@ const PRESETS = {
     'design-vocabulary': 'none',
     'verification': 'superpowers:verification-before-completion',
   },
+  'agent-skills': {
+    'test-first': 'agent-skills:test-driven-development',
+    'debugging': 'agent-skills:debugging-and-error-recovery',
+    'code-review': 'agent-skills:code-review-and-quality',
+    'research': 'none',
+    'design-vocabulary': 'none',
+    'verification': 'none',
+  },
   none: {
     'test-first': 'none',
     'debugging': 'none',

@@ -70,6 +70,27 @@ test('tester for each pack', () => {
   assert.deepEqual(run('tester', repo(`${base}\nskill_pack: none`)).lines, ['test-first none', 'debugging none']);
 });
 
+test('agent-skills pack maps each card', () => {
+  const pack = `${base}\nskill_pack: agent-skills`;
+  assert.deepEqual(run('coder', repo(pack)).lines, [
+    'test-first agent-skills:test-driven-development',
+    'design-vocabulary none',
+    'verification none',
+  ]);
+  assert.deepEqual(run('reviewer', repo(pack)).lines, ['code-review agent-skills:code-review-and-quality']);
+  assert.deepEqual(run('researcher', repo(pack)).lines, ['research none']);
+  assert.deepEqual(run('tester', repo(pack)).lines, [
+    'test-first agent-skills:test-driven-development',
+    'debugging agent-skills:debugging-and-error-recovery',
+  ]);
+});
+
+test('an unknown pack error lists agent-skills', () => {
+  const r = run('coder', repo(`${base}\nskill_pack: nope`));
+  assert.equal(r.code, 2);
+  assert.match(r.lines[0], /agent-skills/);
+});
+
 test('an absent skill_pack means none', () => {
   const r = run('tester', repo(base));
   assert.equal(r.code, 0);

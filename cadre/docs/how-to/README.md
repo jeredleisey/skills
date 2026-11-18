@@ -7,6 +7,7 @@ A how-to guide is a set of steps for one task. It assumes you know the basics. I
 - [Set up cadre on an Azure DevOps repo](set-up-on-azure-devops.md)
 - [Use cadre on a repo with no remote](use-a-repo-with-no-remote.md)
 - [Resume an orchestrator](resume-an-orchestrator.md)
+- [Choose a skill pack](choose-a-skill-pack.md)
 - [Add an extra card](add-an-extra-card.md)
 - [Allow a guard, or turn guards off](allow-a-guard.md)
 - [Turn on agent teams](turn-on-agent-teams.md)
