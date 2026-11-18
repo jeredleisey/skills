@@ -129,5 +129,8 @@ Delete the scratch repo and the folder `.cadre` in your user folder when you fin
 
 Next steps:
 
+- [Set up on GitHub](../how-to/set-up-on-github.md), for your own repo
+- [Do one ticket](../how-to/do-one-ticket.md), on real work
+- [The orchestrator issue](../reference/orchestrator-item.md), which you saw in the lesson
 - [How cadre thinks about orchestrators](../explanation/orchestrator-model.md)
 - [Allow a guard](../how-to/allow-a-guard.md)

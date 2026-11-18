@@ -2,7 +2,13 @@
 
 Cadre is a Claude Code plugin that runs a team of agents on a software repo. The docs follow the four kinds of the Diátaxis form. Read the site at <https://cadre.jeredleisey.com/>, or read these files on GitHub.
 
-Try `/cadre:ticket <ticket>` first. It does one ticket with no orchestrator issue and opens one pull request. See [Do one ticket](how-to/do-one-ticket.md).
+## Start here
+
+New to cadre? Follow this path in order.
+
+1. **On a Windows computer:** [Prepare a Windows computer for cadre](how-to/prepare-a-windows-computer.md). On GitHub, do only the Git, Node, and Claude Code sections. On macOS or Linux, skip this step.
+2. **Do the first-orchestrator tutorial for your tracker:** [Azure DevOps](tutorials/first-orchestrator-ado.md) or [GitHub](tutorials/first-orchestrator.md).
+3. **Do one ticket on real work:** [Do one ticket](how-to/do-one-ticket.md). Type `/cadre:ticket <ticket>`.
 
 ## Tutorials
 
@@ -25,7 +31,7 @@ Steps for one task. See [the index](how-to/README.md).
 - [Turn on agent teams](how-to/turn-on-agent-teams.md)
 - [Run the evals](how-to/run-the-evals.md)
 - [Prepare a Windows computer](how-to/prepare-a-windows-computer.md)
-- [Check a Windows install](how-to/check-a-windows-install.md)
+- [Test a release on Windows 11 (for maintainers)](how-to/check-a-windows-install.md)
 
 ## Explanation
 
