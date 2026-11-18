@@ -2,7 +2,7 @@
 
 Use this when your repo has an Azure DevOps (ADO) remote and cadre is installed.
 
-1. Set the variable `AZURE_DEVOPS_EXT_PAT` to a personal access token. Check it is not empty: `[ -n "$AZURE_DEVOPS_EXT_PAT" ] && echo ok`. Cadre never prints the token.
+1. Set the variable `AZURE_DEVOPS_EXT_PAT` to a personal access token. Check it is not empty: `[ -n "$AZURE_DEVOPS_EXT_PAT" ] && echo ok`. Cadre never prints the token. On Windows, see [Prepare a Windows computer for cadre](prepare-a-windows-computer.md).
 2. Do not run `az login` as a fix. The token is the way in.
 3. Open the repo in Claude Code. Type `/cadre:setup`.
 4. Setup reads the organization, project, and repo from the remote URL. A space in a name is fine.

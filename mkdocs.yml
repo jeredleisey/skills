@@ -22,6 +22,7 @@ nav:
       - Do one ticket: how-to/do-one-ticket.md
       - Set up on GitHub: how-to/set-up-on-github.md
       - Set up on Azure DevOps: how-to/set-up-on-azure-devops.md
+      - Prepare a Windows computer: how-to/prepare-a-windows-computer.md
       - Use a repo with no remote: how-to/use-a-repo-with-no-remote.md
       - Resume an orchestrator: how-to/resume-an-orchestrator.md
       - Add an extra card: how-to/add-an-extra-card.md

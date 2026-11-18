@@ -8,7 +8,7 @@ This lesson has the same steps as [Your first orchestrator](first-orchestrator.m
 
 You use Claude Code in one of three places. These are the terminal (the `claude` command), the Claude desktop app (the Code tab), and the VS Code extension. The lesson is the same in each. Step 1 and step 2 say where they differ.
 
-Check each item in a terminal. Install what is missing.
+Check each item in a terminal. Install what is missing. On Windows, follow [Prepare a Windows computer for cadre](../how-to/prepare-a-windows-computer.md) first.
 
 | Item | Check | Install |
 | --- | --- | --- |
@@ -34,7 +34,7 @@ Cadre also reads the branch policy of the repo and the account of the token.
 
 If ADO refuses the token, setup says so with this order of checks: an empty variable first, then an expired token, then the scope of the token. A refused read of the branch policy does not stop setup. It becomes a note on the screen that says the policy is unread.
 
-Set the variable in the environment that Claude Code starts from. A shell profile is one way. A variable that you set in one open terminal does not reach the desktop app or VS Code. Cadre never prints the token. Do not run `az login` as a fix. The token is the way in.
+Set the variable in the environment that Claude Code starts from. A shell profile is one way. A variable that you set in one open terminal does not reach the desktop app or VS Code. Cadre never prints the token. On Windows, see [the token step of the Windows page](../how-to/prepare-a-windows-computer.md#the-personal-access-token). Do not run `az login` as a fix. The token is the way in.
 
 ## Make a scratch repo
 

@@ -35,7 +35,7 @@ An orchestrator shapes the work and gives tickets to helpers in role cards: code
 - Claude Code with plugin hooks.
 - Node 22 or later.
 - For a GitHub repo: the `gh` CLI, signed in.
-- For an Azure DevOps repo: a token in the variable `AZURE_DEVOPS_EXT_PAT`.
+- For an Azure DevOps repo: a token in the variable `AZURE_DEVOPS_EXT_PAT`. On Windows, see [Prepare a Windows computer](docs/how-to/prepare-a-windows-computer.md).
 
 ## Install
 
