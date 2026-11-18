@@ -3,7 +3,7 @@
 // Output and exit code:
 //   <status>[ <continuation token>]   line 1, then the body    exit 0   any HTTP answer, a 302 and a 401 too
 //   a reason on stderr                                         exit 2   no answer, or the body file is unreadable
-//   usage message on stderr                                    exit 64  wrong arguments, or a host that is not ADO
+//   usage message on stderr                                    exit 64  wrong arguments, a host that is not ADO, or a POST or PATCH to a pull request
 // The token is AZURE_DEVOPS_EXT_PAT, sent as basic auth with an empty user. An empty variable sends no
 // header, and ADO then answers 302. A redirect is never followed.
 // A body file that holds a JSON list goes as application/json-patch+json, any other file as application/json.
@@ -27,6 +27,19 @@ const host = target.hostname.toLowerCase();
 const adoHost = target.protocol === 'https:' && (host === 'dev.azure.com' || /^[a-z0-9][a-z0-9-]*\.visualstudio\.com$/.test(host));
 const localHost = process.env.CADRE_ADO_ALLOW_LOCAL === '1' && target.protocol === 'http:' && host === '127.0.0.1';
 if (!adoHost && !localHost) stop(`usage: ${host} is not an ADO host, so the token stays here`, 64);
+
+// The guard reads `az repos pr update`, but it cannot read a REST write. So a write to a pull request goes through az.
+// Each segment is decoded alone. A write with a segment that does not decode is refused, so the check fails closed.
+const writesPullRequest = target.pathname.split('/').some((segment) => {
+  try {
+    return decodeURIComponent(segment).toLowerCase().split(';')[0] === 'pullrequests';
+  } catch {
+    return true;
+  }
+});
+if (method !== 'GET' && writesPullRequest) {
+  stop('usage: ado-call does not write to a pull request, or to a path that does not decode. Complete or change a pull request with az repos pr update, so that the guard sees it', 64);
+}
 
 const headers = { Accept: 'application/json' };
 const token = process.env.AZURE_DEVOPS_EXT_PAT ?? '';

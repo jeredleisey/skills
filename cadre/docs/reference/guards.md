@@ -166,6 +166,7 @@ The hooks stop a slip. They are not a lock. The hooks do not cover:
 - Merges through `gh api`.
 - Shell aliases.
 - A script on disk.
+- A REST call or `az devops invoke` that completes a pull request. `ado-call.mjs` refuses a `POST` or `PATCH` to a pull request (exit 64), but another client does not refuse it. Complete a pull request with `az repos pr update`, which the guard reads.
 - Any step that is not a `git push`, a `gh pr merge`, or an `az repos pr` completion. A deploy, a delete of a file, and a message to a person have no hook.
 
 The branch policy of the repo is the guard that holds. `/cadre:setup` reports it with [`branch-policy`](scripts.md#branch-policy) or [`branch-policy-ado`](scripts.md#branch-policy-ado), and names each gap.

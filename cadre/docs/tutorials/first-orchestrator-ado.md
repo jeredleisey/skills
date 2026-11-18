@@ -21,7 +21,7 @@ Check each item in a terminal. Install what is missing. On Windows, follow [Prep
 
 Cadre runs Node scripts and the `az` command through the Bash tool of Claude Code, in each of the three places. So each item must work in a terminal on the same computer.
 
-Setup does not check for the `az` CLI yet. A missing `az` fails at the last step of setup, after setup pushes the charter branch. You then open the pull request by hand. Check `az` first.
+Setup does not check for the `az` CLI. A missing `az` fails when setup opens the charter pull request, after it pushes the charter branch. Check `az` first.
 
 ### The token
 
@@ -32,7 +32,7 @@ Make the token in ADO, in the user settings, under **Personal access tokens**. T
 
 Cadre also reads the branch policy of the repo and the account of the token.
 
-If ADO refuses the token, setup says so with this order of checks: an empty variable first, then an expired token, then the scope of the token. A refused read of the branch policy does not stop setup. It becomes a note on the screen that says the policy is unread.
+If ADO refuses the token, setup stops with one line. Check an empty variable first, then an expired token, then the scope of the token. A refused read of the branch policy does not stop setup. It becomes a note on the screen that says the policy is unread.
 
 Set the variable in the environment that Claude Code starts from. A shell profile is one way. A variable that you set in one open terminal does not reach the desktop app or VS Code. Cadre never prints the token. On Windows, see [the token step of the Windows page](../how-to/prepare-a-windows-computer.md#the-personal-access-token). Do not run `az login` as a fix. The token is the way in.
 
@@ -76,7 +76,7 @@ Open the `cadre-scratch` clone in Claude Code:
 
 Type `/cadre:setup`. If the command is not in the list, type `/` and pick `setup` from the cadre entries.
 
-You see `ok node` with a version. Setup reads the organization, project, and repo from the remote URL. A space in a name is fine. You then see `ok ado <org>/<project>`. If you see a `stop:` line, it names the cause. It can be a token that ADO refuses, a project that ADO cannot see, or a token with no access to the project. Check that the variable is not empty, that the token has not expired, and that it has the two scopes above. Then type `/cadre:setup` again.
+You see `ok node` with a version. Setup reads the organization, project, and repo from the remote URL. A space in a project or repo name is fine. You then see `ok ado <org>/<project>`. If you see a `stop:` line, it names the cause. It can be a token that ADO refuses, a project that ADO cannot see, or a token with no access to the project. Check that the variable is not empty, that the token has not expired, and that it has the two scopes above. Then type `/cadre:setup` again.
 
 Setup then reads the branch policy of the repo. A new repo has no branch rules. Setup lists each gap in the Traps row of the screen. Setup cannot read the permission "Bypass policies when pushing". It tells you to check who holds it. That is normal for this lesson.
 
@@ -127,7 +127,7 @@ Say yes to the merge. Give the permission in your own words, for example: "Yes, 
 
 The orchestrator adds a sixth row to the Ledger of its orchestrator issue, for the merge. It then pushes the branch and opens a pull request. A push of an ordinary branch passes with no prompt.
 
-To complete the pull request, the orchestrator runs `az repos pr update` with `--status completed` and `--squash true`, because the charter names squash. The cadre hook stops the command. You see a prompt that asks you to allow the merge. The prompt names the plugin as `[plugin:cadre]`. This is the guard. Allow it. The guard asks also in auto mode. Do not run this lesson with all permission prompts off, because then you may not see the guard.
+To complete the pull request, the orchestrator runs `az repos pr update` with `--status completed` and `--squash true`, because the charter names squash. The cadre hook stops the command. You see a prompt that asks you to allow the merge. This prompt is the guard. Allow it. Do not run this lesson with all permission prompts off, because then you may not see the guard.
 
 You see the pull request completed, and `hello.txt` on the default branch. The orchestrator then adds a checkpoint comment to its work item. The comment starts with `cadre-checkpoint v1` and has three sections.
 

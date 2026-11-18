@@ -389,7 +389,7 @@ node ado-call.mjs <GET|POST|PATCH> <url> [body file]
 | Argument | Meaning |
 | --- | --- |
 | method | `GET`, `POST`, or `PATCH`. |
-| `url` | An `https` URL on `dev.azure.com` or `<name>.visualstudio.com`. Any other host gives exit 64, so the token never leaves for another host. |
+| `url` | An `https` URL on `dev.azure.com` or `<name>.visualstudio.com`. Any other host gives exit 64, so the token never leaves for another host. A `POST` or `PATCH` to a URL with a `pullrequests` segment also gives exit 64. The script decodes each segment and compares it without case. A write with a segment that does not decode also gives exit 64. The script sends a `GET` of a pull request. |
 | `body file` | Optional. A file that holds a JSON list goes as `application/json-patch+json`. Any other file goes as `application/json`. |
 
 Environment: `AZURE_DEVOPS_EXT_PAT` is sent as basic auth with an empty user. An empty variable sends no header, and ADO then answers 302. A redirect is never followed. `CADRE_ADO_ALLOW_LOCAL=1` (test-only) lets the script call `http://127.0.0.1`.
@@ -399,7 +399,7 @@ Environment: `AZURE_DEVOPS_EXT_PAT` is sent as basic auth with an empty user. An
 | Line 1: `<status>[ <continuation token>]`, then the body | 0 | Any HTTP answer, a 302 and a 401 too. |
 | `ado-call: no answer from <host>: <code>` on stderr | 2 | `<code>` is the error code, or the error message when there is no code. Any failure of the fetch: no answer in 30 seconds, a refused connection, a failed name lookup, or a failed TLS handshake. |
 | `ado-call: cannot read the body file: <code>` on stderr | 2 | The body file cannot be read. |
-| Usage message on stderr | 64 | Wrong arguments, a URL that is not valid, or a host that is not ADO. |
+| Usage message on stderr | 64 | Wrong arguments, a URL that is not valid, a host that is not ADO, or a `POST` or `PATCH` to a pull request. The message says to use `az repos pr update`, so that the guard sees the change. |
 
 The continuation token comes from the header `x-ms-continuationtoken`. Read the status before the body. Only a 200 with a JSON body is an answer.
 
