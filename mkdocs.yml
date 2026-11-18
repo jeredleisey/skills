@@ -16,6 +16,7 @@ nav:
   - Tutorials:
       - tutorials/README.md
       - Your first orchestrator: tutorials/first-orchestrator.md
+      - Your first orchestrator on Azure DevOps: tutorials/first-orchestrator-ado.md
   - How-to guides:
       - how-to/README.md
       - Do one ticket: how-to/do-one-ticket.md
