@@ -27,9 +27,14 @@ theme:
         name: Use the system setting
   features:
     - navigation.sections
+    - navigation.indexes
+    - navigation.path
     - navigation.top
     - search.highlight
     - content.code.copy
+markdown_extensions:
+  - toc:
+      title: On this page
 extra_css:
   - stylesheets/cadre.css
 plugins:
