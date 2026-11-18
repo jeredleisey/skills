@@ -10,7 +10,9 @@ permissions:
 
 jobs:
   evals:
-    runs-on: ubuntu-latest
+    # ubuntu-latest moved to 26.04 in November 2026, and there the Claude Code sandbox cannot
+    # start (apply-seccomp setgroups in a nested user namespace). 24.04 passed on 2026-10-28.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,7 +22,7 @@ jobs:
       # The cases grant Bash. Claude Code runs it in a sandbox that needs these two packages.
       - run: sudo apt-get update
       - run: sudo apt-get install -y bubblewrap socat
-      # Ubuntu 24.04 may set this key to 1. Then bwrap cannot create a user namespace and every
+      # Ubuntu 24.04 and 26.04 may set this key to 1. Then bwrap cannot create a user namespace and every
       # Bash call of an agent fails. Print the value, and set it to 0 when the key exists.
       - name: Allow user namespaces
         run: |
