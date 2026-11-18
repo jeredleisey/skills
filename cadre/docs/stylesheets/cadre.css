@@ -92,8 +92,8 @@
   text-underline-offset: 0.2em;
 }
 
-/* Navigation: the active page shows the accent. */
-.md-nav__link--active { color: var(--md-accent-fg-color); font-weight: 600; }
+/* Navigation: the active page is ink and bold. The wide-screen nav below adds the block and the dot. */
+.md-nav__link--active { color: var(--cadre-ink); font-weight: 600; }
 .md-nav__title { font-family: var(--cadre-display); }
 
 /* Code, tables, and rules: warm borders. */
@@ -107,45 +107,80 @@
 .md-search__input::placeholder, .md-search__icon { color: var(--cadre-ink-soft); }
 
 /* Layout after agentskills.io: a clear active page, quiet links, cards for code. */
+:root { --cadre-radius: 8px; --cadre-radius-card: 10px; }
 
-/* Left nav: no site title above the list on a wide screen. */
+/* The left nav layout applies on a wide screen only. Under 76.25em the nav is a drawer, and
+   Material uses the section labels there to open each section. */
 @media screen and (min-width: 76.25em) {
   .md-nav--primary > .md-nav__title { display: none; }
-}
 
-/* Left nav links: muted, with a rounded block on hover and on the active page. */
-.md-nav--primary .md-nav__link {
-  color: var(--cadre-ink-soft);
-  border-radius: 8px;
-  padding: 0.35em 0.7em;
-  margin-top: 0.15em;
-  transition: background-color 120ms, color 120ms;
-}
-.md-nav--primary .md-nav__link:hover,
-.md-nav--primary .md-nav__link:focus-visible {
-  color: var(--cadre-ink);
-  background-color: var(--cadre-accent-soft);
-}
-.md-nav--primary .md-nav__link--active,
-.md-nav--primary .md-nav__link--active:hover {
-  color: var(--cadre-ink);
-  font-weight: 600;
-  background-color: var(--md-code-bg-color);
-}
+  /* Links: muted, with a rounded block on hover and on the active page, and room for the dot. */
+  .md-nav--primary .md-nav__link:not(.md-nav__container) {
+    position: relative;
+    color: var(--cadre-ink-soft);
+    border-radius: var(--cadre-radius);
+    padding: 0.35em 1.5em 0.35em 0.7em;
+    margin-top: 0.15em;
+    transition: background-color 120ms, color 120ms;
+  }
+  .md-nav--primary .md-nav__link:not(.md-nav__container):hover,
+  .md-nav--primary .md-nav__link:not(.md-nav__container):focus-visible {
+    color: var(--cadre-ink);
+    background-color: var(--cadre-accent-soft);
+  }
+  .md-nav--primary .md-nav__link--active,
+  .md-nav--primary .md-nav__link--active:hover {
+    color: var(--cadre-ink);
+    font-weight: 600;
+    background-color: var(--md-code-bg-color);
+  }
 
-/* Section labels: ink, bold, with space above. The label is a link inside a container. */
-.md-nav--primary .md-nav__container {
-  padding: 0;
-  margin-top: 1.1em;
-  background: none;
-  box-shadow: none;
+  /* Section labels: a link inside a container. The container has no block, padding, or dot. */
+  .md-nav--primary .md-nav__container {
+    padding: 0;
+    margin-top: 1.1em;
+    background: none;
+  }
+  .md-nav--primary .md-nav__container > a.md-nav__link { color: var(--cadre-ink); font-weight: 700; margin-top: 0; }
+  .md-nav--primary .md-nav__container > label.md-nav__link { display: none; }
+
+  /* The dot: one orange circle at the right end of the active page. It goes from small to full
+     size one time, when the page opens. On hover, another page shows a thin ring there. */
+  .md-nav--primary .md-nav__link:not(.md-nav__container)::after {
+    content: "";
+    position: absolute;
+    right: 0.65em;
+    top: 50%;
+    width: 0.5em;
+    height: 0.5em;
+    margin-top: -0.25em;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 1.5px solid var(--cadre-accent);
+    opacity: 0;
+    transform: scale(0.4);
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+  .md-nav--primary .md-nav__link:not(.md-nav__container):hover::after { opacity: 0.8; transform: scale(1); }
+  .md-nav--primary .md-nav__link--active::after,
+  .md-nav--primary .md-nav__link--active:hover::after {
+    background-color: var(--cadre-accent);
+    opacity: 1;
+    transform: scale(1);
+    animation: cadre-here 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
 }
-.md-nav--primary .md-nav__container > a.md-nav__link {
-  color: var(--cadre-ink);
-  font-weight: 700;
-  margin-top: 0;
+@keyframes cadre-here {
+  from { opacity: 0; transform: scale(0); }
+  to { opacity: 1; transform: scale(1); }
 }
-.md-nav--primary .md-nav__container > label.md-nav__link { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .md-nav--primary .md-nav__link,
+  .md-nav--primary .md-nav__link::after,
+  .md-nav--primary .md-nav__link:hover::after { transition: none !important; }
+  .md-nav--primary .md-nav__link--active::after,
+  .md-nav--primary .md-nav__link--active:hover::after { animation: none !important; }
+}
 
 /* Breadcrumb above the title: small and quiet. */
 .md-path { font-size: 0.68rem; margin-bottom: 0.2em; }
@@ -156,51 +191,15 @@
 
 /* Right contents list: muted, the current section in ink. */
 .md-nav--secondary .md-nav__link { color: var(--cadre-ink-soft); }
-.md-nav--secondary .md-nav__link--active,
 .md-nav--secondary .md-nav__link:hover { color: var(--cadre-ink); }
-.md-nav--secondary .md-nav__link--active { font-weight: 600; }
+.md-nav--secondary .md-nav__link--active { color: var(--cadre-ink); font-weight: 600; }
 .md-nav--secondary > .md-nav__title { font-family: var(--md-text-font-family); font-weight: 600; color: var(--cadre-ink); }
 
 /* Code blocks: a card with a thin border. */
 .md-typeset pre > code {
   border: 1px solid var(--cadre-line);
-  border-radius: 10px;
+  border-radius: var(--cadre-radius-card);
   background-color: var(--cadre-card);
 }
-.md-typeset .highlight, .md-typeset pre { border-radius: 10px; }
+.md-typeset .highlight, .md-typeset pre { border-radius: var(--cadre-radius-card); }
 .md-typeset .md-code__nav, .md-typeset .md-code__nav:hover { background-color: transparent; }
-
-/* The active page carries one orange circle at the right end. It grows in once when the page
-   loads. On hover, another page shows a thin ring in the same place. */
-.md-nav--primary .md-nav__link { position: relative; padding-right: 1.5em; }
-.md-nav--primary .md-nav__link::after {
-  content: "";
-  position: absolute;
-  right: 0.65em;
-  top: 50%;
-  width: 0.5em;
-  height: 0.5em;
-  margin-top: -0.25em;
-  box-sizing: border-box;
-  border-radius: 50%;
-  border: 1.5px solid var(--cadre-accent);
-  opacity: 0;
-  transform: scale(0.4);
-  transition: opacity 160ms ease, transform 160ms ease;
-}
-.md-nav--primary .md-nav__link:hover::after { opacity: 0.8; transform: scale(1); }
-.md-nav--primary .md-nav__link--active::after,
-.md-nav--primary .md-nav__link--active:hover::after {
-  background-color: var(--cadre-accent);
-  opacity: 1;
-  transform: scale(1);
-  animation: cadre-here 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-@keyframes cadre-here {
-  from { opacity: 0; transform: scale(0); }
-  to { opacity: 1; transform: scale(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .md-nav--primary .md-nav__link::after { transition: none; }
-  .md-nav--primary .md-nav__link--active::after { animation: none; }
-}
