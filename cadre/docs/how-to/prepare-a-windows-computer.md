@@ -1,6 +1,6 @@
 # Prepare a Windows computer for cadre
 
-Use this page on a Windows 11 laptop before you type `/cadre:setup`. You need no earlier use of Node, the Azure CLI, or a personal access token. You work on Azure DevOps (ADO). When each check on this page passes, setup runs with no stop.
+Use this page on a Windows 11 laptop before you type `/cadre:setup`. You need no earlier use of Node, the Azure CLI, or a personal access token. You work on Azure DevOps (ADO). When each check on this page passes, setup does not stop on a missing tool or token.
 
 Each step gives a command to copy, then the output that you should see.
 
@@ -83,7 +83,7 @@ az extension show --name azure-devops
 
 The first command shows a list of versions. The last command shows a block of text with `"name": "azure-devops"`.
 
-The cadre scripts use REST with the token. Only the completion of a pull request uses `az repos pr update`. So you need the extension for that step. If `az extension add` fails with a certificate error, go to [Behind a TLS-inspecting proxy](#behind-a-tls-inspecting-proxy).
+Setup opens the charter pull request with `az repos pr create`. `/cadre:ticket` uses `az boards` and `az repos`. The orchestrator completes a pull request with `az repos pr update`. So install the extension before you run setup. If `az extension add` fails with a certificate error, go to [Behind a TLS-inspecting proxy](#behind-a-tls-inspecting-proxy).
 
 ## The personal access token
 
@@ -137,14 +137,14 @@ For the Claude desktop app: quit it fully, then start it again. For the terminal
 
 ## Ready check
 
-Run this block in Git Bash, or ask Claude Code to run it. Put your ADO organization name in place of `<org>`.
+Run this block in Git Bash, or ask Claude Code to run it. Put your ADO organization name in place of `<org>`, and the project of your repo in place of `<project>`. Write a space in the project name as `%20`. This is the same read that setup does first.
 
 ```bash
 node --version
 git --version
 az extension show --name azure-devops --query version -o tsv
 [ -n "$AZURE_DEVOPS_EXT_PAT" ] && echo "token set, length ${#AZURE_DEVOPS_EXT_PAT}" || echo "token EMPTY"
-curl -s -o /dev/null -w "%{http_code}\n" -u ":$AZURE_DEVOPS_EXT_PAT" "https://dev.azure.com/<org>/_apis/projects?api-version=7.1"
+curl -s -o /dev/null -w "%{http_code}\n" -u ":$AZURE_DEVOPS_EXT_PAT" "https://dev.azure.com/<org>/<project>/_apis/wit/workitemtypes?api-version=7.1"
 ```
 
 You should see:
@@ -160,6 +160,8 @@ The last line is the HTTP status. The block never prints the token or the body o
 - `200` is good.
 - `203` or `302` means ADO refused the token. Check that the token is not empty, then check that it did not expire.
 - `401` means a missing scope or an expired token.
+- `403` means the token has no access to the project. Make a token with the two scopes above.
+- `404` means a wrong organization or project name.
 
 When every line is good, go on to [Set up cadre on an Azure DevOps repo](set-up-on-azure-devops.md) or [Your first orchestrator on Azure DevOps](../tutorials/first-orchestrator-ado.md).
 
@@ -187,7 +189,7 @@ az extension add --source $whl --yes
 
 The fifth line must print `True`. If it prints `False`, stop. Do not install the file.
 
-Until the extension is in, the cadre scripts still do each tracker write with REST. Only the completion of a pull request needs the extension.
+Until the extension is in, the orchestrator still reads and writes work items with REST. Setup, `/cadre:ticket`, and each pull request step need the extension.
 
 ### Find who signs the certificate
 
@@ -204,8 +206,3 @@ Get-ChildItem Cert:\LocalMachine\Root | Select-Object Subject, NotAfter, Thumbpr
 ```
 
 If a signer in the first list is the name of your company, a proxy is on your network. Ask IT for a standard CA bundle file. It is the best fix, because it works for each tool.
-
-## Windows notes for the work
-
-- Some managed computers set `core.autocrlf=true`. Git then changes line endings. Keep LF line endings in your commits, so that format checks pass.
-- Leave a worktree before you remove it. If your shell is inside the worktree, `git worktree remove` fails with "Permission denied". Move to another folder, run `git worktree remove`, then run `git worktree prune`. Remove the empty folder with `rmdir`.
