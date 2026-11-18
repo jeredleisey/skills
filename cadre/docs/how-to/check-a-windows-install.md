@@ -3,7 +3,7 @@
 Use a clean Windows 11 machine with Git for Windows and Node 22 or later. Use a scratch GitHub repo that you own and `gh` signed in. Run each step in order. Report each step that does not show the result.
 
 1. Run `node --version`. You see `v22` or a later version.
-2. Start Claude Code in any folder. Type `/plugin marketplace add jeredleisey/skills`. You see that the marketplace `jeredleisey` was added.
+2. Start Claude Code in any folder. Type `/plugin marketplace add https://github.com/jeredleisey/skills.git`. You see that the marketplace `jeredleisey` was added.
 3. Type `/plugin install cadre@jeredleisey`. You see that `cadre` is installed. Restart Claude Code if it asks you to.
 4. Open the scratch repo in Claude Code. Type `/cadre:setup`. You see `ok node` and then `ok gh <owner>/<repo>`.
 5. Answer the questions. Choose "Accept, without the orchestrator issue", so that step 6 can make the issue. You see a pull request with the charter. Merge it yourself on GitHub, and pull `main`.
