@@ -91,14 +91,14 @@ Step 1 of each card runs `node "${CLAUDE_PLUGIN_ROOT}/scripts/skill-map.mjs" <ca
 
 The pack comes from `skill_pack` in the charter, and `capabilities` overrides single capabilities. See [The charter](charter.md#front-matter). The table below is the constant `PRESETS` in `scripts/skill-map.mjs`.
 
-| Capability | `mattpocock-skills` | `superpowers` | `none` |
-| --- | --- | --- | --- |
-| `test-first` | `mattpocock-skills:tdd` | `superpowers:test-driven-development` | `none` |
-| `debugging` | `mattpocock-skills:diagnosing-bugs` | `superpowers:systematic-debugging` | `none` |
-| `code-review` | `mattpocock-skills:code-review` | `superpowers:requesting-code-review` | `none` |
-| `research` | `mattpocock-skills:research` | `none` | `none` |
-| `design-vocabulary` | `mattpocock-skills:codebase-design` | `none` | `none` |
-| `verification` | `none` | `superpowers:verification-before-completion` | `none` |
+| Capability | `mattpocock-skills` | `superpowers` | `agent-skills` | `none` |
+| --- | --- | --- | --- | --- |
+| `test-first` | `mattpocock-skills:tdd` | `superpowers:test-driven-development` | `agent-skills:test-driven-development` | `none` |
+| `debugging` | `mattpocock-skills:diagnosing-bugs` | `superpowers:systematic-debugging` | `agent-skills:debugging-and-error-recovery` | `none` |
+| `code-review` | `mattpocock-skills:code-review` | `superpowers:requesting-code-review` | `agent-skills:code-review-and-quality` | `none` |
+| `research` | `mattpocock-skills:research` | `none` | `none` | `none` |
+| `design-vocabulary` | `mattpocock-skills:codebase-design` | `none` | `none` | `none` |
+| `verification` | `none` | `superpowers:verification-before-completion` | `none` | `none` |
 
 An override is a scoped name, such as `mattpocock-skills:code-review`. A skill with `disable-model-invocation: true` cannot be in the map, because a model cannot call it.
 

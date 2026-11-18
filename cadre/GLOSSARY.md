@@ -13,7 +13,7 @@ The general part of cadre, with no facts of any one organization or person.
 _Avoid_: base plugin, generic version
 
 **Skill pack**:
-A plugin of SDLC skills that the role cards use, such as `mattpocock-skills` or `superpowers`.
+A plugin of SDLC skills that the role cards use, such as `mattpocock-skills`, `superpowers`, or `agent-skills`.
 _Avoid_: skill set, toolset
 
 **Capability**:

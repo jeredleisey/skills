@@ -26,6 +26,7 @@ Steps for one task. See [the index](how-to/README.md).
 - [Set up on Azure DevOps](how-to/set-up-on-azure-devops.md)
 - [Use a repo with no remote](how-to/use-a-repo-with-no-remote.md)
 - [Resume an orchestrator](how-to/resume-an-orchestrator.md)
+- [Choose a skill pack](how-to/choose-a-skill-pack.md)
 - [Add an extra card](how-to/add-an-extra-card.md)
 - [Allow a guard](how-to/allow-a-guard.md)
 - [Turn on agent teams](how-to/turn-on-agent-teams.md)

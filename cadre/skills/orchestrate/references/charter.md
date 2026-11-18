@@ -12,7 +12,7 @@ Front matter holds only what a script or a hook reads.
 | `written_by` | `cadre <version>`, the version that wrote the file. |
 | `guards` | `off` turns the guards off. Absent when on, the default. |
 | `allow` | A list of guards that the repo allows, such as `[merge]`. Absent when none. |
-| `skill_pack` | The preset of the skill map: `mattpocock-skills`, `superpowers`, or `none`. Absent means `none`. |
+| `skill_pack` | The preset of the skill map: `mattpocock-skills`, `superpowers`, `agent-skills`, or `none`. Absent means `none`. |
 | `capabilities` | Overrides of the skill map, as items `<capability>=<skill or none>`. Write the inline list `[a=b, c=d]` or `- a=b` lines, never a mix. A capability appears once. Absent when none. |
 | `tracker` | `ado` for Azure DevOps, `local` for the local tracker. Absent for GitHub, the default. |
 | `ado_org`, `ado_project` | The ADO organization and project. Absent for GitHub. |
@@ -33,7 +33,7 @@ The body is for agents. Say only what an agent cannot derive from the repo.
 ---
 charter_schema: 1
 written_by: cadre <version>
-skill_pack: <mattpocock-skills, superpowers, or none>
+skill_pack: <pack or none>
 ---
 
 # Charter

@@ -24,7 +24,7 @@ Front matter holds only what a script or a hook reads.
 | `written_by` | `cadre <version>`, the version that wrote the file. | None. Required. | [`charter-check`](scripts.md#charter-check) |
 | `guards` | `off` turns the guards off. Any other value leaves them on. | Absent: guards on. An unreadable charter also counts as guards on. | [`guard`](guards.md) |
 | `allow` | A list of guards that the repo allows, from `push` and `merge`. | Absent: none. | [`guard`](guards.md) |
-| `skill_pack` | `mattpocock-skills`, `superpowers`, or `none`. | Absent: `none`. | [`skill-map`](scripts.md#skill-map) |
+| `skill_pack` | `mattpocock-skills`, `superpowers`, `agent-skills`, or `none`. | Absent: `none`. | [`skill-map`](scripts.md#skill-map) |
 | `capabilities` | Overrides of the skill map, as items `<capability>=<skill or none>`. | Absent: no override. | [`skill-map`](scripts.md#skill-map) |
 | `tracker` | `ado` for Azure DevOps. `local` for the local tracker. | Absent: GitHub. | [`resume-read-ado`](scripts.md#resume-read-ado) and [`grant-check-ado`](scripts.md#grant-check-ado) read `ado`. The skills read `local` and the absence. |
 | `ado_org` | The ADO organization. | Absent for GitHub. | [`resume-read-ado`](scripts.md#resume-read-ado), [`grant-check-ado`](scripts.md#grant-check-ado) |

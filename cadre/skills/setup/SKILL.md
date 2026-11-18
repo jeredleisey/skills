@@ -77,20 +77,22 @@ This step asks nothing.
    - `count` is 2 or more: use none. Add a screen note that names the plugin ids, and say that the human can name a plugin in the closing answer to use its preset.
    - `unknown: <reason>`: say the reason and end setup.
 
-   A preset is a default, never a lock. It never overrides an answer of the charter. The tracker comes from step 2: ignore a preset `tracker` answer that differs, and say so in a note. A preset `skill_pack` must be one of `mattpocock-skills`, `superpowers`, or `none`: if not, ignore it, and say why in a note. A preset `merge_deploy` method that `merge-methods` does not list is ignored, with a note. A preset never lowers a branch policy or a guard, and never sets a secret. Ignore a key that the reference does not list, with a note.
+   A preset is a default, never a lock. It never overrides an answer of the charter. The tracker comes from step 2: ignore a preset `tracker` answer that differs, and say so in a note. A preset `skill_pack` must be one of `mattpocock-skills`, `superpowers`, `agent-skills`, or `none`: if not, ignore it, and say why in a note. A preset `merge_deploy` method that `merge-methods` does not list is ignored, with a note. A preset never lowers a branch policy or a guard, and never sets a secret. Ignore a key that the reference does not list, with a note.
 4. Files. Read `AGENTS.md`, `CLAUDE.md`, and the README in the repo root. Take a fact from them only when the file states it: an owner, a deploy command, a documentation rule, a trap, a secret store. Source is `file <name>`. Do not guess an answer from the file of another tool.
-5. Skill pack. Run `claude plugin list`. If exactly one of `mattpocock-skills` and `superpowers` is installed, it is the default. Else the default is `none`. If the command fails, the default is `none`, and a note says so.
+5. Skill pack. Run `claude plugin list`. The known packs are `mattpocock-skills`, `superpowers`, and `agent-skills`. Match each by plugin name. Exactly one installed: it is the default. Two or more installed: there is no default. Step 5 then asks one question, before the screen: which of the installed packs, or `none`, do the helpers use? None installed: the default is `none`. If the command fails, the default is `none`, and a note says so.
 
 Done when you hold each fact, each note, and each source.
 
 ### 5. Ask the ADO questions
 
-ADO only. Local and GitHub skip this step. Ask both before the screen.
+The ADO questions apply to ADO only. Local and GitHub skip them. Ask both before the screen.
 
 - Which area path do the items of this repo use? Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/ado-setup.mjs" area "<org>" "<project>" "<repo>"`. A `match:` line gives the proposal. A `root:` line gives the project root: say its warning, and ask for another path. Always ask. `unknown:` ends setup.
 - Which work item type holds the orchestrator item? Offer `Task` or the type that a preset gives. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/ado-setup.mjs" type "<org>" "<project>" "<type>"`. A `refuse:` line means that the type does not work: say its reason, and offer its `propose:` type. Never accept a refused type. `unknown:` ends setup.
 
 The area path and the type go in the `## Tracker` section of the charter.
+
+All trackers: if step 4 item 5 found two or more installed skill packs, ask one more question before the screen. Which of the installed packs, or `none`, do the helpers use? Offer only those values. Take the answer as the Skill pack row. Do not guess.
 
 Done when the area path and the type pass their checks, or the tracker is not ADO.
 
@@ -109,7 +111,7 @@ The rows, in this order:
 | Row | Proposed value | Default when nothing else gives it |
 | --- | --- | --- |
 | Tracker | GitHub (host, owner, repo), ADO (org, project, area path, item type), or local. Source: `remote`. | None. It always comes from step 2. |
-| Skill pack | `mattpocock-skills`, `superpowers`, or `none`. | The pack of step 4 item 5. If it is `mattpocock-skills`, add a screen note: the human types `/mattpocock-skills:setup-matt-pocock-skills` by hand, because that skill is human-only. Cadre never reads or writes its files. |
+| Skill pack | `mattpocock-skills`, `superpowers`, `agent-skills`, or `none`. | The pack of step 4 item 5, or the answer of step 5 when two or more packs are installed. If it is `mattpocock-skills`, add a screen note: the human types `/mattpocock-skills:setup-matt-pocock-skills` by hand, because that skill is human-only. Cadre never reads or writes its files. |
 | Owners | The paths that each orchestrator owns. | One row: `/` (all of the repo) owned by the one orchestrator. The `folders` fact becomes a screen note. When code moves to another repo, its ownership moves with it to the orchestrator of that repo. |
 | Merge | Who merges, and which method. Offer only the methods in `merge-methods`. | The owner merges. The method is `merge` if it is allowed, else the first allowed method. If the fact is unread, say that the list is unread, and offer each method of the tracker. The orchestrator can merge only with a grant in the ledger. |
 | Deploy | Who deploys, and how. | None. |

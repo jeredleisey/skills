@@ -89,6 +89,6 @@ One line and an exit code.
 A preset is a default, never a lock. Setup ignores each of these, and says why in a note:
 
 - A `tracker` answer that differs from the tracker that setup found.
-- A `skill_pack` outside `mattpocock-skills`, `superpowers`, and `none`.
+- A `skill_pack` outside `mattpocock-skills`, `superpowers`, `agent-skills`, and `none`.
 - A `merge_deploy` method that the `merge-methods` fact does not list.
 - A key that this page does not list.
