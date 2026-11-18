@@ -128,8 +128,10 @@
     color: var(--cadre-ink);
     background-color: var(--cadre-accent-soft);
   }
-  .md-nav--primary .md-nav__link--active,
-  .md-nav--primary .md-nav__link--active:hover {
+  /* The active rules repeat :not() so that they rank above the link and hover rules. */
+  .md-nav--primary .md-nav__link--active:not(.md-nav__container),
+  .md-nav--primary .md-nav__link--active:not(.md-nav__container):hover,
+  .md-nav--primary .md-nav__link--active:not(.md-nav__container):focus-visible {
     color: var(--cadre-ink);
     font-weight: 600;
     background-color: var(--md-code-bg-color);
@@ -162,8 +164,8 @@
     transition: opacity 160ms ease, transform 160ms ease;
   }
   .md-nav--primary .md-nav__link:not(.md-nav__container):hover::after { opacity: 0.8; transform: scale(1); }
-  .md-nav--primary .md-nav__link--active::after,
-  .md-nav--primary .md-nav__link--active:hover::after {
+  .md-nav--primary .md-nav__link--active:not(.md-nav__container)::after,
+  .md-nav--primary .md-nav__link--active:not(.md-nav__container):hover::after {
     background-color: var(--cadre-accent);
     opacity: 1;
     transform: scale(1);
@@ -178,8 +180,8 @@
   .md-nav--primary .md-nav__link,
   .md-nav--primary .md-nav__link::after,
   .md-nav--primary .md-nav__link:hover::after { transition: none !important; }
-  .md-nav--primary .md-nav__link--active::after,
-  .md-nav--primary .md-nav__link--active:hover::after { animation: none !important; }
+  .md-nav--primary .md-nav__link--active:not(.md-nav__container)::after,
+  .md-nav--primary .md-nav__link--active:not(.md-nav__container):hover::after { animation: none !important; opacity: 1; transform: scale(1); }
 }
 
 /* Breadcrumb above the title: small and quiet. */
