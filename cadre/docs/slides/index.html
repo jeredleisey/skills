@@ -121,7 +121,7 @@
   </svg>
   <p class="small">The tracker is a GitHub issue or an Azure DevOps work item.</p>
   <aside class="notes">
-    You talk to one agent, the orchestrator. It owns the outcome and splits the work into tickets. Each helper does one ticket in its own worktree, so helpers never share files. The tracker, a GitHub issue or an ADO work item, is the record.
+    You talk to one agent, the orchestrator. It owns the outcome and splits the work into tickets. Each helper does one ticket in its own worktree, so helpers never share files. The tracker, a GitHub issue or an Azure DevOps work item, is the record.
   </aside>
 </section>
 
@@ -147,7 +147,7 @@
     <li>The orchestrator <strong>runs the tests itself</strong></li>
     <li>It reads the diff for scope</li>
     <li>A separate reviewer reads the head commit</li>
-    <li>Must-fix and should-fix are fixed before a merge</li>
+    <li>It fixes each must-fix and should-fix before a merge</li>
   </ol>
   <aside class="notes">
     This is the verify loop. The helper says what it did, and that is only a claim. The orchestrator runs the tests again and reads the diff. A different agent reviews the head commit. A wrong claim costs more after a merge than before it.
@@ -160,7 +160,7 @@
   <ul>
     <li>Only <strong>you</strong> grant a permission, in your own session</li>
     <li>One-way steps need a grant: merge, deploy, delete, force push</li>
-    <li>Guards (hooks) ask before a merge or a push to the default branch. They always deny a helper</li>
+    <li>Guards (hooks) ask before a merge, a force push, or a push to the default branch. They always deny a helper</li>
     <li class="small">Not a security boundary. The branch policy of your repo is.</li>
   </ul>
   <aside class="notes">
@@ -177,7 +177,7 @@
     <li>One session holds a name at a time</li>
   </ul>
   <aside class="notes">
-    The orchestrator keeps no private memory. If your session ends or your context is compacted, a new session reads the issue and continues. Only one session holds the orchestrator name at a time, so two sessions do not race.
+    The orchestrator keeps no private memory. If your session ends or Claude Code compacts your context, a new session reads the issue and continues. Only one session holds the orchestrator name at a time, so two sessions do not race.
   </aside>
 </section>
 
@@ -191,7 +191,7 @@
     <li>It merged after green CI, with a grant from me</li>
   </ul>
   <aside class="notes">
-    This deck is a cadre ticket. While I was away, the orchestrator wrote the tickets and started coders. Reviewers read two pull requests and the findings got fixed. It merged only after CI was green, and only because I had given it a grant.
+    This deck is a cadre ticket. While I was away, the orchestrator wrote the tickets and started coders. Reviewers read the pull requests, and the orchestrator fixed their findings. It merged only after CI was green, and only because I had given it a grant.
   </aside>
 </section>
 
@@ -206,9 +206,9 @@
       <tr><td>Large: a skill rewrite, two review rounds</td><td class="num">about 350,000</td></tr>
     </tbody>
   </table>
-  <p class="small" style="margin-top:0.8em">Each ticket runs at least one coder and one reviewer. Your own session adds context on top.</p>
+  <p class="small" style="margin-top:0.8em">Each ticket that changes code runs at least one coder and one reviewer. Your own session adds context on top.</p>
   <aside class="notes">
-    These numbers come from three real tickets in one session of the cadre repo. Each ticket that changes code runs a coder and a reviewer, so you pay for a second pair of eyes. Your own session adds its context on top of this.
+    These numbers come from three real tickets in one session of the cadre repo. Each ticket that changes code runs a coder and a reviewer, so you pay for a second review. Your own session adds its context on top of this.
   </aside>
 </section>
 
@@ -230,7 +230,7 @@
 <section>
   <h2>Get ready</h2>
   <ul>
-    <li>Windows: Git for Windows, Node 22</li>
+    <li>Windows: Git for Windows, Node 22 or later, Claude Code</li>
     <li>The Azure CLI and its <code>azure-devops</code> extension</li>
     <li>A personal access token in <code>AZURE_DEVOPS_EXT_PAT</code></li>
     <li class="small"><a href="https://cadre.jeredleisey.com/how-to/prepare-a-windows-computer/">cadre.jeredleisey.com/how-to/prepare-a-windows-computer/</a></li>
@@ -238,7 +238,7 @@
   <p style="margin-top:0.8em"><span class="cmd">/plugin marketplace add jeredleisey/skills</span></p>
   <p style="margin-top:0.3em"><span class="cmd">/plugin install cadre@jeredleisey</span></p>
   <aside class="notes">
-    On Windows you need four things. The page on the screen lists each step. After that, two commands install the plugin inside Claude Code. Try the install after the session if you do not have time now.
+    The page on the screen lists each step and ends with a ready check. After you set the token, quit VS Code fully and start it again. After that, two commands install the plugin inside Claude Code. Try the install after the session if you do not have time now.
   </aside>
 </section>
 
@@ -246,7 +246,7 @@
 <section class="section-title">
   <h1>Live demo</h1>
   <aside class="notes">
-    Owner: fill in the demo steps here.
+    Now one ticket, live, from start to merge.
   </aside>
 </section>
 
