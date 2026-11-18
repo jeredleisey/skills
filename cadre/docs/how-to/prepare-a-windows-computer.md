@@ -6,7 +6,7 @@ Each step gives a command to copy, then the output that you should see.
 
 ## What you need
 
-Claude Code runs the cadre Node scripts and `az` through Git Bash. So each item must work in Git Bash.
+On Windows, Claude Code has a PowerShell tool and, with Git for Windows, a Bash tool. It usually uses PowerShell first. The cadre skills write their commands for Bash, and cadre was tested on Windows with Git Bash. So install Git for Windows, and make sure that each item works in Git Bash.
 
 | Item | Section |
 | --- | --- |
@@ -111,8 +111,6 @@ Set-Clipboard -Value ' '
 ```
 
 The second line prints the length. An ADO token usually has 52 or 84 characters. The third line clears the clipboard. If Win+V clipboard history is on, delete the token entry there.
-
-Do not use `Read-Host -AsSecureString` for this. A paste into the hidden prompt can store only one character. A length of 1 is a paste fault. It is not an expired token.
 
 Never print the token. Check only the length.
 
