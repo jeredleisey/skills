@@ -159,7 +159,7 @@ The last line is the HTTP status. The block never prints the token or the body o
 
 - `200` is good.
 - `203` or `302` means ADO refused the token. Check that the token is not empty, then check that it did not expire.
-- `401` means a missing scope or an expired token.
+- `401` means ADO refused the token. Check that it did not expire, and that you copied all of it.
 - `403` means the token has no access to the project. Make a token with the two scopes above.
 - `404` means a wrong organization or project name.
 
