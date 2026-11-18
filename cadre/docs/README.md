@@ -24,6 +24,7 @@ Steps for one task. See [the index](how-to/README.md).
 - [Allow a guard](how-to/allow-a-guard.md)
 - [Turn on agent teams](how-to/turn-on-agent-teams.md)
 - [Run the evals](how-to/run-the-evals.md)
+- [Prepare a Windows computer](how-to/prepare-a-windows-computer.md)
 - [Check a Windows install](how-to/check-a-windows-install.md)
 
 ## Explanation

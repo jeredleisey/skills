@@ -11,4 +11,5 @@ A how-to guide is a set of steps for one task. It assumes you know the basics. S
 - [Allow a guard, or turn guards off](allow-a-guard.md)
 - [Turn on agent teams](turn-on-agent-teams.md)
 - [Run the evals](run-the-evals.md)
+- [Prepare a Windows computer for cadre](prepare-a-windows-computer.md)
 - [Check a cadre install on Windows 11](check-a-windows-install.md)
