@@ -40,7 +40,7 @@ An orchestrator shapes the work and gives tickets to helpers in role cards: code
 ## Install
 
 ```
-/plugin marketplace add jeredleisey/skills
+/plugin marketplace add https://github.com/jeredleisey/skills.git
 /plugin install cadre@jeredleisey
 ```
 

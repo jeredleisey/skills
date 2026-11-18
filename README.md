@@ -13,7 +13,7 @@ Read the docs at <https://cadre.jeredleisey.com/>, or in [`cadre/docs/`](cadre/d
 ## Install
 
 ```
-/plugin marketplace add jeredleisey/skills
+/plugin marketplace add https://github.com/jeredleisey/skills.git
 /plugin install cadre@jeredleisey
 ```
 

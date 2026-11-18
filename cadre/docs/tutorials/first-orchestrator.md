@@ -33,18 +33,18 @@ Do this once on each computer. The three places read the same settings, so a plu
 **Terminal.** Start `claude` in any folder. Type:
 
 ```
-/plugin marketplace add jeredleisey/skills
+/plugin marketplace add https://github.com/jeredleisey/skills.git
 /plugin install cadre@jeredleisey
 ```
 
-**Desktop app.** `/plugin` does not work in the Code tab. Click **+** next to the prompt box, and choose **Add plugins**. Add the marketplace `jeredleisey/skills`, then install `cadre`.
+**Desktop app.** `/plugin` does not work in the Code tab. Click **+** next to the prompt box, and choose **Add plugins**. Add the marketplace `https://github.com/jeredleisey/skills.git`, then install `cadre`.
 
-**VS Code.** Type `/plugins` in the prompt box. In **Manage plugins**, open the **Marketplaces** tab and add `jeredleisey/skills`. Then open the **Plugins** tab and install `cadre`.
+**VS Code.** Type `/plugins` in the prompt box. In **Manage plugins**, open the **Marketplaces** tab and add `https://github.com/jeredleisey/skills.git`. Then open the **Plugins** tab and install `cadre`.
 
 If you have the `claude` command, this works for each of the three places, from any terminal:
 
 ```
-claude plugin marketplace add jeredleisey/skills
+claude plugin marketplace add https://github.com/jeredleisey/skills.git
 claude plugin install cadre@jeredleisey --scope user
 ```
 
