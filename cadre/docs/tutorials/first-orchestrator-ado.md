@@ -64,7 +64,7 @@ claude plugin install cadre@jeredleisey --scope user
 
 You see that the marketplace `jeredleisey` was added, and then that `cadre` is installed. A plugin loads when a session starts. Start a new session, or type `/reload-plugins` in an open one.
 
-If your organization manages Claude Code, it can block a marketplace. You then see a message such as `Marketplace source 'jeredleisey/skills' is blocked by enterprise policy`. Ask your administrator to allow the marketplace. You cannot fix this yourself.
+If your organization manages Claude Code, it can block a marketplace. You then see a message such as `Marketplace source 'https://github.com/jeredleisey/skills.git' is blocked by enterprise policy`. Ask your administrator to allow the marketplace. You cannot fix this yourself.
 
 ## 2. Run setup
 
