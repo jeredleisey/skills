@@ -1,0 +1,106 @@
+/* cadre docs theme: warm light and warm dark, one accent. */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap");
+
+:root {
+  --cadre-accent: #ff4f00;
+  --md-text-font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --md-code-font-family: "Cascadia Mono", "SF Mono", Consolas, Menlo, monospace;
+  --cadre-display: "Playfair Display", Georgia, "Times New Roman", serif;
+}
+
+[data-md-color-scheme="default"] {
+  --cadre-base: #faf6ee;
+  --cadre-ink: #2a2622;
+  --cadre-mid: #7a7064;
+  --cadre-line: #e2d9c8;
+  --md-default-bg-color: var(--cadre-base);
+  --md-default-fg-color: var(--cadre-ink);
+  --md-default-fg-color--light: #5c544b;
+  --md-default-fg-color--lighter: #a39887;
+  --md-default-fg-color--lightest: #e2d9c8;
+  --md-primary-fg-color: var(--cadre-base);
+  --md-primary-fg-color--light: var(--cadre-base);
+  --md-primary-fg-color--dark: var(--cadre-base);
+  --md-primary-bg-color: var(--cadre-ink);
+  --md-primary-bg-color--light: var(--cadre-mid);
+  --md-accent-fg-color: #c23c00;
+  --md-accent-fg-color--transparent: rgba(255, 79, 0, 0.1);
+  --md-typeset-color: var(--cadre-ink);
+  --md-typeset-a-color: var(--cadre-ink);
+  --md-code-bg-color: #f0e9dc;
+  --md-code-fg-color: #2a2622;
+  --md-footer-bg-color: #2a2622;
+  --md-footer-bg-color--dark: #1f1c19;
+  --md-footer-fg-color: #faf6ee;
+}
+
+[data-md-color-scheme="slate"] {
+  --cadre-base: #1c1916;
+  --cadre-ink: #ece4d6;
+  --cadre-mid: #a59a8a;
+  --cadre-line: #3a342e;
+  --md-hue: 30;
+  --md-default-bg-color: var(--cadre-base);
+  --md-default-fg-color: var(--cadre-ink);
+  --md-default-fg-color--light: #c9bfaf;
+  --md-default-fg-color--lighter: #8a7f70;
+  --md-default-fg-color--lightest: #3a342e;
+  --md-primary-fg-color: var(--cadre-base);
+  --md-primary-fg-color--light: var(--cadre-base);
+  --md-primary-fg-color--dark: var(--cadre-base);
+  --md-primary-bg-color: var(--cadre-ink);
+  --md-primary-bg-color--light: var(--cadre-mid);
+  --md-accent-fg-color: #ff7a3d;
+  --md-accent-fg-color--transparent: rgba(255, 79, 0, 0.14);
+  --md-typeset-color: var(--cadre-ink);
+  --md-typeset-a-color: var(--cadre-ink);
+  --md-code-bg-color: #26221e;
+  --md-code-fg-color: #ece4d6;
+  --md-footer-bg-color: #14120f;
+  --md-footer-bg-color--dark: #100e0c;
+  --md-footer-fg-color: #ece4d6;
+}
+
+/* Header: the page color, with a hairline. */
+.md-header { box-shadow: none; border-bottom: 1px solid var(--cadre-line); }
+.md-header__topic:first-child { font-family: var(--cadre-display); font-weight: 700; font-size: 1.15em; }
+.md-tabs { border-bottom: 1px solid var(--cadre-line); }
+
+/* Headings: serif display, weight over size. */
+.md-typeset h1, .md-typeset h2, .md-typeset h3 {
+  font-family: var(--cadre-display);
+  color: var(--cadre-ink);
+  letter-spacing: 0;
+}
+.md-typeset h1 { font-weight: 700; margin-bottom: 0.9em; }
+.md-typeset h1::after {
+  content: ""; display: block; width: 2.4rem; height: 3px;
+  margin-top: 0.45em; background: var(--cadre-accent);
+}
+.md-typeset h2 { font-weight: 600; }
+.md-typeset h3 { font-weight: 600; }
+.md-typeset { line-height: 1.7; }
+
+/* Links: ink text with an orange underline. Orange text on cream is too faint to read. */
+.md-typeset a {
+  text-decoration: underline;
+  text-decoration-color: var(--cadre-accent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.2em;
+}
+.md-typeset a:hover { color: var(--md-accent-fg-color); }
+
+/* Navigation: the active page carries the accent. */
+.md-nav__link--active, .md-nav__item .md-nav__link--active { color: var(--md-accent-fg-color); font-weight: 600; }
+.md-nav__title { font-family: var(--cadre-display); }
+
+/* Code and tables: warm, quiet borders. */
+.md-typeset code { border-radius: 3px; }
+.md-typeset table:not([class]) { border: 1px solid var(--cadre-line); box-shadow: none; }
+.md-typeset table:not([class]) th { background: var(--md-code-bg-color); }
+.md-typeset hr { border-bottom-color: var(--cadre-line); }
+
+/* Search: a quiet field in the page colors. */
+.md-search__input { background-color: var(--md-code-bg-color); color: var(--cadre-ink); }
+.md-search__input::placeholder, .md-search__icon { color: var(--cadre-mid); }
+.md-search__input:hover { background-color: var(--md-code-bg-color); }
