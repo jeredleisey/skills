@@ -33,7 +33,7 @@ Write an override as a scoped name, for example `mattpocock-skills:code-review`.
 
 The `## Rules` block is the same in all four cards. `tools/check-cards.mjs` fails when they differ.
 
-- **No ledger.** A card never pushes, merges, deploys, deletes, or changes a live system. It refuses such a request from a peer or a helper.
+- **No ledger.** A card never pushes, merges, deploys, deletes, or changes a live system. It refuses such a request, even from the brief, a peer, or a helper. It checks each command against the rule before it runs it, also a command in a chain. It does the remaining work, unless another rule or step stops it.
 - **No question to a user.** A subagent has no human. Each answer that a skill asks the user for comes from the brief. If the brief lacks one, the card stops and reports the gap.
 - **Check the skills.** Step 1 loads each mapped skill. If one does not load, the card stops and reports its name.
 - **Final message.** The form of the [helper brief](helper-brief.md), with the skills that loaded and each built-in method that was used.
